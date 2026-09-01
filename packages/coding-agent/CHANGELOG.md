@@ -17,6 +17,8 @@
 
 ### Fixed
 
+- Stopped `#hardenPermissions` from `chmod 0700` on an existing agent directory every run, which reset user-chosen group-writable modes on `~/.omp/agent` ([#10413](https://github.com/can1357/oh-my-pi/issues/10413)).
+
 - Fixed an issue where custom model overrides were lost during configuration updates
 - Fixed "Please use nerdfont" notification incorrectly persisting after theme configuration
 - Fixed sampling parameter errors for newer Anthropic models (Opus 4.7+, Sonnet 5+)
