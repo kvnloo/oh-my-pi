@@ -19,6 +19,7 @@ import {
 	postmortem,
 } from "@oh-my-pi/pi-utils";
 import type { RawSettings as Settings } from "../config/settings";
+import { hardenAgentDbFilePermissions } from "./agent-storage-permissions";
 
 /** Row shape for settings table queries */
 type SettingsRow = {
@@ -856,18 +857,6 @@ ON CONFLICT(model_key) DO UPDATE SET
 	}
 
 	#hardenPermissions(dbPath: string): void {
-		const dir = path.dirname(dbPath);
-		try {
-			fs.chmodSync(dir, 0o700);
-		} catch (error) {
-			logger.warn("AgentStorage failed to chmod agent dir", { path: dir, error: String(error) });
-		}
-
-		if (!fs.existsSync(dbPath)) return;
-		try {
-			fs.chmodSync(dbPath, 0o600);
-		} catch (error) {
-			logger.warn("AgentStorage failed to chmod db file", { path: dbPath, error: String(error) });
-		}
+		hardenAgentDbFilePermissions(dbPath);
 	}
 }
