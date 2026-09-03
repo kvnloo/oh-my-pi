@@ -37,6 +37,14 @@ export type RpcCommand =
 	| { id?: string; type: "abort_and_prompt"; message: string; images?: ImageContent[] }
 	| { id?: string; type: "new_session"; parentSession?: string }
 
+	// Voice (protocol v2)
+	| { id?: string; type: "dictation_start" }
+	| { id?: string; type: "dictation_stop" }
+	| { id?: string; type: "dictation_cancel" }
+	| { id?: string; type: "live_start" }
+	| { id?: string; type: "live_toggle_mute" }
+	| { id?: string; type: "live_stop" }
+
 	// State
 	| { id?: string; type: "get_state" }
 	| { id?: string; type: "set_fast_mode"; enabled: boolean }
@@ -120,6 +128,36 @@ export interface RpcSessionState {
 	/** Current context window usage. */
 	contextUsage?: ContextUsage;
 }
+
+export type RpcVoiceMode = "dictation" | "live";
+
+export interface RpcVoiceState {
+	mode: RpcVoiceMode;
+	phase: string;
+	muted?: boolean;
+}
+
+interface RpcVoiceEventBase {
+	voiceSessionId: string;
+	mode: RpcVoiceMode;
+}
+
+export type RpcVoiceEvent =
+	| (RpcVoiceEventBase & { type: "voice_state"; phase: string; muted?: boolean; elapsedMs: number })
+	| (RpcVoiceEventBase & {
+			type: "voice_transcript";
+			role: "user" | "assistant";
+			text: string;
+			final: boolean;
+			turn: number;
+	  })
+	| (RpcVoiceEventBase & { type: "voice_level"; input: number; output: number; elapsedMs: number })
+	| (RpcVoiceEventBase & {
+			type: "voice_terminal";
+			outcome: "stopped" | "cancelled" | "error";
+			elapsedMs: number;
+			error?: string;
+	  });
 
 export interface RpcAvailableSlashCommand {
 	name: string;
@@ -210,6 +248,12 @@ export type RpcResponse =
 	| { id?: string; type: "response"; command: "abort"; success: true }
 	| { id?: string; type: "response"; command: "abort_and_prompt"; success: true }
 	| { id?: string; type: "response"; command: "new_session"; success: true; data: { cancelled: boolean } }
+	| { id?: string; type: "response"; command: "dictation_start"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "dictation_stop"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "dictation_cancel"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "live_start"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "live_toggle_mute"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "live_stop"; success: true; data: RpcVoiceState }
 
 	// State
 	| { id?: string; type: "response"; command: "get_state"; success: true; data: RpcSessionState }

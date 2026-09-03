@@ -15,6 +15,7 @@ import { getOAuthProviders } from "@oh-my-pi/pi-ai/oauth";
 import { toolWireSchema } from "@oh-my-pi/pi-ai/utils/schema";
 import { $env, isRecord, Snowflake } from "@oh-my-pi/pi-utils";
 import { reset as resetCapabilities } from "../../capability";
+import { settings } from "../../config/settings";
 import { clearPluginRootsAndCaches, resolveActiveProjectRegistryPath } from "../../discovery/helpers";
 import {
 	type ExtensionUIContext,
@@ -31,8 +32,10 @@ import {
 } from "../../extensibility/skills";
 import { loadSlashCommands } from "../../extensibility/slash-commands";
 import { type Theme, theme } from "../../modes/theme/theme";
+import { LiveSessionController } from "../../live/controller";
 import type { AgentSession } from "../../session/agent-session";
 import { SKILL_PROMPT_MESSAGE_TYPE, USER_INTERRUPT_LABEL } from "../../session/messages";
+import { STTController } from "../../stt/stt-controller";
 import { executeAcpBuiltinSlashCommand } from "../../slash-commands/acp-builtins";
 import { buildAvailableSlashCommands } from "../../slash-commands/available-commands";
 import { defaultLoadModeForToolName } from "../../tools/essential-tools";
@@ -45,6 +48,7 @@ import { MAX_RPC_FRAME_BYTES, MAX_RPC_REASSEMBLED_BYTES, RpcFrameEncoder } from 
 import { claimRpcInput, readRpcInputFrames } from "./rpc-input";
 import { pageRpcMessages, RPC_MESSAGES_PAGE_BUSY_ERROR, RpcMessagesPageError } from "./rpc-messages";
 import { RpcSubagentRegistry, readRpcSubagentTranscript } from "./rpc-subagents";
+import { RpcVoiceController } from "./rpc-voice";
 import type {
 	RpcCommand,
 	RpcExtensionUIRequest,
@@ -61,6 +65,7 @@ import type {
 	RpcResponse,
 	RpcSessionState,
 	RpcSubagentSubscriptionLevel,
+	RpcVoiceEvent,
 } from "./rpc-types";
 
 // Re-export types for consumers
@@ -102,6 +107,7 @@ type RpcOutput = (
 		| RpcHostToolCancelRequest
 		| RpcHostUriRequest
 		| RpcHostUriCancelRequest
+		| RpcVoiceEvent
 		| object,
 ) => void;
 
@@ -1051,6 +1057,13 @@ export async function runRpcMode(
 	session.subscribe(event => {
 		output(event);
 	});
+	const voiceController = new RpcVoiceController(
+		session,
+		output,
+		new STTController(),
+		options => new LiveSessionController(options),
+		() => settings.get("live.voice"),
+	);
 
 	const getAvailableCommands = async () => buildAvailableSlashCommands(session);
 	const reloadPluginState = async () => {
@@ -1166,20 +1179,36 @@ export async function runRpcMode(
 
 			case "abort": {
 				await session.abort({ reason: USER_INTERRUPT_LABEL });
+				await voiceController.stopActive();
 				return success(id, "abort");
 			}
 
 			case "abort_and_prompt": {
 				await session.abort({ reason: USER_INTERRUPT_LABEL });
+				await voiceController.stopActive();
 				session
 					.prompt(command.message, { images: command.images })
 					.catch(e => output(error(id, "abort_and_prompt", e.message)));
 				return success(id, "abort_and_prompt");
 			}
 
+			case "dictation_start":
+				return success(id, "dictation_start", await voiceController.startDictation());
+			case "dictation_stop":
+				return success(id, "dictation_stop", await voiceController.stopDictation());
+			case "dictation_cancel":
+				return success(id, "dictation_cancel", voiceController.cancelDictation());
+			case "live_start":
+				return success(id, "live_start", await voiceController.startLive());
+			case "live_toggle_mute":
+				return success(id, "live_toggle_mute", voiceController.toggleLiveMute());
+			case "live_stop":
+				return success(id, "live_stop", await voiceController.stopLive());
+
 			case "new_session":
 			case "switch_session":
 			case "branch": {
+				await voiceController.stopActive();
 				const result = await handleRpcSessionChange(session, command, subagentRegistry);
 				if (!result.data.cancelled) await emitAvailableCommandsUpdate();
 				return success(id, result.type, result.data);
@@ -1577,6 +1606,7 @@ export async function runRpcMode(
 			// the process exits. dispose() also emits `session_shutdown`, so we
 			// must NOT emit it separately here or the event fires twice. Skipping
 			// dispose left OMP-owned Chromium alive after RPC shutdown (#5643).
+			await voiceController.stopActive();
 			await session.dispose();
 			process.exit(0);
 		},
@@ -1615,6 +1645,7 @@ export async function runRpcMode(
 	pendingExtensionRequests.rejectAll("RPC client disconnected before extension UI response completed");
 	hostToolBridge.close("RPC client disconnected before host tool execution completed");
 	hostUriBridge.clear("RPC client disconnected before host URI request completed");
+	await voiceController.stopActive();
 	await inputDispatcher.drain();
 	await shutdownCoordinator.drain();
 	subagentRegistry?.dispose();
