@@ -26,7 +26,12 @@ from omp_rpc import (
     VoiceTranscriptEvent,
 )
 
-from .hyprland import ContextMonitor, HyprlandContext, HyprlandWindow
+from .hyprland import (
+    ContextMonitor,
+    HyprlandContext,
+    HyprlandWindow,
+    promote_hud_overlay,
+)
 from .rpc_session import HudRpcSession
 
 
@@ -615,6 +620,8 @@ class HudWindow(Gtk.Window):
         self._active_request_withdrawn = False
         self._active_timeout_source: int | None = None
         self._toast_timeout_source: int | None = None
+        self._overlay_checked = False
+        self._overlay_error: str | None = None
         self._pending_ui_requests: deque[tuple[ExtensionUiRequest, float | None]] = deque()
         self._extension_statuses: dict[str, str] = {}
         self._widgets: dict[str, tuple[str, tuple[str, ...]]] = {}
@@ -652,10 +659,11 @@ class HudWindow(Gtk.Window):
         self._monitor = ContextMonitor(
             lambda context: GLib.idle_add(self._set_context, context),
             lambda error: GLib.idle_add(self._set_context_error, error),
-            interval=refresh_ms / 1000,
+            interval=max(5.0, refresh_ms / 1000),
             on_windows=lambda windows: GLib.idle_add(self._set_windows, windows),
         )
         self.connect("destroy", self._on_destroy)
+        self.connect("map-event", self._on_map)
         self.connect("key-press-event", self._on_key_press)
         self._monitor.start()
         self._run_async(self._session.start, on_error=self._set_error)
@@ -1668,8 +1676,13 @@ class HudWindow(Gtk.Window):
         style = self._status_label.get_style_context()
         for status_kind in ("ready", "working", "error"):
             style.remove_class(status_kind)
-        style.add_class(self._base_status_kind)
-        parts = [self._base_status_text, *self._extension_statuses.values()]
+        status_kind = "error" if self._overlay_error else self._base_status_kind
+        style.add_class(status_kind)
+        parts = [
+            self._overlay_error,
+            self._base_status_text,
+            *self._extension_statuses.values(),
+        ]
         visible_parts = [part for part in parts if part]
         compact = visible_parts[0] if visible_parts else "Ready"
         if len(visible_parts) > 1:
@@ -1705,6 +1718,29 @@ class HudWindow(Gtk.Window):
                 GLib.idle_add(on_error, str(error))
 
         threading.Thread(target=run, name="omp-hud-operation", daemon=True).start()
+
+    def _on_map(self, _window: Gtk.Window, _event: Gdk.Event) -> bool:
+        if self._overlay_checked:
+            return False
+        self._overlay_checked = True
+
+        def promote() -> None:
+            try:
+                promote_hud_overlay()
+            except Exception as error:
+                GLib.idle_add(self._set_overlay_error, str(error))
+
+        threading.Thread(
+            target=promote,
+            name="omp-hud-overlay",
+            daemon=True,
+        ).start()
+        return False
+
+    def _set_overlay_error(self, error: str) -> bool:
+        self._overlay_error = f"Overlay unavailable: {error}"
+        self._render_status()
+        return False
 
     def _on_destroy(self, _window: Gtk.Window) -> None:
         if self._closing:

@@ -12,8 +12,10 @@ import type { RpcVoiceEvent } from "@oh-my-pi/pi-coding-agent/modes/rpc/rpc-type
 class FakeStt implements RpcSttSession {
 	state = "idle";
 	options: SttControllerOptions | undefined;
+	editor: SttEditor | undefined;
 
-	async start(_editor: SttEditor, options: SttControllerOptions): Promise<void> {
+	async start(editor: SttEditor, options: SttControllerOptions): Promise<void> {
+		this.editor = editor;
 		this.options = options;
 		this.state = "recording";
 		options.onStateChange("recording");
@@ -22,6 +24,7 @@ class FakeStt implements RpcSttSession {
 	async stop(options: SttControllerOptions): Promise<string> {
 		this.state = "transcribing";
 		options.onStateChange("transcribing");
+		this.editor?.commitVolatileText("hello");
 		options.onTranscript?.("hello", true);
 		this.state = "idle";
 		options.onStateChange("idle");
@@ -111,18 +114,30 @@ describe("RpcVoiceController", () => {
 		test.stt.options?.onLevel?.(0.4);
 		await test.controller.stopDictation();
 
-		expect(test.events.filter(event => event.type === "voice_state").map(event => event.phase)).toEqual([
-			"recording",
-			"transcribing",
-			"idle",
-		]);
 		expect(
-			test.events.filter(event => event.type === "voice_transcript").map(event => [event.text, event.final]),
+			test.events
+				.filter(event => event.type === "voice_state" || event.type === "voice_transcript")
+				.map(event => (event.type === "voice_state" ? ["state", event.phase] : ["transcript", event.text, event.final])),
 		).toEqual([
-			["hel", false],
-			["hello", true],
+			["state", "recording"],
+			["transcript", "hel", false],
+			["state", "transcribing"],
+			["transcript", "hello", true],
+			["state", "idle"],
 		]);
 		expect(test.events.filter(event => event.type === "voice_level")).toHaveLength(1);
+		expect(test.events.filter(event => event.type === "voice_terminal")).toHaveLength(1);
+	});
+
+	it("does not emit a committed transcript when dictation is cancelled", async () => {
+		const test = harness();
+		await test.controller.startDictation();
+		test.stt.options?.onTranscript?.("uncommitted", false);
+		const transcriptsBeforeCancel = test.events.filter(event => event.type === "voice_transcript");
+
+		test.controller.cancelDictation();
+
+		expect(test.events.filter(event => event.type === "voice_transcript")).toEqual(transcriptsBeforeCancel);
 		expect(test.events.filter(event => event.type === "voice_terminal")).toHaveLength(1);
 	});
 

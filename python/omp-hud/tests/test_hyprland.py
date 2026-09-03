@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
+import socket
 import subprocess
 import threading
+import time
 import unittest
 
 from omp_hud.hyprland import (
@@ -9,6 +12,7 @@ from omp_hud.hyprland import (
     HyprctlError,
     HyprlandContext,
     HyprlandWindow,
+    promote_hud_overlay,
     read_context,
     read_windows,
 )
@@ -107,7 +111,13 @@ class HyprlandContextTests(unittest.TestCase):
             if len(observed) == 2:
                 ready.set()
 
-        monitor = ContextMonitor(on_context, self.fail, interval=0.01, reader=reader)
+        monitor = ContextMonitor(
+            on_context,
+            self.fail,
+            interval=0.01,
+            reader=reader,
+            socket_path=lambda: None,
+        )
         monitor.start()
         self.assertTrue(ready.wait(1.0))
         monitor.stop()
@@ -144,13 +154,125 @@ class HyprlandContextTests(unittest.TestCase):
             if len(observed) == 2:
                 restored.set()
 
-        monitor = ContextMonitor(on_context, errors.append, interval=0.01, reader=reader)
+        monitor = ContextMonitor(
+            on_context,
+            errors.append,
+            interval=0.01,
+            reader=reader,
+            socket_path=lambda: None,
+        )
         monitor.start()
         self.assertTrue(restored.wait(1.0))
         monitor.stop()
 
         self.assertEqual([context, context], observed)
         self.assertEqual(["temporary failure"], errors)
+
+    def test_event_socket_refreshes_only_for_relevant_events(self) -> None:
+        monitor_socket, compositor_socket = socket.socketpair()
+        context_calls = 0
+        window_calls = 0
+        initial = threading.Event()
+        context_changed = threading.Event()
+        windows_changed = threading.Event()
+
+        def context_reader() -> HyprlandContext:
+            nonlocal context_calls
+            context_calls += 1
+            if context_calls == 1:
+                initial.set()
+            return HyprlandContext(str(context_calls), "kitty", "OMP")
+
+        def window_reader() -> tuple[HyprlandWindow, ...]:
+            nonlocal window_calls
+            window_calls += 1
+            return (
+                HyprlandWindow(
+                    f"0x{window_calls}",
+                    "1",
+                    "kitty",
+                    "OMP",
+                ),
+            )
+
+        monitor = ContextMonitor(
+            lambda _context: context_changed.set() if context_calls > 1 else None,
+            self.fail,
+            interval=5.0,
+            reader=context_reader,
+            on_windows=lambda _windows: windows_changed.set()
+            if window_calls > 1
+            else None,
+            window_reader=window_reader,
+            socket_path=lambda: "event.sock",
+            socket_connector=lambda _path: monitor_socket,
+        )
+        monitor.start()
+        self.assertTrue(initial.wait(1.0))
+        time.sleep(0.03)
+        self.assertEqual((1, 1), (context_calls, window_calls))
+
+        compositor_socket.sendall(b"submap>>resize\nworkspacev2>>2,work\n")
+        self.assertTrue(context_changed.wait(1.0))
+        self.assertEqual(1, window_calls)
+
+        compositor_socket.sendall(b"openwindow>>0xabc,2,kitty,OMP\n")
+        self.assertTrue(windows_changed.wait(1.0))
+        self.assertEqual(2, context_calls)
+        monitor.stop()
+        compositor_socket.close()
+
+    def test_promotes_and_verifies_hud_client(self) -> None:
+        floating = False
+        pinned = False
+        commands: list[list[str]] = []
+
+        def runner(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            nonlocal floating, pinned
+            commands.append(command)
+            if command[-1] == "clients":
+                payload = [
+                    {
+                        "address": "abc",
+                        "mapped": True,
+                        "namespace": "omp-hud",
+                        "title": "OMP HUD",
+                        "floating": floating,
+                        "pinned": pinned,
+                    }
+                ]
+                return subprocess.CompletedProcess(
+                    command,
+                    0,
+                    stdout=json.dumps(payload),
+                    stderr="",
+                )
+            if command[2] == "setfloating":
+                floating = True
+            elif command[2] == "pin":
+                pinned = True
+            return subprocess.CompletedProcess(command, 0, stdout="ok\n", stderr="")
+
+        promote_hud_overlay(
+            runner,
+            attempts=1,
+            delay=0,
+            env={"HYPRLAND_INSTANCE_SIGNATURE": "test"},
+        )
+
+        self.assertEqual(
+            [
+                ["hyprctl", "-j", "clients"],
+                ["hyprctl", "dispatch", "setfloating", "address:0xabc"],
+                ["hyprctl", "dispatch", "pin", "address:0xabc"],
+                ["hyprctl", "-j", "clients"],
+            ],
+            commands,
+        )
+
+    def test_promote_reports_missing_hyprland(self) -> None:
+        with self.assertRaisesRegex(HyprctlError, "Hyprland is unavailable"):
+            promote_hud_overlay(attempts=1, env={})
 
 
 if __name__ == "__main__":

@@ -47,6 +47,7 @@ export class RpcVoiceController {
 	#requestedOutcome: "stopped" | "cancelled" = "stopped";
 	#dictationError: Error | undefined;
 	#dictationText = "";
+	#deferDictationIdle = false;
 	constructor(
 		session: AgentSession,
 		output: Output,
@@ -81,15 +82,20 @@ export class RpcVoiceController {
 
 	async stopDictation(): Promise<RpcVoiceState> {
 		this.#require("dictation");
+		this.#deferDictationIdle = true;
 		try {
 			await this.#stt.stop(this.#sttOptions());
 			if (this.#dictationError) throw this.#dictationError;
+			this.#emit({ type: "voice_transcript", role: "user", text: this.#dictationText, final: true, turn: 1 });
 			const state = this.#state("idle");
+			this.#emitState("idle");
 			this.#finish("stopped");
 			return state;
 		} catch (cause) {
 			this.#fail(cause);
 			throw cause;
+		} finally {
+			this.#deferDictationIdle = false;
 		}
 	}
 
@@ -175,6 +181,7 @@ export class RpcVoiceController {
 		this.#requestedOutcome = "stopped";
 		this.#dictationError = undefined;
 		this.#dictationText = "";
+		this.#deferDictationIdle = false;
 	}
 
 	#require(mode: RpcVoiceMode): void {
@@ -206,8 +213,12 @@ export class RpcVoiceController {
 				this.#fail(this.#dictationError);
 			},
 			showStatus: () => {},
-			onStateChange: phase => this.#emitState(phase),
-			onTranscript: (text, final) => this.#emit({ type: "voice_transcript", role: "user", text, final, turn: 1 }),
+			onStateChange: phase => {
+				if (phase !== "idle" || !this.#deferDictationIdle) this.#emitState(phase);
+			},
+			onTranscript: (text, final) => {
+				if (!final) this.#emit({ type: "voice_transcript", role: "user", text, final: false, turn: 1 });
+			},
 			onLevel: input => this.#emit({ type: "voice_level", input, output: 0, elapsedMs: this.#elapsed() }),
 		};
 	}
