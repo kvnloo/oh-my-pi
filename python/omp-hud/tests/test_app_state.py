@@ -171,16 +171,10 @@ class UiRequestStateTests(unittest.TestCase):
         self.assertEqual([], presented)
         self.assertEqual([], list(state._pending_ui_requests))
 
-    def test_widget_removal_updates_structure_without_raw_timeline_event(self) -> None:
-        updates: list[tuple[str, str, tuple[str, ...]]] = []
-        state = SimpleNamespace(
-            _widgets={},
-            _render_widgets=lambda: None,
-            _set_widget_event=lambda key, placement, lines: updates.append(
-                (key, placement, lines)
-            ),
-            _record_event=lambda _event: self.fail("raw widget event was recorded"),
-        )
+    def test_widget_removal_updates_current_popover_state(self) -> None:
+        renders: list[dict[str, tuple[str, tuple[str, ...]]]] = []
+        state = SimpleNamespace(_widgets={})
+        state._render_widgets = lambda: renders.append(dict(state._widgets))
 
         HudWindow._handle_ui_request(
             state,
@@ -203,14 +197,15 @@ class UiRequestStateTests(unittest.TestCase):
 
         self.assertEqual(
             [
-                (
-                    "autoresarch",
-                    "aboveEditor",
-                    ("Searching the selected window",),
-                ),
-                ("autoresarch", "aboveEditor", ()),
+                {
+                    "autoresarch": (
+                        "aboveEditor",
+                        ("Searching the selected window",),
+                    )
+                },
+                {},
             ],
-            updates,
+            renders,
         )
 
     def test_keyed_status_and_widget_updates_replace_and_remove(self) -> None:

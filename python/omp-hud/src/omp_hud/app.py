@@ -7,9 +7,8 @@ import threading
 import time
 from collections import deque
 from collections.abc import Callable
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
-from urllib.parse import urlsplit
 
 import gi
 
@@ -38,36 +37,22 @@ _SPACE_1 = 4
 _SPACE_2 = 8
 _SPACE_3 = 12
 _SPACE_4 = 16
-_CARD_WIDTH = 860
-_CARD_HEIGHT = 600
-_PREVIEW_WIDTH = 140
 _CAPSULE_WIDTH = 680
 _TARGET_CHIP_WIDTH = 204
 _HUD_WIDTH = 1188
-_HUD_HEIGHT = 820
-_GRIP_WIDTH = 48
-_GRIP_HEIGHT = 4
-_RADIUS_1 = 4
-_RADIUS_2 = 8
-_RADIUS_3 = 12
-_RADIUS_4 = 20
+_HUD_HEIGHT = 70
 _RADIUS_PILL = 999
 _BORDER_WIDTH = 1
 _CONTROL_SIZE = 38
-_TYPE_BODY = 15
 _TRANSITION_FAST_MS = 140
-_TRANSITION_MS = 220
-_TOAST_TIMEOUT_MS = 4500
 _EDITOR_WIDTH = 520
 _EDITOR_HEIGHT = 220
-_TYPE_META = 11
 _DESKTOP_KEY = "__desktop__"
 
 _THEME = {
     "surface": "rgba(17, 24, 31, 0.93)",
     "surface_raised": "rgba(24, 33, 42, 0.96)",
     "surface_soft": "rgba(44, 54, 64, 0.78)",
-    "surface_faint": "rgba(38, 48, 58, 0.52)",
     "stroke": "rgba(151, 172, 190, 0.23)",
     "stroke_focus": "rgba(116, 224, 244, 0.72)",
     "text": "rgb(232, 239, 244)",
@@ -78,7 +63,6 @@ _THEME = {
     "success": "rgb(126, 210, 166)",
     "warning": "rgb(235, 193, 106)",
     "error": "rgb(247, 139, 139)",
-    "error_soft": "rgba(171, 62, 68, 0.25)",
     "shadow": "rgba(3, 8, 12, 0.46)",
 }
 
@@ -87,37 +71,19 @@ _CSS = f"""
   background: transparent;
   color: {_THEME['text']};
 }}
-.work-card {{
+.capsule {{
   background: {_THEME['surface']};
   border: {_BORDER_WIDTH}px solid {_THEME['stroke']};
-  border-radius: {_RADIUS_4}px;
+  border-radius: {_RADIUS_PILL}px;
   box-shadow: 0 {_SPACE_3}px {_SPACE_4 * 2}px {_THEME['shadow']};
+  padding: {_SPACE_1}px;
+}}
+#omp-history, #omp-history contents,
+#omp-history scrolledwindow, #omp-history viewport,
+#omp-history textview, #omp-history textview text {{
+  background: {_THEME['surface']};
   color: {_THEME['text']};
 }}
-.card-header {{
-  background: transparent;
-  border-bottom: {_BORDER_WIDTH}px solid {_THEME['stroke']};
-}}
-.drag-grip {{
-  background: {_THEME['text_muted']};
-  border-radius: {_RADIUS_1}px;
-  opacity: 0.72;
-}}
-.app-glyph {{
-  background: {_THEME['cyan_soft']};
-  border: {_BORDER_WIDTH}px solid {_THEME['stroke_focus']};
-  border-radius: {_RADIUS_2}px;
-  color: {_THEME['cyan']};
-  font-weight: 700;
-  padding: {_SPACE_1}px {_SPACE_2}px;
-}}
-.app-title {{
-  color: {_THEME['text']};
-  font-size: {_TYPE_BODY}px;
-  font-weight: 700;
-}}
-.context, .muted {{ color: {_THEME['text_muted']}; }}
-.focus-context {{ color: {_THEME['cyan']}; font-size: {_TYPE_META}px; }}
 .status {{
   background: {_THEME['surface_soft']};
   border-radius: {_RADIUS_PILL}px;
@@ -127,83 +93,14 @@ _CSS = f"""
 .status.ready {{ color: {_THEME['success']}; }}
 .status.working {{ color: {_THEME['warning']}; }}
 .status.error {{ color: {_THEME['error']}; font-weight: 700; }}
-.card-scroll, .card-scroll viewport {{ background: transparent; border: none; }}
-.empty-state {{
-  background: {_THEME['surface_faint']};
-  border: {_BORDER_WIDTH}px solid {_THEME['stroke']};
-  border-radius: {_RADIUS_3}px;
-  color: {_THEME['text_muted']};
-  padding: {_SPACE_4}px;
-}}
-.event-assistant, .event-system, .event-notify, .event-status {{
-  background: {_THEME['surface_soft']};
-  border-radius: {_RADIUS_3}px;
-  color: {_THEME['text']};
-  padding: {_SPACE_2}px {_SPACE_3}px;
-}}
-.event-user {{
-  background: {_THEME['cyan_deep']};
-  border-radius: {_RADIUS_4}px;
-  color: {_THEME['text']};
-  padding: {_SPACE_2}px {_SPACE_3}px;
-}}
-.event-notify {{ border-left: {_SPACE_1}px solid {_THEME['cyan']}; }}
-.event-status {{ color: {_THEME['text_muted']}; }}
-.event-error {{
-  background: {_THEME['error_soft']};
-  border: {_BORDER_WIDTH}px solid {_THEME['error']};
-  border-radius: {_RADIUS_3}px;
-  color: {_THEME['error']};
-  padding: {_SPACE_2}px {_SPACE_3}px;
-}}
-.structured-event {{
-  background: {_THEME['surface_faint']};
-  border: {_BORDER_WIDTH}px solid {_THEME['stroke']};
-  border-radius: {_RADIUS_3}px;
-  padding: {_SPACE_3}px;
-}}
-.structured-title {{ color: {_THEME['text']}; font-weight: 700; }}
-.editor-event {{ font-family: monospace; color: {_THEME['text_muted']}; }}
-.action-strip {{ border-top: {_BORDER_WIDTH}px solid {_THEME['stroke']}; }}
-button.action-pill {{
-  background: {_THEME['surface_soft']};
-  border: {_BORDER_WIDTH}px solid transparent;
-  border-radius: {_RADIUS_PILL}px;
-  color: {_THEME['text_muted']};
-  padding: {_SPACE_1}px {_SPACE_2}px;
-}}
-button.action-pill:hover, button.action-pill:focus {{
-  background: {_THEME['cyan_soft']};
-  border-color: {_THEME['stroke_focus']};
-  color: {_THEME['text']};
-}}
-button.preview-card {{
-  background: {_THEME['surface']};
-  border: {_BORDER_WIDTH}px solid {_THEME['stroke']};
-  border-radius: {_RADIUS_4}px;
-  box-shadow: 0 {_SPACE_2}px {_SPACE_4 * 2}px {_THEME['shadow']};
-  color: {_THEME['text']};
-  padding: {_SPACE_3}px {_SPACE_2}px;
-}}
-button.preview-card:hover, button.preview-card:focus {{
-  background: {_THEME['surface_raised']};
-  border-color: {_THEME['stroke_focus']};
-}}
-.capsule {{
-  background: {_THEME['surface']};
-  border: {_BORDER_WIDTH}px solid {_THEME['stroke']};
-  border-radius: {_RADIUS_PILL}px;
-  box-shadow: 0 {_SPACE_3}px {_SPACE_4 * 2}px {_THEME['shadow']};
-  padding: {_SPACE_1}px;
-}}
-button.deck-toggle, button.target-chip, combobox.target-chip button {{
+button.target-chip, combobox.target-chip button {{
   background: {_THEME['surface_soft']};
   border: {_BORDER_WIDTH}px solid transparent;
   border-radius: {_RADIUS_PILL}px;
   color: {_THEME['text']};
   padding: {_SPACE_2}px {_SPACE_3}px;
 }}
-button.deck-toggle:hover, button.deck-toggle:focus,
+button.target-chip:hover, button.target-chip:focus,
 combobox.target-chip button:hover, combobox.target-chip button:focus {{
   background: {_THEME['cyan_soft']};
   border-color: {_THEME['stroke_focus']};
@@ -239,14 +136,6 @@ button.control-button.voice-high {{
   box-shadow: 0 0 0 {_SPACE_3}px {_THEME['cyan_soft']};
 }}
 button.control-button:disabled {{ opacity: 0.48; }}
-.toast {{
-  background: {_THEME['surface_raised']};
-  border: {_BORDER_WIDTH}px solid {_THEME['stroke']};
-  border-radius: {_RADIUS_3}px;
-  box-shadow: 0 {_SPACE_2}px {_SPACE_4 * 2}px {_THEME['shadow']};
-  color: {_THEME['text']};
-  padding: {_SPACE_2}px {_SPACE_3}px;
-}}
 dialog, messagedialog {{
   background: {_THEME['surface_raised']};
   color: {_THEME['text']};
@@ -259,30 +148,12 @@ dialog entry, dialog textview, dialog textview text, dialog combobox button {{
 
 
 @dataclass(slots=True)
-class CardEvent:
+class ActivityEvent:
     kind: str
     text: str = ""
     title: str = ""
     lines: tuple[str, ...] = ()
     url: str | None = None
-    key: str = ""
-
-
-@dataclass(slots=True)
-class WorkCardState:
-    target: HyprlandWindow
-    events: list[CardEvent] = field(default_factory=list)
-    statuses: dict[str, str] = field(default_factory=dict)
-    widgets: dict[str, tuple[str, tuple[str, ...]]] = field(default_factory=dict)
-    assistant_event_index: int | None = None
-
-    @property
-    def recent_text(self) -> str:
-        for event in reversed(self.events):
-            text = event.text.strip() or " ".join(event.lines).strip()
-            if text:
-                return text
-        return "No OMP activity yet"
 
 @dataclass(slots=True)
 class DictationBuffer:
@@ -357,220 +228,6 @@ def build_targeted_prompt(
     )
 
 
-def _is_http_url(value: str | None) -> bool:
-    if not value:
-        return False
-    return urlsplit(value).scheme.lower() in {"http", "https"}
-
-
-def _app_glyph(app_class: str) -> str:
-    for character in app_class.strip():
-        if character.isalnum():
-            return character.upper()
-    return "•"
-
-
-class WorkCardView(Gtk.Frame):
-    _SUGGESTIONS = (
-        "Summarize this window",
-        "Find what needs attention",
-        "Suggest next steps",
-    )
-
-    def __init__(
-        self,
-        state: WorkCardState,
-        *,
-        on_suggestion: Callable[[str], None],
-        on_focus_composer: Callable[[], None],
-    ) -> None:
-        super().__init__()
-        self.state = state
-        self._on_suggestion = on_suggestion
-        self._event_widgets: list[Gtk.Widget] = []
-        self._event_text_labels: dict[int, Gtk.Label] = {}
-        self.get_style_context().add_class("work-card")
-        self.set_shadow_type(Gtk.ShadowType.NONE)
-        self.set_size_request(_CARD_WIDTH, _CARD_HEIGHT)
-        self.get_accessible().set_name(f"OMP work card for {state.target.label}")
-
-        layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.add(layout)
-
-        header = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=_SPACE_2)
-        header.set_border_width(_SPACE_3)
-        header.get_style_context().add_class("card-header")
-        grip = Gtk.Box()
-        grip.set_size_request(_GRIP_WIDTH, _GRIP_HEIGHT)
-        grip.set_halign(Gtk.Align.CENTER)
-        grip.get_style_context().add_class("drag-grip")
-        grip.set_tooltip_text("Hyprland anchors this layer surface; use the side cards to change focus")
-        header.pack_start(grip, False, False, 0)
-
-        identity = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=_SPACE_2)
-        self._glyph = Gtk.Label(label=_app_glyph(state.target.app_class))
-        self._glyph.get_style_context().add_class("app-glyph")
-        identity.pack_start(self._glyph, False, False, 0)
-        names = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self._title = Gtk.Label(label=state.target.app_class or "Desktop", xalign=0)
-        self._title.set_ellipsize(Pango.EllipsizeMode.END)
-        self._title.get_style_context().add_class("app-title")
-        self._subtitle = Gtk.Label(label=state.target.title, xalign=0)
-        self._subtitle.set_ellipsize(Pango.EllipsizeMode.END)
-        self._subtitle.get_style_context().add_class("context")
-        names.pack_start(self._title, False, False, 0)
-        names.pack_start(self._subtitle, False, False, 0)
-        identity.pack_start(names, True, True, 0)
-        self._focus_status = Gtk.Label(label="Selected", xalign=1)
-        self._focus_status.get_style_context().add_class("status")
-        identity.pack_end(self._focus_status, False, False, 0)
-        header.pack_start(identity, False, False, 0)
-        layout.pack_start(header, False, False, 0)
-
-        self._scroll = Gtk.ScrolledWindow()
-        self._scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self._scroll.get_style_context().add_class("card-scroll")
-        self._body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=_SPACE_2)
-        self._body.set_border_width(_SPACE_3)
-        self._scroll.add(self._body)
-        layout.pack_start(self._scroll, True, True, 0)
-
-        actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=_SPACE_1)
-        actions.set_border_width(_SPACE_2)
-        actions.set_halign(Gtk.Align.END)
-        actions.get_style_context().add_class("action-strip")
-        focus_button = Gtk.Button.new_from_icon_name("list-add-symbolic", Gtk.IconSize.BUTTON)
-        focus_button.set_tooltip_text("Focus the composer for this selected window")
-        focus_button.get_accessible().set_name("Focus composer")
-        focus_button.connect("clicked", lambda _button: on_focus_composer())
-        focus_button.get_style_context().add_class("action-pill")
-        actions.pack_start(focus_button, False, False, 0)
-        self._suggestion_buttons: list[Gtk.Button] = []
-        for prompt in self._SUGGESTIONS:
-            button = Gtk.Button(label=prompt)
-            button.get_style_context().add_class("action-pill")
-            button.set_tooltip_text(f"Submit to OMP for {state.target.label}")
-            button.connect("clicked", self._submit_suggestion, prompt)
-            actions.pack_start(button, False, False, 0)
-            self._suggestion_buttons.append(button)
-        layout.pack_end(actions, False, False, 0)
-        self.render_all()
-
-    def _submit_suggestion(self, _button: Gtk.Button, prompt: str) -> None:
-        self._on_suggestion(prompt)
-
-    def update_target(self, target: HyprlandWindow) -> None:
-        self.state.target = target
-        self._glyph.set_text(_app_glyph(target.app_class))
-        self._title.set_text(target.app_class or "Desktop")
-        self._subtitle.set_text(target.title or f"Workspace {target.workspace or '?'}")
-        self.get_accessible().set_name(f"OMP work card for {target.label}")
-
-    def set_focus_context(self, focused: bool, focused_label: str) -> None:
-        if focused:
-            self._focus_status.set_text("Focused · selected")
-            self._focus_status.set_tooltip_text("This selected window is currently focused")
-        else:
-            self._focus_status.set_text("Selected")
-            self._focus_status.set_tooltip_text(f"Keyboard focus is currently on {focused_label}")
-
-    def set_interactive(self, enabled: bool) -> None:
-        for button in self._suggestion_buttons:
-            button.set_sensitive(enabled)
-
-    def render_all(self) -> None:
-        for child in self._body.get_children():
-            self._body.remove(child)
-        self._event_widgets.clear()
-        self._event_text_labels.clear()
-        if not self.state.events:
-            empty = Gtk.Label(
-                label=(
-                    "No OMP work for this window yet. Ask about what is visible, request a "
-                    "summary, or choose a suggested action below."
-                ),
-                xalign=0,
-            )
-            empty.set_line_wrap(True)
-            empty.get_style_context().add_class("empty-state")
-            self._body.pack_start(empty, False, False, 0)
-        else:
-            for index, event in enumerate(self.state.events):
-                self._append_event_widget(index, event)
-        self._body.show_all()
-
-    def append_event(self, index: int, event: CardEvent) -> None:
-        if len(self.state.events) == 1:
-            for child in self._body.get_children():
-                self._body.remove(child)
-        self._append_event_widget(index, event)
-        self._body.show_all()
-        self._scroll_to_tail()
-
-    def update_event(self, index: int, event: CardEvent) -> None:
-        label = self._event_text_labels.get(index)
-        if label is not None:
-            label.set_text(event.text)
-            self._scroll_to_tail()
-        else:
-            self.render_all()
-
-    def _append_event_widget(self, index: int, event: CardEvent) -> None:
-        if event.kind in {"widget", "editor", "open_url"}:
-            widget = self._build_structured_event(event)
-        else:
-            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            text = event.text
-            if event.title:
-                text = f"{event.title}\n{text}" if text else event.title
-            label = Gtk.Label(label=text, xalign=0)
-            label.set_line_wrap(True)
-            label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
-            label.set_selectable(True)
-            label.set_max_width_chars(72)
-            label.get_style_context().add_class(f"event-{event.kind}")
-            self._event_text_labels[index] = label
-            if event.kind == "user":
-                row.pack_end(label, False, False, 0)
-            else:
-                row.pack_start(label, False, False, 0)
-            widget = row
-        self._event_widgets.append(widget)
-        self._body.pack_start(widget, False, False, 0)
-
-    def _build_structured_event(self, event: CardEvent) -> Gtk.Widget:
-        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=_SPACE_1)
-        container.get_style_context().add_class("structured-event")
-        title = Gtk.Label(label=event.title, xalign=0)
-        title.get_style_context().add_class("structured-title")
-        container.pack_start(title, False, False, 0)
-        if event.text:
-            body = Gtk.Label(label=event.text, xalign=0)
-            body.set_line_wrap(True)
-            body.set_selectable(True)
-            if event.kind == "editor":
-                body.get_style_context().add_class("editor-event")
-            container.pack_start(body, False, False, 0)
-        for line in event.lines:
-            label = Gtk.Label(label=line, xalign=0)
-            label.set_line_wrap(True)
-            label.set_selectable(True)
-            container.pack_start(label, False, False, 0)
-        if event.kind == "open_url" and _is_http_url(event.url):
-            link = Gtk.LinkButton.new_with_label(event.url or "", "Open link")
-            link.set_halign(Gtk.Align.START)
-            link.set_tooltip_text(event.url)
-            link.get_accessible().set_name(f"Open {event.url}")
-            container.pack_start(link, False, False, 0)
-        return container
-
-    def _scroll_to_tail(self) -> None:
-        def scroll() -> bool:
-            adjustment = self._scroll.get_vadjustment()
-            adjustment.set_value(max(adjustment.get_lower(), adjustment.get_upper() - adjustment.get_page_size()))
-            return GLib.SOURCE_REMOVE
-
-        GLib.idle_add(scroll)
 
 
 class HudWindow(Gtk.Window):
@@ -587,7 +244,7 @@ class HudWindow(Gtk.Window):
         self.set_name("omp-hud")
         self.set_decorated(False)
         self.set_default_size(_HUD_WIDTH, _HUD_HEIGHT)
-        self.set_resizable(True)
+        self.set_resizable(False)
         self.set_app_paintable(True)
         visual = self.get_screen().get_rgba_visual()
         if visual is not None:
@@ -611,7 +268,6 @@ class HudWindow(Gtk.Window):
         self._active_request_id: str | None = None
         self._active_request_withdrawn = False
         self._active_timeout_source: int | None = None
-        self._toast_timeout_source: int | None = None
         self._overlay_checked = False
         self._overlay_error: str | None = None
         self._pending_ui_requests: deque[tuple[ExtensionUiRequest, float | None]] = deque()
@@ -621,16 +277,12 @@ class HudWindow(Gtk.Window):
         self._abort_after_ms = abort_after_ms
         self._focused_context = HyprlandContext("", "", "")
         self._windows: dict[str, HyprlandWindow] = {}
-        self._cards: dict[str, WorkCardState] = {}
-        self._card_views: dict[str, WorkCardView] = {}
-        self._card_order: list[str] = []
-        self._selected_key = _DESKTOP_KEY
-        self._selection_source = "desktop default"
-        self._response_card_key: str | None = None
-        self._target_combo_updating = False
         desktop = HyprlandWindow("", "", "desktop", "All windows")
-        self._cards[_DESKTOP_KEY] = WorkCardState(desktop)
-        self._card_order.append(_DESKTOP_KEY)
+        self._targets: dict[str, HyprlandWindow] = {_DESKTOP_KEY: desktop}
+        self._selected_key = _DESKTOP_KEY
+        self._selection_source = "focused default"
+        self._target_locked = False
+        self._target_combo_updating = False
         self._build_ui()
         self._install_css()
 
@@ -661,54 +313,68 @@ class HudWindow(Gtk.Window):
         self._run_async(self._session.start, on_error=self._set_error)
 
     def _build_ui(self) -> None:
-        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=_SPACE_2)
-        root.set_border_width(_SPACE_4)
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        root.set_border_width(_SPACE_2)
         self.add(root)
 
-        toast_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self._toast_revealer = Gtk.Revealer()
-        self._toast_revealer.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE)
-        self._toast_revealer.set_transition_duration(_TRANSITION_MS)
-        self._toast_label = Gtk.Label(xalign=0)
-        self._toast_label.set_line_wrap(True)
-        self._toast_label.set_max_width_chars(42)
-        self._toast_label.get_style_context().add_class("toast")
-        self._toast_revealer.add(self._toast_label)
-        toast_row.pack_end(self._toast_revealer, False, False, 0)
-        root.pack_start(toast_row, False, False, 0)
-
-        self._deck_revealer = Gtk.Revealer()
-        self._deck_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_UP)
-        self._deck_revealer.set_transition_duration(_TRANSITION_MS)
-        self._deck_revealer.set_reveal_child(True)
-        self._deck = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=_SPACE_2)
-        self._deck.set_halign(Gtk.Align.CENTER)
-        self._deck.set_valign(Gtk.Align.START)
-        self._deck_revealer.add(self._deck)
-        root.pack_start(self._deck_revealer, True, True, 0)
-
-        capsule_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        capsule_row.set_halign(Gtk.Align.CENTER)
         capsule = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=_SPACE_1)
+        capsule.set_halign(Gtk.Align.CENTER)
         capsule.get_style_context().add_class("capsule")
         capsule.set_size_request(_CAPSULE_WIDTH, -1)
-
-        self._deck_toggle = Gtk.Button.new_from_icon_name("pan-down-symbolic", Gtk.IconSize.BUTTON)
-        self._deck_toggle.get_style_context().add_class("deck-toggle")
-        self._deck_toggle.set_tooltip_text("Hide work cards")
-        self._deck_toggle.get_accessible().set_name("Hide work cards")
-        self._deck_toggle.connect("clicked", self._on_toggle_deck)
-        capsule.pack_start(self._deck_toggle, False, False, 0)
 
         self._target_combo = Gtk.ComboBoxText()
         self._target_combo.set_size_request(_TARGET_CHIP_WIDTH, -1)
         for renderer in self._target_combo.get_cells():
             renderer.set_property("ellipsize", Pango.EllipsizeMode.END)
         self._target_combo.get_style_context().add_class("target-chip")
-        self._target_combo.set_tooltip_text("Selected desktop target; focus changes do not change this selection")
-        self._target_combo.get_accessible().set_name("Selected desktop application and window")
+        self._target_combo.set_tooltip_text(
+            "Desktop target; follows the focused app until explicitly changed"
+        )
+        self._target_combo.get_accessible().set_name(
+            "Selected desktop application and window"
+        )
         self._target_combo.connect("changed", self._on_target_changed)
         capsule.pack_start(self._target_combo, False, False, 0)
+        self._history_button = Gtk.MenuButton()
+        self._history_button.set_image(
+            Gtk.Image.new_from_icon_name("view-list-symbolic", Gtk.IconSize.BUTTON)
+        )
+        self._history_button.get_style_context().add_class("control-button")
+        self._history_button.set_tooltip_text("Show OMP conversation")
+        self._history_button.get_accessible().set_name("Show OMP conversation")
+        self._history_popover = Gtk.Popover.new(self._history_button)
+        self._history_popover.set_position(Gtk.PositionType.TOP)
+        self._history_popover.set_modal(False)
+        self._history_popover.set_name("omp-history")
+        history_content = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=_SPACE_2
+        )
+        self._widgets_label = Gtk.Label(xalign=0)
+        self._widgets_label.set_line_wrap(True)
+        self._widgets_label.set_selectable(True)
+        self._widgets_label.set_margin_start(_SPACE_3)
+        self._widgets_label.set_margin_end(_SPACE_3)
+        self._widgets_label.set_margin_top(_SPACE_2)
+        self._widgets_label.set_no_show_all(True)
+        history_content.pack_start(self._widgets_label, False, False, 0)
+        self._transcript_scroll = Gtk.ScrolledWindow()
+        self._transcript_scroll.set_policy(
+            Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
+        )
+        self._transcript_scroll.set_size_request(_CAPSULE_WIDTH, 220)
+        self._transcript = Gtk.TextView()
+        self._transcript.set_editable(False)
+        self._transcript.set_cursor_visible(False)
+        self._transcript.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self._transcript.set_left_margin(_SPACE_3)
+        self._transcript.set_right_margin(_SPACE_3)
+        self._transcript.set_top_margin(_SPACE_2)
+        self._transcript.set_bottom_margin(_SPACE_2)
+        self._transcript_scroll.add(self._transcript)
+        history_content.pack_start(self._transcript_scroll, True, True, 0)
+        self._history_popover.add(history_content)
+        self._history_button.set_popover(self._history_popover)
+        capsule.pack_start(self._history_button, False, False, 0)
 
         composer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         composer.get_style_context().add_class("composer")
@@ -731,17 +397,23 @@ class HudWindow(Gtk.Window):
         self._control_stack = Gtk.Stack()
         self._control_stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         self._control_stack.set_transition_duration(_TRANSITION_FAST_MS)
-        self._voice = Gtk.Button.new_from_icon_name("audio-input-microphone-symbolic", Gtk.IconSize.BUTTON)
+        self._voice = Gtk.Button.new_from_icon_name(
+            "audio-input-microphone-symbolic", Gtk.IconSize.BUTTON
+        )
         self._voice.get_style_context().add_class("control-button")
         self._voice.set_tooltip_text("Start OMP live voice")
         self._voice.get_accessible().set_name("Start OMP live voice")
         self._voice.connect("clicked", self._on_voice)
-        self._send = Gtk.Button.new_from_icon_name("mail-send-symbolic", Gtk.IconSize.BUTTON)
+        self._send = Gtk.Button.new_from_icon_name(
+            "mail-send-symbolic", Gtk.IconSize.BUTTON
+        )
         self._send.get_style_context().add_class("control-button")
         self._send.set_tooltip_text("Send prompt to OMP")
         self._send.get_accessible().set_name("Send prompt to OMP")
         self._send.connect("clicked", self._on_submit)
-        self._abort = Gtk.Button.new_from_icon_name("media-playback-stop-symbolic", Gtk.IconSize.BUTTON)
+        self._abort = Gtk.Button.new_from_icon_name(
+            "media-playback-stop-symbolic", Gtk.IconSize.BUTTON
+        )
         self._abort.get_style_context().add_class("control-button")
         self._abort.set_tooltip_text("Stop the current OMP response")
         self._abort.get_accessible().set_name("Stop current OMP response")
@@ -753,11 +425,9 @@ class HudWindow(Gtk.Window):
         self._control_stack.add_named(self._abort, "abort")
         self._control_stack.add_named(self._spinner, "pending")
         capsule.pack_end(self._control_stack, False, False, 0)
-        capsule_row.pack_start(capsule, True, True, 0)
-        root.pack_end(capsule_row, False, False, 0)
+        root.pack_start(capsule, True, True, 0)
 
         self._populate_target_combo()
-        self._rebuild_deck()
 
     def _install_css(self) -> None:
         provider = Gtk.CssProvider()
@@ -774,13 +444,13 @@ class HudWindow(Gtk.Window):
     def _submit_message(self, message: str) -> None:
         if not message or self._busy or self._prompt_pending or self._voice_active:
             return
-        state = self._cards.get(self._selected_key)
-        if state is None:
+        target = self._targets.get(self._selected_key)
+        if target is None:
             self._set_error("Choose a desktop target before sending")
             return
-        selected_key = self._selected_key
-        targeted_message = build_targeted_prompt(message, state.target, self._selection_source)
-        self._response_card_key = selected_key
+        targeted_message = build_targeted_prompt(
+            message, target, self._selection_source
+        )
         self._error_active = False
         self._prompt_pending = True
         self._set_status("Sending…", "working")
@@ -788,31 +458,19 @@ class HudWindow(Gtk.Window):
 
         def submit() -> None:
             agent_invoked = self._session.submit(targeted_message)
-            GLib.idle_add(
-                self._submission_accepted,
-                selected_key,
-                message,
-                agent_invoked,
-            )
+            GLib.idle_add(self._submission_accepted, message, agent_invoked)
 
         self._run_async(submit, on_error=self._submission_failed)
 
-    def _submission_accepted(
-        self, selected_key: str, message: str, agent_invoked: bool
-    ) -> bool:
+    def _submission_accepted(self, message: str, agent_invoked: bool) -> bool:
         if self._entry.get_text().strip() == message:
             self._entry.set_text("")
-        state = self._cards.get(selected_key)
-        if state is not None:
-            state.assistant_event_index = None
-            self._append_card_event(selected_key, CardEvent("user", text=message))
-        self._response_card_key = selected_key
+        self._append_text(f"You: {message}\n\nOMP: ")
         if agent_invoked:
             self._set_status("Starting…", "working")
         else:
             self._prompt_pending = False
             self._set_status("Ready")
-            self._response_card_key = None
         if self._abort_after_ms is not None:
             abort_after_ms = self._abort_after_ms
             self._abort_after_ms = None
@@ -821,7 +479,6 @@ class HudWindow(Gtk.Window):
 
     def _submission_failed(self, error: str) -> bool:
         self._set_error(error)
-        self._response_card_key = None
         self._update_controls()
         return False
 
@@ -1013,15 +670,10 @@ class HudWindow(Gtk.Window):
             self._set_status("Working…", "working")
         elif self._abort_pending:
             self._abort_pending = False
-            self._record_event(CardEvent("status", text="Stopped by user"))
+            self._record_event(ActivityEvent("status", text="Stopped by user"))
             self._set_status("Ready · stopped")
         elif not self._error_active:
             self._set_status("Ready")
-        if not busy and self._response_card_key is not None:
-            response_state = self._cards.get(self._response_card_key)
-            if response_state is not None:
-                response_state.assistant_event_index = None
-            self._response_card_key = None
         self._update_controls()
         if not busy and not self._voice_active:
             self._entry.grab_focus()
@@ -1058,95 +710,29 @@ class HudWindow(Gtk.Window):
             self._voice.get_accessible().set_name("Start OMP live voice")
             self._control_stack.set_visible_child_name("voice")
             self._spinner.stop()
-        for view in self._card_views.values():
-            view.set_interactive(can_compose)
 
     def _append_text(self, text: str) -> bool:
-        key = self._response_card_key or self._selected_key
-        state = self._cards.get(key)
-        if state is None:
-            state = self._cards[_DESKTOP_KEY]
-            key = _DESKTOP_KEY
-        index = state.assistant_event_index
-        if index is None or index >= len(state.events) or state.events[index].kind != "assistant":
-            index = len(state.events)
-            state.events.append(CardEvent("assistant", text=text))
-            state.assistant_event_index = index
-            view = self._card_views.get(key)
-            if view is not None:
-                view.append_event(index, state.events[index])
-        else:
-            state.events[index].text += text
-            view = self._card_views.get(key)
-            if view is not None:
-                view.update_event(index, state.events[index])
-        self._rebuild_deck_if_visible(key)
+        adjustment = self._transcript_scroll.get_vadjustment()
+        follows_tail = (
+            adjustment.get_upper()
+            - adjustment.get_value()
+            - adjustment.get_page_size()
+            <= 2
+        )
+        buffer = self._transcript.get_buffer()
+        buffer.insert(buffer.get_end_iter(), text)
+        self._transcript_scroll.show_all()
+        if follows_tail:
+            mark = buffer.create_mark(None, buffer.get_end_iter(), False)
+            self._transcript.scroll_mark_onscreen(mark)
+            buffer.delete_mark(mark)
         return False
 
-    def _append_card_event(self, key: str, event: CardEvent) -> None:
-        state = self._cards.get(key)
-        if state is None:
-            return
-        if event.kind != "assistant":
-            state.assistant_event_index = None
-        index = len(state.events)
-        state.events.append(event)
-        view = self._card_views.get(key)
-        if view is not None:
-            view.append_event(index, event)
-        self._rebuild_deck_if_visible(key)
-
-    def _record_event(self, event: CardEvent) -> None:
-        key = self._response_card_key or self._selected_key
-        if key not in self._cards:
-            key = _DESKTOP_KEY
-        self._append_card_event(key, event)
-
-    def _set_widget_event(
-        self, key: str, placement: str, lines: tuple[str, ...]
-    ) -> None:
-        card_key = self._response_card_key or self._selected_key
-        if card_key not in self._cards:
-            card_key = _DESKTOP_KEY
-        state = self._cards[card_key]
-        existing_index = next(
-            (
-                index
-                for index, event in enumerate(state.events)
-                if event.kind == "widget" and event.key == key
-            ),
-            None,
-        )
-        if lines:
-            state.widgets[key] = (placement, lines)
-            event = CardEvent(
-                "widget",
-                title=humanize_extension_key(key),
-                lines=lines,
-                key=key,
-            )
-            if existing_index is None:
-                self._append_card_event(card_key, event)
-                return
-            state.events[existing_index] = event
-        else:
-            state.widgets.pop(key, None)
-            if existing_index is None:
-                return
-            state.events.pop(existing_index)
-            if (
-                state.assistant_event_index is not None
-                and state.assistant_event_index > existing_index
-            ):
-                state.assistant_event_index -= 1
-        view = self._card_views.get(card_key)
-        if view is not None:
-            view.render_all()
-        self._rebuild_deck_if_visible(card_key)
-
-    def _rebuild_deck_if_visible(self, key: str) -> None:
-        if key != self._selected_key:
-            self._rebuild_deck()
+    def _record_event(self, event: ActivityEvent) -> None:
+        parts = [event.title, event.text, *event.lines, event.url or ""]
+        text = "\n".join(part for part in parts if part)
+        if text:
+            self._append_text(f"\n{text}\n")
 
     def _set_status(self, text: str, kind: str | None = None) -> bool:
         if kind is None:
@@ -1179,9 +765,8 @@ class HudWindow(Gtk.Window):
         self._prompt_pending = False
         self._error_active = True
         message = text.removeprefix("Error: ").strip()
-        self._record_event(CardEvent("error", text=message, title="Error"))
+        self._record_event(ActivityEvent("error", text=message, title="Error"))
         self._set_status(f"Error: {message}", "error")
-        self._show_toast(f"OMP error\n{message}")
         self._update_controls()
         return False
 
@@ -1200,7 +785,7 @@ class HudWindow(Gtk.Window):
         if context.title.startswith("OMP HUD") or context.app_class == "omp-hud":
             return False
         self._focused_context = context
-        if self._selection_source == "desktop default":
+        if not self._target_locked:
             target = self._window_for_context(context)
             if target is None and (context.app_class or context.title):
                 target = HyprlandWindow(
@@ -1210,10 +795,10 @@ class HudWindow(Gtk.Window):
                     context.title,
                 )
                 self._windows[target.key] = target
+                self._targets[target.key] = target
             if target is not None:
                 self._select_target(target.key, "focused default")
         self._populate_target_combo()
-        self._update_focus_badges()
         return False
 
     def _set_windows(self, windows: tuple[HyprlandWindow, ...]) -> bool:
@@ -1222,35 +807,16 @@ class HudWindow(Gtk.Window):
             for window in windows
             if window.app_class != "omp-hud" and not window.title.startswith("OMP HUD")
         )
+        previous_selected = self._targets.get(self._selected_key)
         self._windows = {window.key: window for window in filtered}
-        live_order: list[str] = []
-        focused_key = self._window_for_context(self._focused_context)
-        if focused_key is not None:
-            live_order.append(focused_key.key)
-        for window in filtered:
-            if window.key not in live_order:
-                live_order.append(window.key)
-            state = self._cards.get(window.key)
-            if state is None:
-                self._cards[window.key] = WorkCardState(window)
-            else:
-                state.target = window
-                view = self._card_views.get(window.key)
-                if view is not None:
-                    view.update_target(window)
-        retained = [
-            key
-            for key, state in self._cards.items()
-            if key not in live_order and key != _DESKTOP_KEY and (state.events or key == self._selected_key)
-        ]
-        self._card_order = live_order + retained
-        if self._selected_key == _DESKTOP_KEY and self._cards[_DESKTOP_KEY].events:
-            self._card_order.append(_DESKTOP_KEY)
-        if self._selected_key not in self._card_order:
-            self._card_order.insert(0, self._selected_key)
+        desktop = self._targets[_DESKTOP_KEY]
+        self._targets = {_DESKTOP_KEY: desktop, **self._windows}
+        if (
+            previous_selected is not None
+            and self._selected_key not in self._targets
+        ):
+            self._targets[self._selected_key] = previous_selected
         self._populate_target_combo()
-        self._rebuild_deck()
-        self._update_focus_badges()
         return False
 
     def _window_for_context(self, context: HyprlandContext) -> HyprlandWindow | None:
@@ -1263,8 +829,14 @@ class HudWindow(Gtk.Window):
 
     def _set_context_error(self, error: str) -> bool:
         self._focused_context = HyprlandContext("", "", "")
-        self._show_toast(f"Hyprland context unavailable\n{error}")
-        self._update_focus_badges()
+        self._record_event(
+            ActivityEvent(
+                "error",
+                title="Hyprland context unavailable",
+                text=error,
+            )
+        )
+        self._set_status("Context unavailable", "error")
         return False
 
     def _populate_target_combo(self) -> None:
@@ -1286,9 +858,9 @@ class HudWindow(Gtk.Window):
             prefix = "Focused · " if focused else ""
             self._target_combo.append(window.key, f"{prefix}{window.label}")
         if self._selected_key not in self._windows and self._selected_key != _DESKTOP_KEY:
-            state = self._cards.get(self._selected_key)
-            if state is not None:
-                self._target_combo.append(self._selected_key, f"Closed · {state.target.label}")
+            target = self._targets.get(self._selected_key)
+            if target is not None:
+                self._target_combo.append(self._selected_key, f"Closed · {target.label}")
         self._target_combo.set_active_id(self._selected_key)
         self._target_combo_updating = False
 
@@ -1297,142 +869,35 @@ class HudWindow(Gtk.Window):
             return
         key = combo.get_active_id()
         if key:
-            self._select_target(key, "explicit chooser selection")
+            self._select_target(key, "explicit chooser selection", lock=True)
 
-    def _select_target(self, key: str, selection_source: str) -> None:
-        if key == _DESKTOP_KEY:
-            target = self._cards[_DESKTOP_KEY].target
-        else:
-            target = self._windows.get(key)
-            if target is None:
-                existing = self._cards.get(key)
-                if existing is None:
-                    return
-                target = existing.target
-            if key not in self._cards:
-                self._cards[key] = WorkCardState(target)
+    def _select_target(
+        self, key: str, selection_source: str, *, lock: bool = False
+    ) -> None:
+        target = self._windows.get(key) or self._targets.get(key)
+        if target is None:
+            return
+        self._targets[key] = target
         self._selected_key = key
         self._selection_source = selection_source
-        if key not in self._card_order:
-            self._card_order.append(key)
+        if lock:
+            self._target_locked = True
         if hasattr(self, "_target_combo") and self._target_combo.get_active_id() != key:
             self._target_combo_updating = True
             self._target_combo.set_active_id(key)
             self._target_combo_updating = False
-        self._rebuild_deck()
-        self._update_focus_badges()
         if hasattr(self, "_entry"):
             self._entry.set_placeholder_text(
-                "Ask OMP about this window" if target.app_class != "desktop" else "Ask OMP…"
+                "Ask OMP about this window"
+                if target.app_class != "desktop"
+                else "Ask OMP…"
             )
 
-    def _ensure_card_view(self, key: str) -> WorkCardView:
-        view = self._card_views.get(key)
-        if view is None:
-            view = WorkCardView(
-                self._cards[key],
-                on_suggestion=self._submit_message,
-                on_focus_composer=self._focus_composer,
-            )
-            self._card_views[key] = view
-        return view
-
-    def _rebuild_deck(self) -> None:
-        if not hasattr(self, "_deck") or self._selected_key not in self._cards:
-            return
-        for child in self._deck.get_children():
-            self._deck.remove(child)
-        other_keys = [key for key in self._card_order if key != self._selected_key and key in self._cards]
-        before = other_keys[-1] if other_keys else None
-        after = other_keys[0] if other_keys else None
-        if before is not None:
-            self._deck.pack_start(self._build_preview_button(before), False, False, 0)
-        view = self._ensure_card_view(self._selected_key)
-        parent = view.get_parent()
-        if isinstance(parent, Gtk.Container):
-            parent.remove(view)
-        self._deck.pack_start(view, True, True, 0)
-        if after is not None and after != before:
-            self._deck.pack_start(self._build_preview_button(after), False, False, 0)
-        self._deck.show_all()
-        self._update_controls()
-
-    def _build_preview_button(self, key: str) -> Gtk.Button:
-        state = self._cards[key]
-        button = Gtk.Button()
-        button.get_style_context().add_class("preview-card")
-        button.set_size_request(_PREVIEW_WIDTH, _CARD_HEIGHT - (_SPACE_4 * 2))
-        button.set_tooltip_text(f"Select {state.target.label}")
-        button.get_accessible().set_name(f"Select work card for {state.target.label}")
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=_SPACE_2)
-        glyph = Gtk.Label(label=_app_glyph(state.target.app_class))
-        glyph.get_style_context().add_class("app-glyph")
-        glyph.set_halign(Gtk.Align.START)
-        name = Gtk.Label(label=state.target.app_class or "Desktop", xalign=0)
-        name.set_ellipsize(Pango.EllipsizeMode.END)
-        name.get_style_context().add_class("app-title")
-        title = Gtk.Label(label=state.target.title, xalign=0)
-        title.set_ellipsize(Pango.EllipsizeMode.END)
-        title.set_line_wrap(True)
-        title.get_style_context().add_class("context")
-        recent = Gtk.Label(label=state.recent_text, xalign=0, yalign=0)
-        recent.set_ellipsize(Pango.EllipsizeMode.END)
-        recent.set_line_wrap(True)
-        recent.set_max_width_chars(16)
-        recent.get_style_context().add_class("muted")
-        content.pack_start(glyph, False, False, 0)
-        content.pack_start(name, False, False, 0)
-        content.pack_start(title, False, False, 0)
-        content.pack_start(recent, True, True, _SPACE_4)
-        button.add(content)
-        button.connect("clicked", lambda _button: self._select_target(key, "explicit card selection"))
-        return button
-
-    def _update_focus_badges(self) -> None:
-        focused_label = self._focused_context.app_class or "the desktop"
-        for key, view in self._card_views.items():
-            target = self._cards[key].target
-            focused = bool(
-                target.address
-                and self._focused_context.address
-                and target.address == self._focused_context.address
-            ) or bool(
-                not target.address
-                and target.app_class == self._focused_context.app_class
-                and target.title == self._focused_context.title
-                and target.app_class != "desktop"
-            )
-            view.set_focus_context(focused, focused_label)
 
     def _focus_composer(self) -> None:
-        if not self._deck_revealer.get_reveal_child():
-            self._set_deck_visible(True)
         self._entry.grab_focus()
 
-    def _on_toggle_deck(self, _button: Gtk.Button) -> None:
-        self._set_deck_visible(not self._deck_revealer.get_reveal_child())
 
-    def _set_deck_visible(self, visible: bool) -> None:
-        self._deck_revealer.set_reveal_child(visible)
-        icon = "pan-down-symbolic" if visible else "pan-up-symbolic"
-        label = "Hide work cards" if visible else "Show work cards"
-        self._deck_toggle.set_image(Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON))
-        self._deck_toggle.set_tooltip_text(label)
-        self._deck_toggle.get_accessible().set_name(label)
-
-    def _show_toast(self, text: str) -> None:
-        if not hasattr(self, "_toast_revealer"):
-            return
-        if self._toast_timeout_source is not None:
-            GLib.source_remove(self._toast_timeout_source)
-        self._toast_label.set_text(text)
-        self._toast_revealer.set_reveal_child(True)
-        self._toast_timeout_source = GLib.timeout_add(_TOAST_TIMEOUT_MS, self._hide_toast)
-
-    def _hide_toast(self) -> bool:
-        self._toast_timeout_source = None
-        self._toast_revealer.set_reveal_child(False)
-        return GLib.SOURCE_REMOVE
 
     def _handle_ui_request(self, request: ExtensionUiRequest) -> bool:
         if request.method == "cancel":
@@ -1448,12 +913,13 @@ class HudWindow(Gtk.Window):
                 )
             return False
         if request.method == "notify":
-            title = request.title or "Notification"
-            message = request.message or ""
-            record = getattr(self, "_record_event", None)
-            if callable(record):
-                record(CardEvent("notify", title=title, text=message))
-                self._show_toast("\n".join(part for part in (title, message) if part))
+            self._record_event(
+                ActivityEvent(
+                    "notify",
+                    title=request.title or "Notification",
+                    text=request.message or "",
+                )
+            )
             return False
         if request.method == "setStatus":
             key = request.status_key or "extension"
@@ -1466,7 +932,7 @@ class HudWindow(Gtk.Window):
                 record = getattr(self, "_record_event", None)
                 if callable(record):
                     record(
-                        CardEvent(
+                        ActivityEvent(
                             "status",
                             title=humanize_extension_key(key),
                             text=request.status_text,
@@ -1481,13 +947,6 @@ class HudWindow(Gtk.Window):
             else:
                 self._widgets.pop(key, None)
             self._render_widgets()
-            set_widget_event = getattr(self, "_set_widget_event", None)
-            if callable(set_widget_event):
-                set_widget_event(
-                    key,
-                    request.widget_placement or "aboveEditor",
-                    request.widget_lines or (),
-                )
             return False
         if request.method == "setTitle":
             self.set_title(f"OMP HUD — {request.title}" if request.title else "OMP HUD")
@@ -1495,23 +954,19 @@ class HudWindow(Gtk.Window):
         if request.method == "set_editor_text":
             text = request.text or ""
             self._entry.set_text(text)
-            record = getattr(self, "_record_event", None)
-            if callable(record):
-                record(CardEvent("editor", title="Editor prepared", text=text))
+            self._record_event(
+                ActivityEvent("editor", title="Editor prepared", text=text)
+            )
             return False
         if request.method == "open_url":
-            url = request.launch_url or request.url
-            record = getattr(self, "_record_event", None)
-            if callable(record):
-                record(
-                    CardEvent(
-                        "open_url",
-                        title="Link available",
-                        text=request.instructions or "Open this link when ready.",
-                        url=url,
-                    )
+            self._record_event(
+                ActivityEvent(
+                    "open_url",
+                    title="Link available",
+                    text=request.instructions or "Open this link when ready.",
+                    url=request.launch_url or request.url,
                 )
-                self._show_toast("Link available")
+            )
             self._set_status("Link available")
             return False
         if not request.is_interactive():
@@ -1677,18 +1132,20 @@ class HudWindow(Gtk.Window):
         self._status_label.set_text(compact)
         self._status_label.set_tooltip_text(" · ".join(visible_parts))
 
+
     def _render_widgets(self) -> None:
-        state = self._cards.get(self._response_card_key or self._selected_key)
-        if state is not None:
-            state.widgets = dict(self._widgets)
+        sections = [
+            "\n".join((humanize_extension_key(key), *lines))
+            for key, (_placement, lines) in self._widgets.items()
+        ]
+        text = "\n\n".join(sections)
+        self._widgets_label.set_text(text)
+        self._widgets_label.set_visible(bool(text))
 
     def _on_key_press(self, _window: Gtk.Window, event: Gdk.EventKey) -> bool:
         key = Gdk.keyval_name(event.keyval)
         if key == "Escape" and self._voice_active:
             self._cancel_voice()
-            return True
-        if key == "Escape" and self._deck_revealer.get_reveal_child():
-            self._set_deck_visible(False)
             return True
         if key in {"l", "L"} and event.state & Gdk.ModifierType.CONTROL_MASK:
             self._focus_composer()
@@ -1710,6 +1167,9 @@ class HudWindow(Gtk.Window):
         if self._overlay_checked:
             return False
         self._overlay_checked = True
+        display = Gdk.Display.get_default()
+        if display is None or not display.get_name().lower().startswith("wayland"):
+            return False
 
         width, height = self.get_size()
 
@@ -1740,9 +1200,6 @@ class HudWindow(Gtk.Window):
         if self._closing:
             return
         self._closing = True
-        if self._toast_timeout_source is not None:
-            GLib.source_remove(self._toast_timeout_source)
-            self._toast_timeout_source = None
         self._monitor.stop()
         self._session.close()
         Gtk.main_quit()
