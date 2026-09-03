@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+caller_cwd=$PWD
+
+PYTHONPATH="$root/python/omp-hud/src:$root/python/omp-rpc/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+
+exec python3 -m omp_hud \
+	--omp "$root/scripts/omp-handsfree-omp" \
+	--cwd "$caller_cwd" \
+	"$@"

@@ -3,9 +3,9 @@ requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "omp-hud"
+name = "omp-handsfree"
 version = "0.1.0"
-description = "Hyprland-native heads-up display for OMP"
+description = "Hyprland-native Handsfree Mode for OMP"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Stencil Labs, Inc." }]
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-omp-hud = "omp_hud.app:main"
+omp-handsfree = "omp_hud.app:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

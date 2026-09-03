@@ -36,6 +36,8 @@ class TargetPromptTests(unittest.TestCase):
         self.assertIn('"selection_source":"explicit chooser selection"', prompt)
         self.assertIn("does not authorize any desktop action", prompt)
         self.assertIn("not a ComputerTool window id", prompt)
+        self.assertIn("call stageManager.inspect() first", prompt)
+        self.assertIn("before using stageManager", prompt)
         self.assertTrue(prompt.endswith("USER_REQUEST=Summarize what needs attention"))
 
 

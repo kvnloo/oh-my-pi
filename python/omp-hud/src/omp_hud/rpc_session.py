@@ -50,7 +50,7 @@ class HudRpcSession:
         self._client = RpcClient(
             executable=executable,
             cwd=cwd,
-            extra_args=("--approval-mode", "write"),
+            extra_args=("--approval-mode", "write", "--tools", "computer"),
         )
         self._client.on_ready(lambda _event: None)
         self._client.on_agent_start(lambda _event: self._on_busy(True))

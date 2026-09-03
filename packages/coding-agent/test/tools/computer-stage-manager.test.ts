@@ -126,6 +126,21 @@ describe("HyprlandStageManager", () => {
 		expect(restored.activeAddress).toBe("0xa");
 		expect(manager.list()).toEqual([]);
 	});
+	test("keeps the selected active member on its own monitor workspace", async () => {
+		const hyprland = new FakeHyprland();
+		const manager = new HyprlandStageManager(hyprland.run);
+
+		const stage = await manager.create({
+			name: "detached",
+			activeAddress: "0xb",
+			memberAddresses: ["0xb", "0xc"],
+		});
+
+		expect(stage.workspace).toEqual({ id: 2, name: "2" });
+		expect(hyprland.clients[1]!.workspace.name).toBe("2");
+		expect(hyprland.clients[2]!.workspace.name).toBe("special:omp-stage-detached");
+		await manager.restore("detached");
+	});
 
 	test("rejects stale and pinned members before dispatch", async () => {
 		const hyprland = new FakeHyprland();

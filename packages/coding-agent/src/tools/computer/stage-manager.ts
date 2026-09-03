@@ -174,10 +174,12 @@ export class HyprlandStageManager {
 		const activeAddress = normalizeAddress(options.activeAddress);
 		if (!members.includes(activeAddress)) members.unshift(activeAddress);
 		this.#validateMembers(baseline, members);
+		const activeClient = baseline.clients.find(client => client.address === activeAddress);
+		if (!activeClient) throw new ToolError(`Hyprland client ${activeAddress} is not mapped`);
 		const parkedWorkspace = `special:omp-stage-${name}`;
 		const stage: HyprlandStage = {
 			name,
-			workspace: baseline.activeWorkspace,
+			workspace: activeClient.workspace,
 			activeAddress,
 			memberAddresses: members,
 			parkedWorkspace,
