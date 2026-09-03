@@ -1,5 +1,6 @@
 from .client import (
     AgentEventListener,
+    CloseListener,
     ExtensionErrorListener,
     ListenerErrorEvent,
     ListenerErrorListener,
@@ -140,6 +141,7 @@ __all__ = [
     "ImageContent",
     "ListenerErrorEvent",
     "ListenerErrorListener",
+    "CloseListener",
     "MessageEndEvent",
     "MessagesPage",
     "MessageStartEvent",

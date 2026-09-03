@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omp-hud"
+version = "0.1.0"
+description = "Hyprland-native heads-up display for OMP"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Stencil Labs, Inc." }]
+dependencies = [
+    "omp-rpc>=0.1.0",
+    "PyGObject>=3.42",
+]
+
+[project.scripts]
+omp-hud = "omp_hud.app:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv.sources]
+omp-rpc = { path = "../omp-rpc", editable = true }
