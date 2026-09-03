@@ -4,14 +4,25 @@ import threading
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from omp_rpc import AgentEndEvent, ExtensionUiRequest, MessageUpdateEvent, RpcClient, UnknownNotification
+from omp_rpc import (
+    AgentEndEvent,
+    ExtensionUiRequest,
+    MessageUpdateEvent,
+    RpcClient,
+    UnknownNotification,
+    VoiceLevelEvent,
+    VoiceState,
+    VoiceStateEvent,
+    VoiceTerminalEvent,
+    VoiceTranscriptEvent,
+)
+
 
 def extract_text_delta(event: Mapping[str, object]) -> str | None:
     if event.get("type") != "text_delta":
         return None
     delta = event.get("delta")
     return delta if isinstance(delta, str) else None
-
 
 
 class HudRpcSession:
@@ -26,18 +37,30 @@ class HudRpcSession:
         on_closed: Callable[[str], None],
         on_busy: Callable[[bool], None],
         on_ui_request: Callable[[ExtensionUiRequest], None],
+        on_voice_state: Callable[[VoiceStateEvent], None],
+        on_voice_transcript: Callable[[VoiceTranscriptEvent], None],
+        on_voice_level: Callable[[VoiceLevelEvent], None],
+        on_voice_terminal: Callable[[VoiceTerminalEvent], None],
     ) -> None:
         self._on_text = on_text
         self._on_status = on_status
         self._on_error = on_error
         self._on_closed = on_closed
         self._on_busy = on_busy
-        self._client = RpcClient(executable=executable, cwd=cwd)
-        self._client.on_ready(lambda _event: self._on_status("Ready"))
+        self._client = RpcClient(
+            executable=executable,
+            cwd=cwd,
+            extra_args=("--approval-mode", "write"),
+        )
+        self._client.on_ready(lambda _event: None)
         self._client.on_agent_start(lambda _event: self._on_busy(True))
         self._client.on_agent_end(self._handle_agent_end)
         self._client.on_message_update(self._handle_message_update)
         self._client.on_ui_request(on_ui_request)
+        self._client.on_voice_state(on_voice_state)
+        self._client.on_voice_transcript(on_voice_transcript)
+        self._client.on_voice_level(on_voice_level)
+        self._client.on_voice_terminal(on_voice_terminal)
         self._client.on_protocol_error(lambda error: self._on_error(str(error)))
         self._client.on_extension_error(lambda error: self._on_error(str(error)))
         self._client.on_unknown_notification(self._handle_unknown_notification)
@@ -50,6 +73,11 @@ class HudRpcSession:
         self._on_status("Starting OMP…")
         try:
             self._client.start()
+            if not self._closed.is_set():
+                self._on_status("Enabling ComputerTool…")
+                agent_invoked = self._client.prompt("/computer on")
+                if not agent_invoked:
+                    self._on_status("Ready")
         finally:
             if self._closed.is_set():
                 self._client.stop()
@@ -63,6 +91,21 @@ class HudRpcSession:
         if self._closed.is_set():
             return
         self._client.abort()
+
+    def start_dictation(self) -> VoiceState:
+        if self._closed.is_set():
+            raise RuntimeError("OMP session is closed")
+        return self._client.start_dictation()
+
+    def stop_dictation(self) -> VoiceState:
+        if self._closed.is_set():
+            raise RuntimeError("OMP session is closed")
+        return self._client.stop_dictation()
+
+    def cancel_dictation(self) -> VoiceState:
+        if self._closed.is_set():
+            raise RuntimeError("OMP session is closed")
+        return self._client.cancel_dictation()
 
     def respond_confirmation(self, request_id: str, confirmed: bool) -> None:
         self._client.send_ui_confirmation(request_id, confirmed)
@@ -92,7 +135,13 @@ class HudRpcSession:
         if event_type == "command_output":
             text = event.payload.get("text")
             if isinstance(text, str):
-                self._on_text(text)
+                normalized = text.lstrip()
+                if normalized.startswith(
+                    ("Computer use enabled", "Computer use is already enabled")
+                ):
+                    self._on_status("ComputerTool ready")
+                else:
+                    self._on_text(text)
         elif event_type == "prompt_result" and event.payload.get("agentInvoked") is False:
             self._on_status("Ready")
 

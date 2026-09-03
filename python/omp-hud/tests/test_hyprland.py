@@ -4,7 +4,14 @@ import subprocess
 import threading
 import unittest
 
-from omp_hud.hyprland import ContextMonitor, HyprctlError, HyprlandContext, read_context
+from omp_hud.hyprland import (
+    ContextMonitor,
+    HyprctlError,
+    HyprlandContext,
+    HyprlandWindow,
+    read_context,
+    read_windows,
+)
 
 
 class HyprlandContextTests(unittest.TestCase):
@@ -33,6 +40,42 @@ class HyprlandContextTests(unittest.TestCase):
             ],
             commands,
         )
+
+    def test_reads_selectable_windows_with_stable_hyprland_identity(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            commands.append(command)
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout=(
+                    '[{"address":"0xabc","mapped":true,"class":"firefox",'
+                    '"title":"PER-606","pid":41,"workspace":{"id":2,"name":"work"}},'
+                    '{"address":"0xhidden","mapped":false,"class":"hidden"}]'
+                ),
+                stderr="",
+            )
+
+        windows = read_windows(runner)
+        self.assertEqual(
+            (
+                HyprlandWindow(
+                    address="0xabc",
+                    workspace="work",
+                    app_class="firefox",
+                    title="PER-606",
+                    pid=41,
+                ),
+            ),
+            windows,
+        )
+        self.assertEqual("0xabc", windows[0].key)
+        self.assertEqual(
+            HyprlandContext("work", "firefox", "PER-606", "0xabc"),
+            windows[0].as_context(),
+        )
+        self.assertEqual([["hyprctl", "-j", "clients"]], commands)
 
     def test_surfaces_invalid_hyprctl_json(self) -> None:
         def runner(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:

@@ -10,6 +10,10 @@ from omp_rpc import (
     MessageUpdateEvent,
     SessionState,
     TodoReminderEvent,
+    VoiceLevelEvent,
+    VoiceStateEvent,
+    VoiceTerminalEvent,
+    VoiceTranscriptEvent,
     assistant_text,
     assistant_text_with_thinking,
     parse_notification,
@@ -49,6 +53,20 @@ class ProtocolParsingTests(unittest.TestCase):
                 self.assertIsInstance(parsed, MessageUpdateEvent)
                 assert isinstance(parsed, MessageUpdateEvent)
                 self.assertEqual(parsed.assistant_message_event["type"], event_type)
+
+    def test_parse_voice_events(self) -> None:
+        common = {"voiceSessionId": "voice-1", "mode": "live"}
+        cases = (
+            ({"type": "voice_state", **common, "phase": "listening", "elapsedMs": 12, "muted": False}, VoiceStateEvent),
+            ({"type": "voice_transcript", **common, "role": "assistant", "text": "hello", "final": True, "turn": 2}, VoiceTranscriptEvent),
+            ({"type": "voice_level", **common, "input": 0.25, "output": 0.5, "elapsedMs": 15}, VoiceLevelEvent),
+            ({"type": "voice_terminal", **common, "outcome": "stopped", "elapsedMs": 20}, VoiceTerminalEvent),
+        )
+        for payload, expected_type in cases:
+            with self.subTest(event=payload["type"]):
+                parsed = parse_notification(payload)
+                self.assertIsInstance(parsed, expected_type)
+                self.assertEqual(parsed.voice_session_id, "voice-1")
 
     def test_parse_session_state(self) -> None:
         state = parse_session_state(

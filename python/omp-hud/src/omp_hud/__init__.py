@@ -1,4 +1,11 @@
-from .hyprland import ContextMonitor, HyprctlError, HyprlandContext, read_context
+from .hyprland import (
+    ContextMonitor,
+    HyprctlError,
+    HyprlandContext,
+    HyprlandWindow,
+    read_context,
+    read_windows,
+)
 from .rpc_session import HudRpcSession
 
 __all__ = [
@@ -6,5 +13,7 @@ __all__ = [
     "HudRpcSession",
     "HyprctlError",
     "HyprlandContext",
+    "HyprlandWindow",
     "read_context",
+    "read_windows",
 ]

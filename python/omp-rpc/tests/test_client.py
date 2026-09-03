@@ -11,6 +11,7 @@ import textwrap
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 from omp_rpc import (
     AgentEndEvent,
@@ -20,8 +21,35 @@ from omp_rpc import (
     RpcError,
     RpcProcessExitError,
     host_tool,
+    VoiceState,
 )
 from omp_rpc.client import _RpcFrameDecoder
+
+
+class VoiceClientTests(unittest.TestCase):
+    def test_voice_methods_send_correlated_command_names(self) -> None:
+        client = RpcClient()
+        commands: list[str] = []
+
+        def request(_client: RpcClient, command: str, **_payload: object) -> dict[str, object]:
+            commands.append(command)
+            return {"mode": "dictation" if command.startswith("dictation") else "live", "phase": "idle"}
+
+        with patch.object(RpcClient, "_request", request):
+            states = (
+                client.start_dictation(),
+                client.stop_dictation(),
+                client.cancel_dictation(),
+                client.start_live(),
+                client.toggle_live_mute(),
+                client.stop_live(),
+            )
+
+        self.assertEqual(
+            commands,
+            ["dictation_start", "dictation_stop", "dictation_cancel", "live_start", "live_toggle_mute", "live_stop"],
+        )
+        self.assertTrue(all(isinstance(state, VoiceState) for state in states))
 
 
 FAKE_SERVER = textwrap.dedent(

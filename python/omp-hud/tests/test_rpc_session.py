@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 import unittest
 
-from omp_rpc import AgentEndEvent, UnknownNotification
+from omp_rpc import AgentEndEvent, UnknownNotification, VoiceState
 
 from omp_hud.rpc_session import HudRpcSession, extract_text_delta
 
@@ -45,6 +45,79 @@ class RpcLifecycleTests(unittest.TestCase):
 
         self.assertEqual(["local result\n"], output)
         self.assertEqual(["Ready"], statuses)
+
+    def test_computer_enable_details_are_compacted_to_status(self) -> None:
+        output: list[str] = []
+        statuses: list[str] = []
+        session = HudRpcSession.__new__(HudRpcSession)
+        session._on_text = output.append
+        session._on_status = statuses.append
+
+        session._handle_unknown_notification(
+            UnknownNotification(
+                {
+                    "type": "command_output",
+                    "text": (
+                        "Computer use enabled for this session. Computer use: enabled · "
+                        "tool: active · exposure: function"
+                    ),
+                }
+            )
+        )
+
+        self.assertEqual([], output)
+        self.assertEqual(["ComputerTool ready"], statuses)
+
+    def test_local_computer_enable_marks_session_ready(self) -> None:
+        statuses: list[str] = []
+        prompts: list[str] = []
+
+        class FakeClient:
+            def start(self) -> None:
+                return None
+
+            def prompt(self, text: str) -> bool:
+                prompts.append(text)
+                return False
+
+            def stop(self) -> None:
+                return None
+
+        session = HudRpcSession.__new__(HudRpcSession)
+        session._closed = threading.Event()
+        session._client = FakeClient()
+        session._on_status = statuses.append
+
+        session.start()
+
+        self.assertEqual(["/computer on"], prompts)
+        self.assertEqual(["Starting OMP…", "Enabling ComputerTool…", "Ready"], statuses)
+
+    def test_dictation_commands_remain_owned_by_rpc_client(self) -> None:
+        calls: list[str] = []
+        expected = VoiceState(mode="dictation", phase="listening")
+
+        class FakeClient:
+            def start_dictation(self) -> VoiceState:
+                calls.append("start")
+                return expected
+
+            def stop_dictation(self) -> VoiceState:
+                calls.append("stop")
+                return expected
+
+            def cancel_dictation(self) -> VoiceState:
+                calls.append("cancel")
+                return expected
+
+        session = HudRpcSession.__new__(HudRpcSession)
+        session._closed = threading.Event()
+        session._client = FakeClient()
+
+        self.assertIs(expected, session.start_dictation())
+        self.assertIs(expected, session.stop_dictation())
+        self.assertIs(expected, session.cancel_dictation())
+        self.assertEqual(["start", "stop", "cancel"], calls)
 
     def test_close_winning_start_race_stops_late_process(self) -> None:
         entered_start = threading.Event()
