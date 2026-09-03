@@ -1715,7 +1715,7 @@ class HudWindow(Gtk.Window):
 
         def promote() -> None:
             try:
-                promote_hud_overlay(width=width, height=height)
+                promote_hud_overlay(width=width, height=height, attempts=40, delay=0.25)
             except Exception as error:
                 GLib.idle_add(self._set_overlay_error, str(error))
 
@@ -1728,6 +1728,11 @@ class HudWindow(Gtk.Window):
 
     def _set_overlay_error(self, error: str) -> bool:
         self._overlay_error = f"Overlay unavailable: {error}"
+        try:
+            with open("/tmp/omp-hud-overlay.log", "a") as handle:
+                handle.write(f"overlay-error: {error}\n")
+        except OSError:
+            pass
         self._render_status()
         return False
 
