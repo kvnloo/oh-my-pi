@@ -205,19 +205,24 @@ def _dispatch_overlay_action(
     action: str,
     runner: CommandRunner,
 ) -> None:
+    # Hyprland 0.55+ with a Lua config evaluates `dispatch` as Lua, so the
+    # classic `setfloating`/`pin` strings fail there while `hl.dsp.*` fails on
+    # hyprlang sessions. Grammar is only discoverable by trying: lua first
+    # (this session speaks Lua), legacy as fallback.
     selector = f"address:{address}"
-    legacy = [action, selector]
     lua_action = "float" if action == "setfloating" else "pin"
     lua = [
         f'hl.dsp.window.{lua_action}({{ action = "enable", window = "{selector}" }})'
     ]
-    for arguments in (["dispatch", *legacy], ["dispatch", *lua]):
+    legacy = [action, selector]
+    for arguments in (["dispatch", *lua], ["dispatch", *legacy]):
         reply = _dispatch(arguments, runner)
         if reply == "ok":
             return
         if not (
             reply.startswith("Invalid dispatcher")
             or reply.startswith("error:")
+            or "attempt to call a nil value" in reply
         ):
             break
     raise HyprctlError(f"hyprctl dispatch {action} failed")
@@ -274,16 +279,22 @@ def _position_hud(
     monitor_y = round(float(monitor.get("y") or 0))
     x = monitor_x + max(0, (monitor_width - width) // 2)
     y = monitor_y + max(0, monitor_height - height - bottom_margin)
-    reply = _dispatch(
-        [
-            "dispatch",
-            "movewindowpixel",
-            f"exact {x} {y},address:{address}",
-        ],
-        runner,
+    selector = f"address:{address}"
+    attempts = (
+        [f'hl.dsp.window.move({{ x = {x}, y = {y}, window = "{selector}" }})'],
+        ["movewindowpixel", f"exact {x} {y},{selector}"],
     )
-    if reply != "ok":
-        raise HyprctlError("hyprctl dispatch movewindowpixel failed")
+    for arguments in attempts:
+        reply = _dispatch(["dispatch", *arguments], runner)
+        if reply == "ok":
+            return
+        if not (
+            reply.startswith("Invalid dispatcher")
+            or reply.startswith("error:")
+            or "attempt to call a nil value" in reply
+        ):
+            break
+    raise HyprctlError("hyprctl dispatch movewindowpixel failed")
 
 
 

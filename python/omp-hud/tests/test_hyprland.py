@@ -247,9 +247,14 @@ class HyprlandContextTests(unittest.TestCase):
                     stdout=json.dumps(payload),
                     stderr="",
                 )
-            if command[2] == "setfloating":
+            dispatched = command[2] if len(command) > 2 else ""
+            if "window.float" in dispatched:
                 floating = True
-            elif command[2] == "pin":
+            elif "window.pin" in dispatched:
+                pinned = True
+            elif dispatched == "setfloating":
+                floating = True
+            elif dispatched == "pin":
                 pinned = True
             return subprocess.CompletedProcess(command, 0, stdout="ok\n", stderr="")
 
@@ -263,8 +268,8 @@ class HyprlandContextTests(unittest.TestCase):
         self.assertEqual(
             [
                 ["hyprctl", "-j", "clients"],
-                ["hyprctl", "dispatch", "setfloating", "address:0xabc"],
-                ["hyprctl", "dispatch", "pin", "address:0xabc"],
+                ["hyprctl", "dispatch", 'hl.dsp.window.float({ action = "enable", window = "address:0xabc" })'],
+                ["hyprctl", "dispatch", 'hl.dsp.window.pin({ action = "enable", window = "address:0xabc" })'],
                 ["hyprctl", "-j", "clients"],
             ],
             commands,
@@ -317,8 +322,7 @@ class HyprlandContextTests(unittest.TestCase):
             [
                 "hyprctl",
                 "dispatch",
-                "movewindowpixel",
-                "exact 2286 244,address:0xabc",
+                'hl.dsp.window.move({ x = 2286, y = 244, window = "address:0xabc" })',
             ],
             commands,
         )
