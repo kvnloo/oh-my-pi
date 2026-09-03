@@ -222,34 +222,87 @@ def _dispatch_overlay_action(
             break
     raise HyprctlError(f"hyprctl dispatch {action} failed")
 
+def _find_hud_client(clients: list[object]) -> dict[str, object] | None:
+    mapped = [
+        raw
+        for raw in clients
+        if isinstance(raw, dict)
+        and raw.get("mapped") is not False
+        and raw.get("address")
+    ]
+    titled = next(
+        (raw for raw in mapped if str(raw.get("title") or "") == "OMP HUD"),
+        None,
+    )
+    if titled is not None:
+        return titled
+    return next(
+        (
+            raw
+            for raw in mapped
+            if raw.get("class") == "omp-hud"
+            or raw.get("initialClass") == "omp-hud"
+        ),
+        None,
+    )
+
+
+def _position_hud(
+    address: str,
+    width: int,
+    height: int,
+    bottom_margin: int,
+    runner: CommandRunner,
+) -> None:
+    monitors = _read_json_array("monitors", runner)
+    monitor = next(
+        (
+            raw
+            for raw in monitors
+            if isinstance(raw, dict) and raw.get("focused") is True
+        ),
+        None,
+    )
+    if monitor is None:
+        monitor = next((raw for raw in monitors if isinstance(raw, dict)), None)
+    if monitor is None:
+        raise HyprctlError("Hyprland did not expose a monitor for the OMP HUD")
+    scale = float(monitor.get("scale") or 1)
+    monitor_width = round(float(monitor.get("width") or 0) / scale)
+    monitor_height = round(float(monitor.get("height") or 0) / scale)
+    monitor_x = round(float(monitor.get("x") or 0))
+    monitor_y = round(float(monitor.get("y") or 0))
+    x = monitor_x + max(0, (monitor_width - width) // 2)
+    y = monitor_y + max(0, monitor_height - height - bottom_margin)
+    reply = _dispatch(
+        [
+            "dispatch",
+            "movewindowpixel",
+            f"exact {x} {y},address:{address}",
+        ],
+        runner,
+    )
+    if reply != "ok":
+        raise HyprctlError("hyprctl dispatch movewindowpixel failed")
+
+
+
 
 def promote_hud_overlay(
     runner: CommandRunner = subprocess.run,
     *,
     attempts: int = 8,
     delay: float = 0.05,
+    width: int | None = None,
+    height: int | None = None,
+    bottom_margin: int = 16,
     env: Mapping[str, str] = os.environ,
 ) -> None:
     if not env.get("HYPRLAND_INSTANCE_SIGNATURE"):
         raise HyprctlError("Hyprland is unavailable")
     for attempt in range(attempts):
         clients = _read_json_array("clients", runner)
-        client = next(
-            (
-                raw
-                for raw in clients
-                if isinstance(raw, dict)
-                and raw.get("mapped") is not False
-                and (
-                    raw.get("class") == "omp-hud"
-                    or raw.get("initialClass") == "omp-hud"
-                    or raw.get("namespace") == "omp-hud"
-                    or str(raw.get("title") or "").startswith("OMP HUD")
-                )
-                and raw.get("address")
-            ),
-            None,
-        )
+        client = _find_hud_client(clients)
         if client is None:
             if attempt + 1 < attempts:
                 threading.Event().wait(delay)
@@ -261,6 +314,8 @@ def promote_hud_overlay(
             _dispatch_overlay_action(address, "setfloating", runner)
         if client.get("pinned") is not True:
             _dispatch_overlay_action(address, "pin", runner)
+        if width is not None and height is not None:
+            _position_hud(address, width, height, bottom_margin, runner)
         verified = next(
             (
                 raw

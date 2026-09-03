@@ -106,6 +106,20 @@ class HudRpcSession:
         if self._closed.is_set():
             raise RuntimeError("OMP session is closed")
         return self._client.cancel_dictation()
+    def start_live(self) -> VoiceState:
+        if self._closed.is_set():
+            raise RuntimeError("OMP session is closed")
+        return self._client.start_live()
+
+    def stop_live(self) -> VoiceState:
+        if self._closed.is_set():
+            raise RuntimeError("OMP session is closed")
+        return self._client.stop_live()
+
+    def toggle_live_mute(self) -> VoiceState:
+        if self._closed.is_set():
+            raise RuntimeError("OMP session is closed")
+        return self._client.toggle_live_mute()
 
     def respond_confirmation(self, request_id: str, confirmed: bool) -> None:
         self._client.send_ui_confirmation(request_id, confirmed)

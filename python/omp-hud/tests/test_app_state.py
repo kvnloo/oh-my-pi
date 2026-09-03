@@ -76,7 +76,7 @@ class DictationStateTests(unittest.TestCase):
             state,
             VoiceStateEvent(
                 voice_session_id="voice-1",
-                mode="dictation",
+                mode="live",
                 phase="transcribing",
                 elapsed_ms=100,
             ),
@@ -106,7 +106,7 @@ class DictationStateTests(unittest.TestCase):
                 state,
                 VoiceTerminalEvent(
                     voice_session_id="voice-1",
-                    mode="dictation",
+                    mode="live",
                     outcome="error",
                     elapsed_ms=100,
                     error="Microphone failed",

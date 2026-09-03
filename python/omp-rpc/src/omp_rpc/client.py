@@ -1848,7 +1848,7 @@ class RpcClient:
         if self._command is not None:
             return self._command
 
-        command: list[str] = [self._executable, "--mode", "rpc"]
+        command: list[str] = [self._executable, "--mode", "rpc-ui"]
         if self._provider:
             command.extend(["--provider", self._provider])
         if self._model:

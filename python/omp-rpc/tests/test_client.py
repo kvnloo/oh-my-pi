@@ -968,7 +968,7 @@ class RpcClientTests(unittest.TestCase):
             (
                 "omp",
                 "--mode",
-                "rpc",
+                "rpc-ui",
                 "--model",
                 "openrouter/anthropic/claude-sonnet-4.6",
                 "--thinking",

@@ -269,6 +269,60 @@ class HyprlandContextTests(unittest.TestCase):
             ],
             commands,
         )
+    def test_positions_hud_at_bottom_center_of_focused_scaled_monitor(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            commands.append(command)
+            if command[-1] == "clients":
+                payload = [
+                    {
+                        "address": "0xabc",
+                        "mapped": True,
+                        "class": "omp-hud",
+                        "title": "OMP HUD",
+                        "floating": True,
+                        "pinned": True,
+                    }
+                ]
+                return subprocess.CompletedProcess(
+                    command, 0, stdout=json.dumps(payload), stderr=""
+                )
+            if command[-1] == "monitors":
+                payload = [
+                    {
+                        "focused": True,
+                        "x": 1920,
+                        "y": 0,
+                        "width": 3840,
+                        "height": 2160,
+                        "scale": 2,
+                    }
+                ]
+                return subprocess.CompletedProcess(
+                    command, 0, stdout=json.dumps(payload), stderr=""
+                )
+            return subprocess.CompletedProcess(command, 0, stdout="ok\n", stderr="")
+
+        promote_hud_overlay(
+            runner,
+            attempts=1,
+            delay=0,
+            width=1188,
+            height=820,
+            env={"HYPRLAND_INSTANCE_SIGNATURE": "test"},
+        )
+
+        self.assertIn(
+            [
+                "hyprctl",
+                "dispatch",
+                "movewindowpixel",
+                "exact 2286 244,address:0xabc",
+            ],
+            commands,
+        )
+
 
     def test_promote_reports_missing_hyprland(self) -> None:
         with self.assertRaisesRegex(HyprctlError, "Hyprland is unavailable"):

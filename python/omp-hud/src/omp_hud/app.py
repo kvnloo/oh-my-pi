@@ -15,8 +15,7 @@ import gi
 
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gtk", "3.0")
-gi.require_version("GtkLayerShell", "0.1")
-from gi.repository import Gdk, GLib, Gtk, GtkLayerShell, Pango
+from gi.repository import Gdk, GLib, Gtk, Pango
 from omp_rpc import (
     ExtensionUiRequest,
     VoiceLevelEvent,
@@ -594,13 +593,6 @@ class HudWindow(Gtk.Window):
         if visual is not None:
             self.set_visual(visual)
 
-        GtkLayerShell.init_for_window(self)
-        GtkLayerShell.set_namespace(self, "omp-hud")
-        GtkLayerShell.set_layer(self, GtkLayerShell.Layer.TOP)
-        GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.BOTTOM, True)
-        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.BOTTOM, _SPACE_4)
-        GtkLayerShell.set_exclusive_zone(self, 0)
-        GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.ON_DEMAND)
 
         self._closing = False
         self._busy = False
@@ -741,8 +733,8 @@ class HudWindow(Gtk.Window):
         self._control_stack.set_transition_duration(_TRANSITION_FAST_MS)
         self._voice = Gtk.Button.new_from_icon_name("audio-input-microphone-symbolic", Gtk.IconSize.BUTTON)
         self._voice.get_style_context().add_class("control-button")
-        self._voice.set_tooltip_text("Start OMP dictation")
-        self._voice.get_accessible().set_name("Start OMP dictation")
+        self._voice.set_tooltip_text("Start OMP live voice")
+        self._voice.get_accessible().set_name("Start OMP live voice")
         self._voice.connect("clicked", self._on_voice)
         self._send = Gtk.Button.new_from_icon_name("mail-send-symbolic", Gtk.IconSize.BUTTON)
         self._send.get_style_context().add_class("control-button")
@@ -859,16 +851,15 @@ class HudWindow(Gtk.Window):
         command_serial = self._voice_command_serial
         self._voice_pending = True
         if self._voice_active:
-            self._voice_phase = "transcribing"
-            self._set_status("Transcribing…", "working")
-            operation = self._session.stop_dictation
+            self._voice_phase = "stopping"
+            self._set_status("Stopping live voice…", "working")
+            operation = self._session.stop_live
         else:
-            self._dictation.reset(self._entry.get_text())
             self._voice_session_id = None
             self._voice_active = True
             self._voice_phase = "starting"
-            self._set_status("Starting voice…", "working")
-            operation = self._session.start_dictation
+            self._set_status("Starting live voice…", "working")
+            operation = self._session.start_live
         self._update_controls()
 
         def run() -> None:
@@ -886,11 +877,11 @@ class HudWindow(Gtk.Window):
         self._voice_command_serial += 1
         command_serial = self._voice_command_serial
         self._voice_pending = True
-        self._set_status("Cancelling voice…", "working")
+        self._set_status("Stopping live voice…", "working")
         self._update_controls()
 
         def cancel() -> None:
-            state = self._session.cancel_dictation()
+            state = self._session.stop_live()
             GLib.idle_add(self._apply_voice_state, state, command_serial)
 
         self._run_async(
@@ -920,7 +911,7 @@ class HudWindow(Gtk.Window):
         return self._voice_session_id == voice_session_id
 
     def _handle_voice_state(self, event: VoiceStateEvent) -> bool:
-        if event.mode != "dictation" or not self._voice_event_is_current(
+        if event.mode != "live" or not self._voice_event_is_current(
             event.voice_session_id
         ):
             return False
@@ -937,21 +928,18 @@ class HudWindow(Gtk.Window):
 
     def _handle_voice_transcript(self, event: VoiceTranscriptEvent) -> bool:
         if (
-            event.mode != "dictation"
-            or event.role != "user"
+            event.mode != "live"
             or not self._voice_event_is_current(event.voice_session_id)
         ):
             return False
-        text = self._dictation.apply(event.text, final=event.final)
-        self._entry.set_text(text)
-        self._entry.set_position(-1)
-        self._voice_phase = "captured" if event.final else "listening"
-        self._render_voice_state()
+        if event.role == "user":
+            self._voice_phase = "captured" if event.final else "listening"
+            self._render_voice_state()
         return False
 
     def _handle_voice_level(self, event: VoiceLevelEvent) -> bool:
         if (
-            event.mode != "dictation"
+            event.mode != "live"
             or not self._voice_active
             or not self._voice_event_is_current(event.voice_session_id)
         ):
@@ -972,7 +960,7 @@ class HudWindow(Gtk.Window):
         return False
 
     def _handle_voice_terminal(self, event: VoiceTerminalEvent) -> bool:
-        if event.mode != "dictation" or not self._voice_event_is_current(
+        if event.mode != "live" or not self._voice_event_is_current(
             event.voice_session_id
         ):
             return False
@@ -981,13 +969,12 @@ class HudWindow(Gtk.Window):
         self._voice_phase = event.outcome
         self._voice_session_id = None
         if event.outcome == "cancelled":
-            self._entry.set_text(self._dictation.prefix)
-            self._set_status("Ready · voice cancelled")
+            self._set_status("Ready · live voice stopped")
         elif event.outcome == "error":
             self._voice_command_serial += 1
-            self._set_error(event.error or "Voice input failed")
+            self._set_error(event.error or "Live voice failed")
         else:
-            self._set_status("Ready · voice captured")
+            self._set_status("Ready · live voice ended")
         self._clear_voice_level()
         self._update_controls()
         self._entry.grab_focus()
@@ -1058,8 +1045,8 @@ class HudWindow(Gtk.Window):
             self._spinner.start()
         elif self._voice_active:
             self._voice.set_image(Gtk.Image.new_from_icon_name("media-playback-stop-symbolic", Gtk.IconSize.BUTTON))
-            self._voice.set_tooltip_text("Stop and transcribe OMP dictation")
-            self._voice.get_accessible().set_name("Stop and transcribe OMP dictation")
+            self._voice.set_tooltip_text("Stop OMP live voice")
+            self._voice.get_accessible().set_name("Stop OMP live voice")
             self._control_stack.set_visible_child_name("voice")
             self._spinner.stop()
         elif has_text:
@@ -1067,8 +1054,8 @@ class HudWindow(Gtk.Window):
             self._spinner.stop()
         else:
             self._voice.set_image(Gtk.Image.new_from_icon_name("audio-input-microphone-symbolic", Gtk.IconSize.BUTTON))
-            self._voice.set_tooltip_text("Start OMP dictation")
-            self._voice.get_accessible().set_name("Start OMP dictation")
+            self._voice.set_tooltip_text("Start OMP live voice")
+            self._voice.get_accessible().set_name("Start OMP live voice")
             self._control_stack.set_visible_child_name("voice")
             self._spinner.stop()
         for view in self._card_views.values():
@@ -1724,9 +1711,11 @@ class HudWindow(Gtk.Window):
             return False
         self._overlay_checked = True
 
+        width, height = self.get_size()
+
         def promote() -> None:
             try:
-                promote_hud_overlay()
+                promote_hud_overlay(width=width, height=height)
             except Exception as error:
                 GLib.idle_add(self._set_overlay_error, str(error))
 
