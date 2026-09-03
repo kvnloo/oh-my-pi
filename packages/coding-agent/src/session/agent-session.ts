@@ -4085,8 +4085,18 @@ export class AgentSession implements SettingsScope {
 			}
 
 			if (unexpectedStopOutcome === "terminal") {
-				// The cap is terminal: skip later recovery/fallback gates, then settle
-				// through the standard error tail (session_stop hooks, agent_end).
+				// agent-core finalizes `message_end` and `agent_end.messages` as
+				// separate objects. Propagate the synthetic cap failure into the
+				// public terminal event so RPC/ACP/notification consumers see it.
+				if (fallbackAssistant) {
+					fallbackAssistant.stopReason = msg.stopReason;
+					fallbackAssistant.errorMessage = msg.errorMessage;
+				}
+				// The retry cap already marked the turn as an error and emitted
+				// auto_retry_end. Skip the retry/fallback gates below so the
+				// advertised terminal cap never switches models or issues another
+				// request on this replay-safe thinking-only stop, then settle through
+				// the standard error tail (session_stop hooks, agent_end).
 				maintenanceRoute("unexpected-stop-retry-cap");
 			} else {
 				const resolvedInterruptedToolTurn = this.#recovery.classifyResolvedInterruptedToolTurn(msg);
