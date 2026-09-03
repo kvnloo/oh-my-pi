@@ -50,7 +50,7 @@ type ComputerSchema = Type<ComputerToolInput>;
 const getComputerSchema: () => ComputerSchema = once(() =>
 	type({
 		code: type("string").describe(
-			"JavaScript executed in the persistent computer session; top-level await allowed; `desktop`, `wait`, `assert` in scope",
+			"JavaScript executed in the persistent computer session; top-level await allowed; `desktop`, `stageManager`, `wait`, `assert` in scope",
 		),
 		"read_only?": type("boolean").describe(
 			"true = inspection only: screenshots and ax reads allowed, all input/mutation blocked",

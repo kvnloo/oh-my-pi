@@ -2,13 +2,15 @@ Host desktop control via JS: windows, screenshots, native input, OS accessibilit
 
 ## Scope
 
-`code`: top-level await; persistent session; window handles, screenshot frames, AX refs survive calls. In scope: `desktop`, `wait(msOrFn, {timeout?, interval?})`, `assert(cond, msg?)`, `display`/`print`/`read`/`write`/`tool.*`.
+`code`: top-level await; persistent session; window handles, screenshot frames, AX refs, and named Hyprland stages survive calls. In scope: `desktop`, `stageManager`, `wait(msOrFn, {timeout?, interval?})`, `assert(cond, msg?)`, `display`/`print`/`read`/`write`/`tool.*`.
 
 - `desktop.windows({app?, title?})` → `[{id, app, title, pid, x, y, width, height, focused}]`; `desktop.window(idOrFilter)` → `Promise<Win>` — MUST await it; ids are opaque strings; ambiguous → throws listing candidates. Also `desktop.focusedWindow()`, `desktop.displays()`, `desktop.capabilities()`.
 - Win: `.screenshot({silent?})`, `.click(x, y, {button?, count?, modifiers?, delivery?})`, `.doubleClick(x, y)`, `.move(x, y)`, `.drag([[x,y],…], {modifiers?, delivery?})`, `.scroll(x, y, {dx?, dy?, delivery?})`, `.type(text, {delivery?})`, `.press("cmd+shift+p", {delivery?})`, `.raise()`, `.ax({all?, maxDepth?})`, `.find({role?, title?, value?, limit?})` → all matches, `await .ref("e5")` → live element; expired → `StaleRef`.
 - `desktop.screenshot()/click()/…`: same input surface, all-displays composite.
 - AX elements: `win.ax({maxDepth?})` returns a formatted TEXT tree — a single STRING, one node per line with `[ref=eN]` tags; NOT an array of node objects (never iterate or `.map` it). `.find({role?, title?, value?, limit?})` → live element objects; `await .ref("e5")` → live element; expired → `StaleRef`. `desktop.elementAt(x,y)` (global desktop coords, `.bounds()` space; no screenshot), `desktop.focusedElement()`. Members: `.role/.title/.ref`, `.value()`, `.setValue(v)`, `.bounds()`, `.attributes()`, `.actions()`, `.perform(name)`, `.press()`, `.click()`, `.focus()`, `.parent()`, `.children()`.
 - Clipboard: `desktop.clipboard.read()` / `.write(text)`.
+- Hyprland Stage Manager: `await stageManager.inspect()` returns the active workspace/window and mapped clients with stable addresses. `stageManager.list()` lists session-owned stages. Mutations: `await stageManager.create({name, activeAddress, memberAddresses})`, `await stageManager.switch({name, activeAddress})`, `await stageManager.restore(name)`.
+- A stage keeps one member on the current workspace and parks its other members on a private special workspace. Use exact addresses from a fresh `inspect()` result. `restore` returns surviving members to their original workspaces and restores the original focused window.
 
 ## Rules
 
@@ -18,6 +20,7 @@ Host desktop control via JS: windows, screenshots, native input, OS accessibilit
 - Input default: `delivery: "background"` — target window input without changing user focus, pointer, or window order. macOS keyboard input to multi-window app → `BackgroundUnavailable`: OS accepts only process id, may key a different window; retry `delivery: "foreground"` (briefly activates target, acts, restores focus) or AX. Targets dropping other background events also → `BackgroundUnavailable`, naming window class and event kind. NEVER infer background action landed from absent error: errors report surface failure.
 - Wayland: per-window native input and `.raise()` unavailable; use AX, or desktop input after focusing target yourself.
 - `read_only: true`: pure inspection; input/mutation throw; lighter approval.
+- Stage mutations require `read_only: false`; `inspect` and `list` are allowed in read-only runs. Never stage pinned clients. Always inspect immediately before creating a stage, and restore a temporary stage after the requested task.
 - Screenshots auto-display and save full-res to temp path; loops: `{silent: true}`.
 
 <critical>

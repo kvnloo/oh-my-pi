@@ -258,6 +258,22 @@ describe("computer schema and approval", () => {
 });
 
 describe("computer worker round trips", () => {
+	it("exposes the persistent Stage Manager facade without granting mutation to read-only runs", async () => {
+		const transport = new MemoryTransport();
+		new ComputerWorkerCore(transport, () => new FakeNativeSession());
+
+		const result = await runWorker(
+			transport,
+			"stage-manager-scope",
+			"({ inspect: typeof stageManager.inspect, create: typeof stageManager.create, stages: stageManager.list() })",
+			true,
+		);
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.payload.returnValue).toEqual({ inspect: "function", create: "function", stages: [] });
+	});
+
 	it("lists windows and returns screenshot caption, image, and detail through a fake native session", async () => {
 		const transport = new MemoryTransport();
 		const native = new FakeNativeSession();
