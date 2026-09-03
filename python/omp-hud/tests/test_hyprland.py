@@ -236,7 +236,7 @@ class HyprlandContextTests(unittest.TestCase):
                         "address": "abc",
                         "mapped": True,
                         "namespace": "omp-hud",
-                        "title": "OMP HUD",
+                        "title": "OMP Handsfree Mode",
                         "floating": floating,
                         "pinned": pinned,
                     }

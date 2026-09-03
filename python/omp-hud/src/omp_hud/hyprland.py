@@ -255,7 +255,7 @@ def _find_hud_client(
         (
             raw
             for raw in mapped
-            if str(raw.get("title") or "").startswith("OMP HUD")
+            if str(raw.get("title") or "").startswith(("OMP Handsfree Mode", "OMP HUD"))
         ),
         None,
     )
