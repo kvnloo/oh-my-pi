@@ -227,7 +227,17 @@ def _dispatch_overlay_action(
             break
     raise HyprctlError(f"hyprctl dispatch {action} failed")
 
-def _find_hud_client(clients: list[object]) -> dict[str, object] | None:
+def _find_hud_client(
+    clients: list[object],
+    *,
+    own_pid: int | None = None,
+) -> dict[str, object] | None:
+    # PID match is bulletproof: the app passes os.getpid(), and hyprctl
+    # reports the client pid. Title/class matching is fallback only — the
+    # title gains a " — ..." suffix on UI requests and the class is the
+    # interpreter name (__main__.py), so neither is stable.
+    if own_pid is None:
+        own_pid = os.getpid()
     mapped = [
         raw
         for raw in clients
@@ -235,8 +245,18 @@ def _find_hud_client(clients: list[object]) -> dict[str, object] | None:
         and raw.get("mapped") is not False
         and raw.get("address")
     ]
+    own = next(
+        (raw for raw in mapped if raw.get("pid") == own_pid),
+        None,
+    )
+    if own is not None:
+        return own
     titled = next(
-        (raw for raw in mapped if str(raw.get("title") or "") == "OMP HUD"),
+        (
+            raw
+            for raw in mapped
+            if str(raw.get("title") or "").startswith("OMP HUD")
+        ),
         None,
     )
     if titled is not None:
