@@ -5,13 +5,13 @@
 
 mod parsers;
 
-use std::{borrow::Cow, collections::HashMap, fmt, path::Path, sync::LazyLock};
+use std::{borrow::Cow, fmt, path::Path, sync::LazyLock};
 
 use ast_grep_core::{
-	Doc, Language, Node,
-	matcher::{KindMatcher, Pattern, PatternBuilder, PatternError},
+	Language,
+	matcher::{Pattern, PatternBuilder, PatternError},
 	meta_var::MetaVariable,
-	tree_sitter::{LanguageExt, StrDoc, TSLanguage, TSRange},
+	tree_sitter::{LanguageExt, StrDoc, TSLanguage},
 };
 use phf::phf_map;
 
@@ -168,7 +168,7 @@ impl_lang!(Regex, language_regex);
 impl_lang!(Dart, language_dart);
 impl_lang!(EmacsLisp, language_elisp);
 
-// ── Html (custom implementation with injection support) ──────────────────
+// ── Html (custom implementation) ──────────────────────────────────────────
 
 #[derive(Clone, Copy, Debug)]
 pub struct Html;
@@ -202,65 +202,6 @@ impl LanguageExt for Html {
 	fn get_ts_language(&self) -> TSLanguage {
 		parsers::language_html()
 	}
-
-	fn injectable_languages(&self) -> Option<&'static [&'static str]> {
-		Some(&["css", "js", "ts", "tsx", "scss", "less", "stylus", "coffee"])
-	}
-
-	fn extract_injections<L: LanguageExt>(
-		&self,
-		root: Node<StrDoc<L>>,
-	) -> HashMap<String, Vec<TSRange>> {
-		let lang = root.lang();
-		let mut map = HashMap::new();
-		let matcher = KindMatcher::new("script_element", lang.clone());
-		for script in root.find_all(matcher) {
-			let injected = find_html_lang(&script).unwrap_or_else(|| "js".into());
-			let content = script.children().find(|c| c.kind() == "raw_text");
-			if let Some(content) = content {
-				map.entry(injected)
-					.or_insert_with(Vec::new)
-					.push(node_to_range(&content));
-			}
-		}
-		let matcher = KindMatcher::new("style_element", lang.clone());
-		for style in root.find_all(matcher) {
-			let injected = find_html_lang(&style).unwrap_or_else(|| "css".into());
-			let content = style.children().find(|c| c.kind() == "raw_text");
-			if let Some(content) = content {
-				map.entry(injected)
-					.or_insert_with(Vec::new)
-					.push(node_to_range(&content));
-			}
-		}
-		map
-	}
-}
-
-fn find_html_lang<D: Doc>(node: &Node<D>) -> Option<String> {
-	let html = node.lang();
-	let attr_matcher = KindMatcher::new("attribute", html.clone());
-	let name_matcher = KindMatcher::new("attribute_name", html.clone());
-	let val_matcher = KindMatcher::new("attribute_value", html.clone());
-	node.find_all(attr_matcher).find_map(|attr| {
-		let name = attr.find(&name_matcher)?;
-		if name.text() != "lang" {
-			return None;
-		}
-		let val = attr.find(&val_matcher)?;
-		Some(val.text().to_string())
-	})
-}
-
-fn node_to_range<D: Doc>(node: &Node<D>) -> TSRange {
-	let r = node.range();
-	let start = node.start_pos();
-	let sp = start.byte_point();
-	let sp = tree_sitter::Point::new(sp.0, sp.1);
-	let end = node.end_pos();
-	let ep = end.byte_point();
-	let ep = tree_sitter::Point::new(ep.0, ep.1);
-	TSRange { start_byte: r.start, end_byte: r.end, start_point: sp, end_point: ep }
 }
 
 // ── SupportLang enum ────────────────────────────────────────────────────
@@ -529,18 +470,6 @@ impl Language for SupportLang {
 
 impl LanguageExt for SupportLang {
 	impl_lang_method!(get_ts_language, () => TSLanguage);
-
-	impl_lang_method!(injectable_languages, () => Option<&'static [&'static str]>);
-
-	fn extract_injections<L: LanguageExt>(
-		&self,
-		root: Node<StrDoc<L>>,
-	) -> HashMap<String, Vec<TSRange>> {
-		match self {
-			Self::Html => Html.extract_injections(root),
-			_ => HashMap::new(),
-		}
-	}
 }
 
 // ── File extension mapping ──────────────────────────────────────────────
