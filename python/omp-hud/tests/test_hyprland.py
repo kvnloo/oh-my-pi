@@ -11,11 +11,13 @@ from omp_hud.hyprland import (
     _calculate_hud_position,
     CarouselMonitor,
     ContextMonitor,
+    HandsfreeCarousel,
     HyprctlError,
     HyprlandContext,
     HyprlandWindow,
     auto_stage_enabled,
     compute_carousel_slots,
+    compute_stage_layout,
     promote_hud_overlay,
     read_context,
     read_windows,
@@ -829,6 +831,76 @@ class CarouselLayoutTests(unittest.TestCase):
     def test_auto_stage_defaults_on(self) -> None:
         self.assertTrue(auto_stage_enabled({}))
         self.assertFalse(auto_stage_enabled({"OMP_HUD_AUTO_STAGE": "0"}))
+
+
+    def test_stage_layout_is_stable_across_actives(self) -> None:
+        monitor = CarouselMonitor(0, 0, 0, 1440, 900, (0, 0, 0, 0))
+        a = compute_stage_layout(monitor)
+        b = compute_stage_layout(monitor)
+        self.assertEqual(a, b)
+        self.assertEqual(a.center, b.center)
+        self.assertEqual(a.left, b.left)
+        self.assertEqual(a.right, b.right)
+
+    def test_switch_does_not_refloat_or_recompute_slots(self) -> None:
+        """After open, switch only move/resize/focus — float once."""
+        commands: list[list[str]] = []
+        clients = [
+            {
+                "address": "0xa",
+                "mapped": True,
+                "floating": False,
+                "at": [10, 10],
+                "size": [400, 300],
+                "workspace": {"id": 1, "name": "1"},
+                "monitor": 0,
+            },
+            {
+                "address": "0xb",
+                "mapped": True,
+                "floating": False,
+                "at": [20, 20],
+                "size": [400, 300],
+                "workspace": {"id": 1, "name": "1"},
+                "monitor": 0,
+            },
+        ]
+        monitors = [
+            {
+                "id": 0,
+                "x": 0,
+                "y": 0,
+                "width": 2880,
+                "height": 1800,
+                "scale": 2,
+                "reserved": [0, 0, 0, 0],
+            }
+        ]
+
+        def runner(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            commands.append(command)
+            if command[:2] == ["hyprctl", "-j"] and command[-1] == "clients":
+                return subprocess.CompletedProcess(
+                    command, 0, stdout=json.dumps(clients), stderr=""
+                )
+            if command[:2] == ["hyprctl", "-j"] and command[-1] == "monitors":
+                return subprocess.CompletedProcess(
+                    command, 0, stdout=json.dumps(monitors), stderr=""
+                )
+            return subprocess.CompletedProcess(command, 0, stdout="ok\n", stderr="")
+
+        carousel = HandsfreeCarousel(runner)
+        carousel.open(["0xa", "0xb"], "0xa")
+        open_cmds = list(commands)
+        commands.clear()
+        carousel.switch("0xb")
+        switch_blob = "\n".join(" ".join(c) for c in commands)
+        # One batched eval preferred.
+        self.assertTrue(any(c[1] == "eval" for c in commands), commands)
+        self.assertNotIn("float", switch_blob.lower())
+        # Open floated; switch must not re-enable float.
+        open_blob = "\n".join(" ".join(c) for c in open_cmds)
+        self.assertIn("float", open_blob.lower())
 
 
 class PromoteHudTests(unittest.TestCase):

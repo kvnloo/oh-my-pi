@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import socket
 import subprocess
 import threading
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -142,10 +143,10 @@ _CONTEXT_EVENTS = frozenset(
 )
 _WINDOW_EVENTS = frozenset(
     {
-        "changefloatingmode",
+        # Membership / identity only. Geometry events (movewindow*) fire on every
+        # Stage rotate and must NOT re-query clients — that fights the layout batch
+        # and made Super+H/L feel 250–500ms + jagged.
         "closewindow",
-        "movewindow",
-        "movewindowv2",
         "openwindow",
         "windowtitle",
         "windowtitlev2",
@@ -594,56 +595,6 @@ def _logical_monitor(raw: Mapping[str, object]) -> CarouselMonitor:
     )
 
 
-def compute_carousel_slots(
-    monitor: CarouselMonitor,
-    member_addresses: list[str],
-    active_address: str,
-    *,
-    gap_out: int = CAROUSEL_GAP_OUT,
-    gap_between: int = CAROUSEL_GAP_BETWEEN,
-    bottom_safe: int = CAROUSEL_BOTTOM_SAFE,
-    active_width_frac: float = CAROUSEL_ACTIVE_WIDTH_FRAC,
-    active_height_frac: float = CAROUSEL_ACTIVE_HEIGHT_FRAC,
-    peek_visible_frac: float = CAROUSEL_PEEK_VISIBLE_FRAC,
-) -> list[CarouselSlot]:
-    """Center active with gaps; optional left/right peeks (Felix layout)."""
-    members = [address.lower() for address in member_addresses]
-    active = active_address.lower()
-    if active not in members:
-        raise HyprctlError(f"active address {active_address!r} is not a carousel member")
-    active_index = members.index(active)
-
-    left_r, top_r, right_r, bottom_r = monitor.reserved
-    bottom = max(bottom_safe, bottom_r)
-    usable_w = max(320, monitor.width - left_r - right_r - gap_out * 2)
-    usable_h = max(240, monitor.height - top_r - bottom - gap_out * 2)
-    active_w = max(280, round(usable_w * active_width_frac))
-    active_h = max(200, round(usable_h * active_height_frac))
-    active_x = monitor.x + left_r + gap_out + (usable_w - active_w) // 2
-    active_y = monitor.y + top_r + gap_out + (usable_h - active_h) // 2
-
-    peek_w = max(240, round(active_w * 0.92))
-    peek_h = max(180, round(active_h * 0.94))
-    peek_y = active_y + (active_h - peek_h) // 2
-    peek_visible = max(96, round(monitor.width * peek_visible_frac))
-
-    slots: list[CarouselSlot] = [
-        CarouselSlot(active, active_x, active_y, active_w, active_h, "active")
-    ]
-    if active_index > 0:
-        left_addr = members[active_index - 1]
-        x = active_x - gap_between - peek_w
-        if x + peek_w < monitor.x + peek_visible:
-            x = monitor.x - peek_w + peek_visible
-        slots.append(CarouselSlot(left_addr, x, peek_y, peek_w, peek_h, "left"))
-    if active_index < len(members) - 1:
-        right_addr = members[active_index + 1]
-        x = active_x + active_w + gap_between
-        max_x = monitor.x + monitor.width - peek_visible
-        if x > max_x:
-            x = max_x
-        slots.append(CarouselSlot(right_addr, x, peek_y, peek_w, peek_h, "right"))
-    return slots
 
 
 def _dispatch_window_action(
@@ -677,23 +628,38 @@ def _batch_lua_dispatches(runner: CommandRunner, expressions: list[str]) -> None
     if not expressions:
         return
     code = "\n".join(expressions)
-    reply = _dispatch(["eval", code], runner)
-    if reply in {"ok", ""}:
-        return
-    # Batch rejected — fall back one-by-one so partial layouts still progress.
-    last = reply
-    for expression in expressions:
-        one = _dispatch(["eval", expression], runner)
-        if one not in {"ok", ""}:
-            last = one
-            if not (
-                one.startswith("Invalid dispatcher")
-                or one.startswith("error:")
-                or "attempt to call a nil value" in one
-            ):
-                raise HyprctlError(f"hyprctl eval failed: {one}")
-    if last not in {"ok", ""}:
-        raise HyprctlError(f"hyprctl eval batch failed: {last}")
+    with _layout_busy():
+        reply = _dispatch(["eval", code], runner)
+        if reply in {"ok", ""}:
+            return
+        # Batch rejected — fall back one-by-one so partial layouts still progress.
+        last = reply
+        for expression in expressions:
+            one = _dispatch(["eval", expression], runner)
+            if one not in {"ok", ""}:
+                last = one
+                if not (
+                    one.startswith("Invalid dispatcher")
+                    or one.startswith("error:")
+                    or "attempt to call a nil value" in one
+                ):
+                    raise HyprctlError(f"hyprctl eval failed: {one}")
+        if last not in {"ok", ""}:
+            raise HyprctlError(f"hyprctl eval batch failed: {last}")
+
+
+_LAYOUT_BUSY = threading.Event()
+
+
+@contextlib.contextmanager
+def _layout_busy() -> Iterator[None]:
+    """While Stage is applying geometry, ContextMonitor must not hyprctl-poll."""
+    _LAYOUT_BUSY.set()
+    try:
+        yield
+    finally:
+        _LAYOUT_BUSY.clear()
+
 
 
 def _lua_float(address: str, floating: bool) -> str:
@@ -728,6 +694,21 @@ def _lua_move(address: str, x: int, y: int) -> str:
         f'hl.dispatch(hl.dsp.window.move({{ x = {int(x)}, y = {int(y)}, '
         f'window = "address:{address}" }}))'
     )
+
+
+def _set_windows_move_animation(
+    runner: CommandRunner, *, enabled: bool, speed: float = 2.0
+) -> None:
+    """Toggle Hyprland windowsMove animation (Lua configs). Best-effort."""
+    flag = "true" if enabled else "false"
+    code = (
+        f'hl.animation({{ leaf = "windowsMove", enabled = {flag}, '
+        f'speed = {speed}, bezier = "default" }})'
+    )
+    try:
+        _dispatch(["eval", code], runner)
+    except HyprctlError:
+        pass
 
 
 def _set_window_floating(address: str, floating: bool, runner: CommandRunner) -> None:
@@ -782,14 +763,6 @@ def _move_window_pixel(address: str, x: int, y: int, runner: CommandRunner) -> N
         legacy=["movewindowpixel", f"exact {px} {py},{selector}"],
         runner=runner,
     )
-
-
-def _park_geometry(monitor: CarouselMonitor, index: int) -> tuple[int, int, int, int]:
-    """Same-workspace offscreen stash — avoids specialWorkspace slide animations."""
-    width, height = 320, 240
-    x = monitor.x + monitor.width + 64 + index * 12
-    y = monitor.y + 64 + (index % 8) * 12
-    return x, y, width, height
 
 
 def _read_client_baselines(
@@ -852,7 +825,13 @@ def auto_stage_enabled(env: Mapping[str, str] = os.environ) -> bool:
 
 
 class HandsfreeCarousel:
-    """Session-scoped Felix carousel driven directly via hyprctl (not the LLM)."""
+    """Felix stage: float once, fixed L/C/R slots, switch only reassigns occupants.
+
+    Hyprland model:
+      open  → float once + place into immutable slot geometry
+      switch → move only (same card size → no resize thrash)
+      close → restore baselines + windowsMove animation
+    """
 
     def __init__(self, runner: CommandRunner = subprocess.run) -> None:
         self._runner = runner
@@ -860,8 +839,11 @@ class HandsfreeCarousel:
         self._members: list[str] = []
         self._active: str | None = None
         self._workspace: str | None = None
-        self._parked = "special:omp-hud-carousel"
+        self._layout: StageLayout | None = None
+        self._placed: dict[str, tuple[int, int, int, int]] = {}
+        self._prepared: set[str] = set()
         self._open = False
+        self._anim_tweaked = False
 
     @property
     def is_open(self) -> bool:
@@ -880,25 +862,13 @@ class HandsfreeCarousel:
         member_addresses: list[str],
         active_address: str | None = None,
     ) -> None:
-        members = []
-        seen: set[str] = set()
-        for address in member_addresses:
-            normalized = address.lower()
-            if not normalized.startswith("0x"):
-                normalized = f"0x{normalized}"
-            if normalized in seen:
-                continue
-            seen.add(normalized)
-            members.append(normalized)
+        members = _normalize_member_list(member_addresses)
         if not members:
             raise HyprctlError("carousel needs at least one window")
-        active = (active_address or members[0]).lower()
-        if not active.startswith("0x"):
-            active = f"0x{active}"
+        active = _normalize_address(active_address or members[0])
         if active not in members:
             members.insert(0, active)
 
-        # Replace any prior stage first so baselines stay accurate.
         if self._open:
             self.close()
 
@@ -907,79 +877,272 @@ class HandsfreeCarousel:
         if missing:
             raise HyprctlError(f"carousel members not mapped: {', '.join(missing)}")
 
-        active_baseline = baselines[active]
+        monitor = _pick_monitor_for_client(active, self._runner)
         self._baselines = baselines
         self._members = members
         self._active = active
-        self._workspace = active_baseline.workspace
+        self._workspace = baselines[active].workspace
+        self._layout = compute_stage_layout(monitor)
+        self._placed = {}
+        self._prepared = set()
         self._open = True
+        # Instant snaps while stage is open — multi-window windowsMove is jagged.
+        _set_windows_move_animation(self._runner, enabled=False)
+        self._anim_tweaked = True
         try:
-            self._apply(active)
+            self._assign(active, prepare=True)
         except Exception:
             self.close()
             raise
 
     def switch(self, active_address: str) -> None:
-        if not self._open:
+        if not self._open or self._layout is None or self._workspace is None:
             raise HyprctlError("carousel is not open")
-        active = active_address.lower()
-        if not active.startswith("0x"):
-            active = f"0x{active}"
+        active = _normalize_address(active_address)
         if active not in self._members:
             raise HyprctlError(f"{active} is not a carousel member")
-        self._apply(active)
+        if active == self._active:
+            return
+        self._assign(active, prepare=False)
         self._active = active
+
 
     def close(self) -> None:
         if not self._open and not self._baselines:
             return
         baselines = dict(self._baselines)
         focus = self._active
+        anim_tweaked = self._anim_tweaked
         self._open = False
         self._members = []
         self._active = None
         self._workspace = None
+        self._layout = None
+        self._placed = {}
+        self._prepared = set()
         self._baselines = {}
+        self._anim_tweaked = False
         live = _read_client_baselines(list(baselines), self._runner)
+        expressions: list[str] = []
         for address, baseline in baselines.items():
             if address not in live:
                 continue
-            try:
-                _move_window_workspace(address, baseline.workspace, self._runner)
-                _set_window_floating(address, baseline.floating, self._runner)
-                if baseline.width > 0 and baseline.height > 0:
-                    _resize_window(address, baseline.width, baseline.height, self._runner)
-                _move_window_pixel(address, baseline.x, baseline.y, self._runner)
-            except HyprctlError:
-                continue
+            expressions.append(_lua_workspace(address, baseline.workspace))
+            expressions.append(_lua_float(address, baseline.floating))
+            if baseline.width > 0 and baseline.height > 0:
+                expressions.append(
+                    _lua_resize(address, baseline.width, baseline.height)
+                )
+            expressions.append(_lua_move(address, baseline.x, baseline.y))
         if focus and focus in live:
-            try:
-                _focus_window(focus, self._runner)
-            except HyprctlError:
-                pass
+            expressions.append(_lua_focus(focus))
+        try:
+            _batch_lua_dispatches(self._runner, expressions)
+        except HyprctlError:
+            for address, baseline in baselines.items():
+                if address not in live:
+                    continue
+                try:
+                    _move_window_workspace(address, baseline.workspace, self._runner)
+                    _set_window_floating(address, baseline.floating, self._runner)
+                    if baseline.width > 0 and baseline.height > 0:
+                        _resize_window(
+                            address, baseline.width, baseline.height, self._runner
+                        )
+                    _move_window_pixel(address, baseline.x, baseline.y, self._runner)
+                except HyprctlError:
+                    continue
+            if focus and focus in live:
+                try:
+                    _focus_window(focus, self._runner)
+                except HyprctlError:
+                    pass
+        if anim_tweaked:
+            _set_windows_move_animation(self._runner, enabled=True)
 
-    def _apply(self, active: str) -> None:
-        assert self._workspace is not None
-        monitor = _pick_monitor_for_client(active, self._runner)
-        slots = compute_carousel_slots(monitor, self._members, active)
-        visible = {slot.address for slot in slots}
 
+    def _assign(self, active: str, *, prepare: bool) -> None:
+        assert self._layout is not None and self._workspace is not None
+        layout = self._layout
+        roles = _roles_for_active(self._members, active)
+        desired: dict[str, tuple[int, int, int, int]] = {}
         for address in self._members:
-            if address in visible:
-                continue
-            _move_window_workspace(address, self._parked, self._runner)
+            role = roles.get(address, "park")
+            if role == "active":
+                g = layout.center
+            elif role == "left":
+                g = layout.left
+            elif role == "right":
+                g = layout.right
+            else:
+                g = layout.park_for(self._members.index(address))
+            desired[address] = (g.x, g.y, g.width, g.height)
 
-        for address in visible:
-            _move_window_workspace(address, self._workspace, self._runner)
-            _set_window_floating(address, True, self._runner)
+        expressions: list[str] = []
+        # Prepare (float + workspace) once per member for the session.
+        if prepare:
+            for address in self._members:
+                if address not in self._prepared:
+                    expressions.append(_lua_workspace(address, self._workspace))
+                    expressions.append(_lua_float(address, True))
+                    self._prepared.add(address)
 
-        # Peeks first, active last (z-order).
-        ordered = sorted(slots, key=lambda slot: 0 if slot.role != "active" else 1)
-        for slot in ordered:
-            _resize_window(slot.address, slot.width, slot.height, self._runner)
-            _move_window_pixel(slot.address, slot.x, slot.y, self._runner)
-        _focus_window(active, self._runner)
+        # Geometry: peeks first, active last (z-order). Skip unchanged.
+        order = [a for a in self._members if roles.get(a) != "active"] + [
+            a for a in self._members if roles.get(a) == "active"
+        ]
+        for address in order:
+            x, y, w, h = desired[address]
+            prev = self._placed.get(address)
+            if prev is None or prev[2] != w or prev[3] != h:
+                expressions.append(_lua_resize(address, w, h))
+            if prev is None or prev[0] != x or prev[1] != y:
+                expressions.append(_lua_move(address, x, y))
+            self._placed[address] = (x, y, w, h)
 
+        expressions.append(_lua_focus(active))
+        _batch_lua_dispatches(self._runner, expressions)
+
+
+def _normalize_address(address: str) -> str:
+    normalized = address.lower()
+    if not normalized.startswith("0x"):
+        normalized = f"0x{normalized}"
+    return normalized
+
+
+def _normalize_member_list(member_addresses: list[str]) -> list[str]:
+    members: list[str] = []
+    seen: set[str] = set()
+    for address in member_addresses:
+        normalized = _normalize_address(address)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        members.append(normalized)
+    return members
+
+
+def _roles_for_active(members: list[str], active: str) -> dict[str, str]:
+    """Map address → active|left|right|park from fixed neighbor rule."""
+    idx = members.index(active)
+    roles = {address: "park" for address in members}
+    roles[active] = "active"
+    if idx > 0:
+        roles[members[idx - 1]] = "left"
+    if idx < len(members) - 1:
+        roles[members[idx + 1]] = "right"
+    return roles
+
+
+@dataclass(frozen=True, slots=True)
+class SlotGeom:
+    x: int
+    y: int
+    width: int
+    height: int
+
+
+@dataclass(frozen=True, slots=True)
+class StageLayout:
+    """Immutable slot geometry for one Stage session (computed once on open)."""
+
+    center: SlotGeom
+    left: SlotGeom
+    right: SlotGeom
+    park_origin_x: int
+    park_origin_y: int
+
+    def park_for(self, index: int) -> SlotGeom:
+        # Stable off-monitor stash; same card size so role swaps don't resize.
+        return SlotGeom(
+            self.park_origin_x + index * 12,
+            self.park_origin_y + (index % 8) * 12,
+            self.left.width,
+            self.left.height,
+        )
+
+
+def compute_stage_layout(
+    monitor: CarouselMonitor,
+    *,
+    gap_out: int = CAROUSEL_GAP_OUT,
+    gap_between: int = CAROUSEL_GAP_BETWEEN,
+    bottom_safe: int = CAROUSEL_BOTTOM_SAFE,
+    active_width_frac: float = CAROUSEL_ACTIVE_WIDTH_FRAC,
+    active_height_frac: float = CAROUSEL_ACTIVE_HEIGHT_FRAC,
+    peek_visible_frac: float = CAROUSEL_PEEK_VISIBLE_FRAC,
+) -> StageLayout:
+    """Fixed L/C/R positions — same size so rotate is move-only (no resize thrash)."""
+    left_r, top_r, right_r, bottom_r = monitor.reserved
+    bottom = max(bottom_safe, bottom_r)
+    usable_w = max(320, monitor.width - left_r - right_r - gap_out * 2)
+    usable_h = max(240, monitor.height - top_r - bottom - gap_out * 2)
+    # One card size for all stage roles. Peeks are the same window size, just
+    # shifted off-center — role changes never resize (Hyprland windowsMove only).
+    card_w = max(280, round(usable_w * active_width_frac))
+    card_h = max(200, round(usable_h * active_height_frac))
+    center_x = monitor.x + left_r + gap_out + (usable_w - card_w) // 2
+    center_y = monitor.y + top_r + gap_out + (usable_h - card_h) // 2
+
+    peek_visible = max(96, round(monitor.width * peek_visible_frac))
+    left_x = center_x - gap_between - card_w
+    if left_x + card_w < monitor.x + peek_visible:
+        left_x = monitor.x - card_w + peek_visible
+    right_x = center_x + card_w + gap_between
+    max_x = monitor.x + monitor.width - peek_visible
+    if right_x > max_x:
+        right_x = max_x
+
+    return StageLayout(
+        center=SlotGeom(center_x, center_y, card_w, card_h),
+        left=SlotGeom(left_x, center_y, card_w, card_h),
+        right=SlotGeom(right_x, center_y, card_w, card_h),
+        park_origin_x=monitor.x + monitor.width + 64,
+        park_origin_y=monitor.y + 64,
+    )
+
+
+
+def compute_carousel_slots(
+    monitor: CarouselMonitor,
+    member_addresses: list[str],
+    active_address: str,
+    *,
+    gap_out: int = CAROUSEL_GAP_OUT,
+    gap_between: int = CAROUSEL_GAP_BETWEEN,
+    bottom_safe: int = CAROUSEL_BOTTOM_SAFE,
+    active_width_frac: float = CAROUSEL_ACTIVE_WIDTH_FRAC,
+    active_height_frac: float = CAROUSEL_ACTIVE_HEIGHT_FRAC,
+    peek_visible_frac: float = CAROUSEL_PEEK_VISIBLE_FRAC,
+) -> list[CarouselSlot]:
+    """Compatibility wrapper: fixed layout + role assignment → slot list."""
+    members = _normalize_member_list(member_addresses)
+    active = _normalize_address(active_address)
+    if active not in members:
+        raise HyprctlError(f"active address {active_address!r} is not a carousel member")
+    layout = compute_stage_layout(
+        monitor,
+        gap_out=gap_out,
+        gap_between=gap_between,
+        bottom_safe=bottom_safe,
+        active_width_frac=active_width_frac,
+        active_height_frac=active_height_frac,
+        peek_visible_frac=peek_visible_frac,
+    )
+    roles = _roles_for_active(members, active)
+    slots: list[CarouselSlot] = []
+    for address, role in roles.items():
+        if role == "park":
+            continue
+        if role == "active":
+            g = layout.center
+        elif role == "left":
+            g = layout.left
+        else:
+            g = layout.right
+        slots.append(CarouselSlot(address, g.x, g.y, g.width, g.height, role))
+    return slots
 
 
 EventSocketConnector = Callable[[str], socket.socket]
@@ -1039,6 +1202,8 @@ class ContextMonitor:
             thread.join(timeout=2.0)
 
     def _refresh(self, *, context: bool = True, windows: bool = True) -> None:
+        if _LAYOUT_BUSY.is_set():
+            return
         try:
             if context:
                 current = self._reader()
