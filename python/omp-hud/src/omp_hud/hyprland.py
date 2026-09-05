@@ -697,18 +697,24 @@ def _lua_move(address: str, x: int, y: int) -> str:
 
 
 def _set_windows_move_animation(
-    runner: CommandRunner, *, enabled: bool, speed: float = 2.0
+    runner: CommandRunner,
+    *,
+    enabled: bool = True,
+    speed: float = 3.0,
+    bezier: str = "easeOutQuint",
 ) -> None:
-    """Toggle Hyprland windowsMove animation (Lua configs). Best-effort."""
+    """Tune Hyprland windowsMove (Lua configs). Best-effort."""
     flag = "true" if enabled else "false"
+    bez = bezier.replace("\\", "\\\\").replace('"', '\\"')
     code = (
         f'hl.animation({{ leaf = "windowsMove", enabled = {flag}, '
-        f'speed = {speed}, bezier = "default" }})'
+        f'speed = {speed}, bezier = "{bez}" }})'
     )
     try:
         _dispatch(["eval", code], runner)
     except HyprctlError:
         pass
+
 
 
 def _set_window_floating(address: str, floating: bool, runner: CommandRunner) -> None:
@@ -886,8 +892,10 @@ class HandsfreeCarousel:
         self._placed = {}
         self._prepared = set()
         self._open = True
-        # Instant snaps while stage is open — multi-window windowsMove is jagged.
-        _set_windows_move_animation(self._runner, enabled=False)
+        # Smooth concurrent slides (same card size → move-only, not resize thrash).
+        _set_windows_move_animation(
+            self._runner, enabled=True, speed=3.0, bezier="easeOutQuint"
+        )
         self._anim_tweaked = True
         try:
             self._assign(active, prepare=True)
@@ -958,7 +966,10 @@ class HandsfreeCarousel:
                 except HyprctlError:
                     pass
         if anim_tweaked:
-            _set_windows_move_animation(self._runner, enabled=True)
+            # Session default-ish restore (do not leave stage curve global).
+            _set_windows_move_animation(
+                self._runner, enabled=True, speed=4.0, bezier="default"
+            )
 
 
     def _assign(self, active: str, *, prepare: bool) -> None:
