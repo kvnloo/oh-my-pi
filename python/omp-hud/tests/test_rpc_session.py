@@ -91,7 +91,10 @@ class RpcLifecycleTests(unittest.TestCase):
         session.start()
 
         self.assertEqual(["/computer on"], prompts)
-        self.assertEqual(["Starting OMP…", "Enabling ComputerTool…", "Ready"], statuses)
+        self.assertEqual(
+            ["Starting OMP… (up to 180s)", "Enabling ComputerTool…", "Ready"],
+            statuses,
+        )
 
     def test_dictation_commands_remain_owned_by_rpc_client(self) -> None:
         calls: list[str] = []

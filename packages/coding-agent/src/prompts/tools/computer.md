@@ -9,8 +9,8 @@ Host desktop control via JS: windows, screenshots, native input, OS accessibilit
 - `desktop.screenshot()/click()/…`: same input surface, all-displays composite.
 - AX elements: `win.ax({maxDepth?})` returns a formatted TEXT tree — a single STRING, one node per line with `[ref=eN]` tags; NOT an array of node objects (never iterate or `.map` it). `.find({role?, title?, value?, limit?})` → live element objects; `await .ref("e5")` → live element; expired → `StaleRef`. `desktop.elementAt(x,y)` (global desktop coords, `.bounds()` space; no screenshot), `desktop.focusedElement()`. Members: `.role/.title/.ref`, `.value()`, `.setValue(v)`, `.bounds()`, `.attributes()`, `.actions()`, `.perform(name)`, `.press()`, `.click()`, `.focus()`, `.parent()`, `.children()`.
 - Clipboard: `desktop.clipboard.read()` / `.write(text)`.
-- Hyprland Stage Manager: `await stageManager.inspect()` returns the active workspace/window and mapped clients with stable addresses. `stageManager.list()` lists session-owned stages. Mutations: `await stageManager.create({name, activeAddress, memberAddresses})`, `await stageManager.switch({name, activeAddress})`, `await stageManager.restore(name)`.
-- A stage keeps one member on the current workspace and parks its other members on a private special workspace. Use exact addresses from a fresh `inspect()` result. `restore` returns surviving members to their original workspaces and restores the original focused window.
+- Hyprland Stage Manager (Felix-style carousel by default): `await stageManager.inspect()` returns workspaces/windows/monitors. `stageManager.list()` lists session-owned stages. `await stageManager.create({name, activeAddress, memberAddresses, layout?})` floats members into a centered active window with outer gaps and left/right peeks (`layout: "carousel"` default; `"isolate"` parks non-active on a special workspace only). Switch with `await stageManager.switch({name, activeAddress})` or simple carousel steps `await stageManager.next(name?)` / `await stageManager.prev(name?)`. `await stageManager.restore(name)` returns members to their pre-stage workspace/float/geometry.
+- A carousel stage keeps the active app large and centered with margins, shows immediate neighbors as side peeks, and parks farther members on `special:omp-stage-<name>`. Use exact addresses from a fresh `inspect()` result. Never stage pinned clients. Always inspect immediately before creating a stage, and restore a temporary stage after the requested task.
 
 ## Rules
 
@@ -20,7 +20,7 @@ Host desktop control via JS: windows, screenshots, native input, OS accessibilit
 - Input default: `delivery: "background"` — target window input without changing user focus, pointer, or window order. macOS keyboard input to multi-window app → `BackgroundUnavailable`: OS accepts only process id, may key a different window; retry `delivery: "foreground"` (briefly activates target, acts, restores focus) or AX. Targets dropping other background events also → `BackgroundUnavailable`, naming window class and event kind. NEVER infer background action landed from absent error: errors report surface failure.
 - Wayland: per-window native input and `.raise()` unavailable; use AX, or desktop input after focusing target yourself.
 - `read_only: true`: pure inspection; input/mutation throw; lighter approval.
-- Stage mutations require `read_only: false`; `inspect` and `list` are allowed in read-only runs. Never stage pinned clients. Always inspect immediately before creating a stage, and restore a temporary stage after the requested task.
+- Stage mutations require `read_only: false`; `inspect` and `list` are allowed in read-only runs. Never stage pinned clients. Prefer `next`/`prev` for simple app switching once a stage exists. Always inspect immediately before creating a stage, and restore a temporary stage after the requested task.
 - Screenshots auto-display and save full-res to temp path; loops: `{silent: true}`.
 
 <critical>

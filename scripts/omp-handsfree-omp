@@ -1,7 +1,18 @@
 #!/bin/sh
+# Handsfree OMP child. Prefer override, else coding-agent bunfig-safe launcher.
+# Direct `bun …/cli.ts` from a random cwd inherits that dir's bunfig and can
+# hang before RPC ready.
+#
+# NOTE: released PATH `omp` binaries may not register the hidden `computer`
+# tool that Handsfree + Stage Manager need (`--tools computer`). Prefer the
+# worktree launcher unless OMP_HANDSFREE_OMP points at a build that lists
+# `computer` in `omp --help`.
 set -eu
+
+if [ -n "${OMP_HANDSFREE_OMP:-}" ]; then
+	exec "$OMP_HANDSFREE_OMP" "$@"
+fi
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 root=$(CDPATH= cd -- "$script_dir/.." && pwd)
-
-exec bun "$root/packages/coding-agent/src/cli.ts" "$@"
+exec "$root/packages/coding-agent/scripts/omp" "$@"

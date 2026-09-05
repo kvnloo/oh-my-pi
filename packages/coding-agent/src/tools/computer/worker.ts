@@ -662,10 +662,25 @@ export class ComputerWorkerCore {
 				guardRun(context, "stageManager.switch");
 				return await this.#stageManager.switch(options, context.signal);
 			},
+			next: async (name?: string) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.next");
+				return await this.#stageManager.next(name, context.signal);
+			},
+			prev: async (name?: string) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.prev");
+				return await this.#stageManager.prev(name, context.signal);
+			},
 			restore: async (name: string) => {
 				const context = this.#currentRunContext();
 				guardRun(context, "stageManager.restore");
 				return await this.#stageManager.restore(name, context.signal);
+			},
+			execGated: async (shellCommand: string) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.execGated");
+				return await this.#stageManager.execGated(shellCommand, context.signal);
 			},
 		};
 	}

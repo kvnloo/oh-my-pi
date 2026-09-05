@@ -16,6 +16,7 @@ import { renderTerminalOutputIsolated } from "../../launch/terminal-output-worke
 import type { Theme, ThemeColor } from "../../modes/theme/theme";
 import { framedBlock, outputBlockContentWidth, renderStatusLine } from "../../tui";
 import type { ToolSession } from "..";
+import { mergeE2eIsolationEnv } from "../computer/e2e-isolation";
 import { resolveToCwd } from "../path-utils";
 import {
 	capPreviewLines,
@@ -190,11 +191,13 @@ function commandSpec(params: LaunchParams, session: ToolSession): DaemonSpec {
 		throw new ToolError("ready.port must be an integer from 1 to 65535");
 	}
 	if (ready && !ready.log && ready.port === undefined) throw new ToolError("ready requires log or port");
+	// Handsfree E2E: stamp isolation env so children carry ownership proof. Window
+	// placement still goes through stageManager.execGated / harness dispatch_exec.
 	return {
 		name,
 		application: params.application,
 		args: params.args ?? [],
-		env: params.env ?? {},
+		env: mergeE2eIsolationEnv(params.env),
 		cwd: resolveToCwd(params.cwd ?? session.cwd, session.cwd),
 		pty: detached ? false : (params.pty ?? true),
 		ready: ready

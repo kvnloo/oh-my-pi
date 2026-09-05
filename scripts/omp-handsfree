@@ -8,7 +8,40 @@ caller_cwd=$PWD
 PYTHONPATH="$root/python/omp-hud/src:$root/python/omp-rpc/src${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONPATH
 
-exec python3 -m omp_hud \
-	--omp "$root/scripts/omp-handsfree-omp" \
+if [ "${1:-}" = "--hud-log" ]; then
+	if [ "$#" -lt 2 ] || [ -z "$2" ]; then
+		echo "omp-handsfree: --hud-log requires a non-empty path" >&2
+		exit 2
+	fi
+	OMP_HUD_LOG=$2
+	shift 2
+fi
+
+if [ -z "${OMP_HUD_LOG+x}" ] && [ -n "${OMP_HANDSFREE_E2E_TOKEN:-}" ]; then
+	case "$OMP_HANDSFREE_E2E_TOKEN" in
+		*[!A-Za-z0-9._-]*)
+			echo "omp-handsfree: OMP_HANDSFREE_E2E_TOKEN contains unsafe filename characters" >&2
+			exit 2
+			;;
+	esac
+	OMP_HUD_LOG="/tmp/$OMP_HANDSFREE_E2E_TOKEN.log"
+fi
+
+# Isolation E2E must not boot the real coding agent (session I/O stalls map).
+if [ -n "${OMP_HANDSFREE_E2E_TOKEN:-}" ]; then
+	omp_bin="$root/scripts/omp-handsfree-e2e-omp"
+else
+	omp_bin="$root/scripts/omp-handsfree-omp"
+fi
+
+if [ -n "${OMP_HUD_LOG:-}" ]; then
+	exec python3 -u -m omp_hud \
+		--omp "$omp_bin" \
+		--cwd "$caller_cwd" \
+		"$@" >>"$OMP_HUD_LOG" 2>&1
+fi
+
+exec python3 -u -m omp_hud \
+	--omp "$omp_bin" \
 	--cwd "$caller_cwd" \
 	"$@"

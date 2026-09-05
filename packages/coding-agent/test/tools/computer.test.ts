@@ -82,13 +82,15 @@ class FakeNativeSession implements NativeDesktopSession {
 	clickCount = 0;
 	closeCount = 0;
 	sourceWidth = 64;
+	windows: DesktopWindow[] = [windowFixture];
+	readonly clickedTargets: string[] = [];
 	sourceHeight = 32;
 
 	async listDisplays(): Promise<DesktopDisplay[]> {
 		return [display];
 	}
 	async listWindows(): Promise<DesktopWindow[]> {
-		return [windowFixture];
+		return this.windows;
 	}
 	async capture(target: string): Promise<{
 		data: Uint8Array;
@@ -107,8 +109,9 @@ class FakeNativeSession implements NativeDesktopSession {
 			target,
 		};
 	}
-	async click(_target: string, _x: number, _y: number, _opts?: PointerOptions | null): Promise<void> {
+	async click(target: string, _x: number, _y: number, _opts?: PointerOptions | null): Promise<void> {
 		this.clickCount += 1;
+		this.clickedTargets.push(target);
 	}
 	async moveMouse(_target: string, _x: number, _y: number, _opts?: PointerOptions | null): Promise<void> {}
 	async drag(_target: string, _points: DesktopPoint[], _opts?: PointerOptions | null): Promise<void> {}
@@ -418,6 +421,89 @@ describe("computer worker round trips", () => {
 		);
 		expect(result.ok).toBe(true);
 		if (result.ok) expect(result.payload.returnValue).toEqual({ role: "button", count: 1 });
+	});
+
+	it("treats selected-app metadata as context and resolves an exact live identity before control", async () => {
+		const transport = new MemoryTransport();
+		const native = new FakeNativeSession();
+		native.windows = [
+			windowFixture,
+			{ ...windowFixture, id: "43", title: "Editor — review", focused: false },
+			{ ...windowFixture, id: "44", app: "Code - OSS", focused: false },
+		];
+		new ComputerWorkerCore(transport, () => native);
+		const targetJson = JSON.stringify({
+			app_class: "Code",
+			window_title: "Editor",
+			workspace: "1",
+			hyprland_address: "0xabc",
+			selection_source: "selector",
+		});
+
+		const inspection = await runWorker(
+			transport,
+			"selected-target-inspection",
+			[
+				`const selected = ${targetJson};`,
+				"const matches = (await desktop.windows()).filter(win => win.app === selected.app_class && win.title === selected.window_title);",
+				"if (matches.length !== 1) throw new Error(`expected one exact target, got ${matches.length}`);",
+				"globalThis.selectedWindowId = matches[0].id;",
+				"({ selected, resolved: matches[0] })",
+			].join("\n"),
+			true,
+		);
+		expect(inspection.ok).toBe(true);
+		if (!inspection.ok) return;
+		expect(inspection.payload.returnValue).toEqual({
+			selected: {
+				app_class: "Code",
+				window_title: "Editor",
+				workspace: "1",
+				hyprland_address: "0xabc",
+				selection_source: "selector",
+			},
+			resolved: windowFixture,
+		});
+		expect(native.clickCount).toBe(0);
+
+		const denied = await runWorker(
+			transport,
+			"selected-target-read-only-control",
+			"await (await desktop.window(globalThis.selectedWindowId)).click(1, 1)",
+			true,
+		);
+		expect(denied.ok).toBe(false);
+		expect(native.clickCount).toBe(0);
+
+		const controlled = await runWorker(
+			transport,
+			"selected-target-control",
+			"await (await desktop.window(globalThis.selectedWindowId)).click(1, 1)",
+		);
+		expect(controlled.ok).toBe(true);
+		expect(native.clickedTargets).toEqual(["42"]);
+	});
+
+	it("refuses ambiguous selected-app metadata instead of mutating a guessed window", async () => {
+		const transport = new MemoryTransport();
+		const native = new FakeNativeSession();
+		native.windows = [windowFixture, { ...windowFixture, id: "43", focused: false }];
+		new ComputerWorkerCore(transport, () => native);
+
+		const result = await runWorker(
+			transport,
+			"ambiguous-selected-target",
+			[
+				'const selected = { app_class: "Code", window_title: "Editor" };',
+				"const matches = (await desktop.windows()).filter(win => win.app === selected.app_class && win.title === selected.window_title);",
+				"if (matches.length !== 1) throw new Error(`expected one exact target, got ${matches.length}`);",
+				"await (await desktop.window(matches[0].id)).click(1, 1);",
+			].join("\n"),
+		);
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.error.message).toContain("expected one exact target, got 2");
+		expect(native.clickCount).toBe(0);
 	});
 
 	it("applies the current read-only policy to a retained writable window", async () => {
