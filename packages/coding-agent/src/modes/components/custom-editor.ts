@@ -618,7 +618,12 @@ export class CustomEditor extends Editor {
 					},
 					span => highlightMagicKeywords(span, undefined, phase),
 				);
-				if (this.#queueShorthandActive && (value.startsWith("->") || value.startsWith("=>"))) {
+				if (
+					this.#queueShorthandActive &&
+					context.line === 0 &&
+					context.startCol === 0 &&
+					(value.startsWith("->") || value.startsWith("=>"))
+				) {
 					const icon = typeof theme === "undefined" ? "➤" : theme.nav.selected;
 					return `${fgOrPlain("dim", `Queueing ${icon}`)}${highlighted.slice(2)}`;
 				}

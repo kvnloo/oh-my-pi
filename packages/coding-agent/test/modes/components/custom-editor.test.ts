@@ -174,6 +174,25 @@ describe("CustomEditor queue shorthand decoration", () => {
 		editor.setText("=>\n1. first\n3. third");
 		expect(editor.decorateText("1. first", { line: 1, startCol: 0, endCol: 8 })).toBe("1. first");
 	});
+
+	it("does not re-decorate a continuation body line that begins with => as another Queueing header", () => {
+		const editor = new CustomEditor(getEditorTheme());
+		editor.setText("=>\nfix the parser\n=> refactor tests");
+		const out = editor.decorateText("=> refactor tests", { line: 2, startCol: 0, endCol: 16 });
+		expect(Bun.stripANSI(out)).toBe("=> refactor tests");
+	});
+
+	it("renders a queue body whose continuation line begins with -> as a single Queueing header", () => {
+		const editor = new CustomEditor(getEditorTheme());
+		for (const ch of "->") editor.handleInput(ch);
+		for (const ch of "fix the parser\n-> refactor tests") editor.handleInput(ch);
+		expect(editor.getText()).toBe("->\nfix the parser\n-> refactor tests");
+		editor.focused = true;
+		const rendered = editor.render(80).map(line => Bun.stripANSI(line.replace(CURSOR_MARKER, "")));
+		const queueingLines = rendered.filter(line => line.includes("Queueing"));
+		expect(queueingLines.length).toBe(1);
+		expect(rendered.some(line => line.includes("-> refactor tests"))).toBe(true);
+	});
 });
 
 describe("CustomEditor bracketed path paste", () => {
