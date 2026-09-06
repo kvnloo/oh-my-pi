@@ -397,6 +397,86 @@ describe("AuthStorage account rotation", () => {
 		expect(Date.now() - startedAt).toBeLessThan(1_000);
 	});
 
+	test("API key resolver forwards the caller signal on the initial resolve (branch A)", async () => {
+		const controller = new AbortController();
+		const calls: Array<{ forceRefresh?: boolean; signal?: AbortSignal } | undefined> = [];
+		vi.spyOn(authStorage.limits, "rotate").mockResolvedValue({ switched: false });
+		const registry: Parameters<typeof createApiKeyResolver>[0] = {
+			async getApiKeyWithCredentialForProvider(_provider, _sessionId, options) {
+				calls.push(options);
+				return { apiKey: "initial-key" };
+			},
+			authStorage,
+		};
+		const resolver = createApiKeyResolver(registry, "openai-codex", { sessionId: "branch-a-signal" });
+
+		const result = await resolver({ lastChance: false, error: undefined, signal: controller.signal });
+
+		expect(resolvedApiKeyBearer(result)).toBe("initial-key");
+		expect(calls).toHaveLength(1);
+		expect(calls[0]?.forceRefresh).toBeUndefined();
+		expect(calls[0]?.signal).toBe(controller.signal);
+	});
+
+	test("API key resolver forwards the caller signal on the post-rotation re-resolve (branch B)", async () => {
+		const controller = new AbortController();
+		const resolveCalls: Array<{ forceRefresh?: boolean; signal?: AbortSignal } | undefined> = [];
+		const rotationCalls: Array<{ signal?: AbortSignal; apiKey?: string } | undefined> = [];
+		vi.spyOn(authStorage.limits, "rotate").mockImplementation(async (_provider, _sessionId, options) => {
+			rotationCalls.push(options);
+			return { switched: false };
+		});
+		const registry: Parameters<typeof createApiKeyResolver>[0] = {
+			async getApiKeyWithCredentialForProvider(_provider, _sessionId, options) {
+				resolveCalls.push(options);
+				return { apiKey: "rotated-key" };
+			},
+			authStorage,
+		};
+		const resolver = createApiKeyResolver(registry, "openai-codex", { sessionId: "branch-b-signal" });
+
+		const result = await resolver({
+			lastChance: true,
+			error: Object.assign(new Error("401 authentication_error"), { status: 401 }),
+			previousKey: "stale-key",
+			signal: controller.signal,
+		});
+
+		expect(resolvedApiKeyBearer(result)).toBe("rotated-key");
+		expect(rotationCalls).toHaveLength(1);
+		expect(rotationCalls[0]?.signal).toBe(controller.signal);
+		expect(rotationCalls[0]?.apiKey).toBe("stale-key");
+		expect(resolveCalls).toHaveLength(1);
+		expect(resolveCalls[0]?.forceRefresh).toBeUndefined();
+		expect(resolveCalls[0]?.signal).toBe(controller.signal);
+	});
+
+	test("API key resolver forwards the caller signal on the force-refresh re-resolve (branch C)", async () => {
+		const controller = new AbortController();
+		const calls: Array<{ forceRefresh?: boolean; signal?: AbortSignal } | undefined> = [];
+		vi.spyOn(authStorage.limits, "rotate").mockResolvedValue({ switched: false });
+		const registry: Parameters<typeof createApiKeyResolver>[0] = {
+			async getApiKeyWithCredentialForProvider(_provider, _sessionId, options) {
+				calls.push(options);
+				return { apiKey: "refreshed-key" };
+			},
+			authStorage,
+		};
+		const resolver = createApiKeyResolver(registry, "openai-codex", { sessionId: "branch-c-signal" });
+
+		const result = await resolver({
+			lastChance: false,
+			error: Object.assign(new Error("401 authentication_error"), { status: 401 }),
+			previousKey: "stale-key",
+			signal: controller.signal,
+		});
+
+		expect(resolvedApiKeyBearer(result)).toBe("refreshed-key");
+		expect(calls).toHaveLength(1);
+		expect(calls[0]?.forceRefresh).toBe(true);
+		expect(calls[0]?.signal).toBe(controller.signal);
+	});
+
 	test("withAuth reaches a fourth healthy Codex OAuth sibling through ModelRegistry", async () => {
 		await authStorage.credentials.set("openai-codex", [
 			{
