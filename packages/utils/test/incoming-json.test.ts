@@ -444,4 +444,16 @@ describe("incoming JSON cursors", () => {
 		// Bun's 5 s default test timeout is tighter than the ceiling above;
 		// give loaded runners an explicit budget (logger-contract precedent).
 	}, 30_000);
+
+	it("makes the array-end sentinel sticky across repeated next() calls", async () => {
+		const { feed, doc } = IncomingDoc.channel();
+		feed.push("[10,20,30]");
+		feed.finish();
+		const arr = doc.root().array();
+		expect(await (await arr.next())?.number()).toBe(10);
+		expect(await (await arr.next())?.number()).toBe(20);
+		expect(await (await arr.next())?.number()).toBe(30);
+		expect(await arr.next()).toBeUndefined();
+		for (let i = 0; i < 8; i++) expect(await arr.next()).toBeUndefined();
+	});
 });
