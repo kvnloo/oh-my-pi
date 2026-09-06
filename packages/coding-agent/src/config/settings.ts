@@ -2806,6 +2806,18 @@ export class Settings {
 					shouldWrite = true;
 				}
 
+				// Re-apply any path a concurrent set() touched while this save's
+				// read/lock was in flight, so `this.#global = current` does not
+				// revert it. Mirrors the rolesToPreserve guard for model roles.
+				const preservedPathValues = new Map<string, unknown>();
+				for (const modPath of this.#modified) {
+					const segments = modPath.split(".");
+					const value = getByPath(this.#global, segments);
+					preservedPathValues.set(modPath, value);
+					setByPath(current, segments, value);
+					shouldWrite = true;
+				}
+
 				// Update our global with any external changes we preserved.
 				this.#global = current;
 				if (shouldWrite) {
@@ -2819,6 +2831,16 @@ export class Settings {
 					if (latestGlobalRoles[role] === globalRolesAfterWrite[role]) {
 						this.#modifiedGlobalModelRoles.delete(role);
 						this.#modifiedGlobalModelRoleMutations.delete(role);
+					}
+				}
+				// Drop the regular paths this save just wrote, unless a newer local
+				// set() arrived while the write was in flight. Mirrors the
+				// rolesToPreserve cleanup above so the follow-up save does not
+				// re-apply a value the disk already owns.
+				for (const [modPath, preservedValue] of preservedPathValues) {
+					if (Bun.deepEquals(getByPath(this.#global, modPath.split(".")), preservedValue)) {
+						this.#modified.delete(modPath);
+						this.#modifiedPathMutations.delete(modPath);
 					}
 				}
 			});

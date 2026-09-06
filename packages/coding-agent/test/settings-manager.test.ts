@@ -1559,6 +1559,97 @@ describe("Settings", () => {
 		});
 	});
 
+	describe("concurrent regular set() during in-flight save", () => {
+		it("survives to #global, the merged view, and disk (non-default value)", async () => {
+			await writeSettings({ setupVersion: 1 });
+			const settings = await Settings.init({ cwd: projectDir, agentDir });
+
+			const firstSaveEntered = Promise.withResolvers<void>();
+			const releaseFirstSave = Promise.withResolvers<void>();
+			const withFileLock = fileLock.withFileLock;
+			vi.spyOn(fileLock, "withFileLock").mockImplementation(async (filePath, fn, options) => {
+				firstSaveEntered.resolve();
+				await releaseFirstSave.promise;
+				return withFileLock(filePath, fn, options);
+			});
+
+			settings.set("setupVersion", 2);
+			await firstSaveEntered.promise;
+
+			// A distinct-path set() in a separate macrotask lands after
+			// #modified.clear() and before `this.#global = current` runs inside
+			// the in-flight save's lock callback. Pre-fix this was reverted from
+			// #global and never persisted; it must now survive to every layer.
+			settings.set("theme.dark", "dracula");
+
+			releaseFirstSave.resolve();
+			await settings.flush();
+
+			expect(settings.get("theme.dark")).toBe("dracula");
+			expect(settings.isConfigured("theme.dark")).toBe(true);
+			expect((await readSettings()).theme).toEqual({ dark: "dracula" });
+		});
+
+		it("survives when the concurrent value equals the schema default", async () => {
+			await writeSettings({ setupVersion: 1 });
+			const settings = await Settings.init({ cwd: projectDir, agentDir });
+
+			const firstSaveEntered = Promise.withResolvers<void>();
+			const releaseFirstSave = Promise.withResolvers<void>();
+			const withFileLock = fileLock.withFileLock;
+			vi.spyOn(fileLock, "withFileLock").mockImplementation(async (filePath, fn, options) => {
+				firstSaveEntered.resolve();
+				await releaseFirstSave.promise;
+				return withFileLock(filePath, fn, options);
+			});
+
+			settings.set("setupVersion", 2);
+			await firstSaveEntered.promise;
+
+			// "titanium" is the schema default for theme.dark, so a get()-only
+			// assertion cannot distinguish the loss; isConfigured and the on-disk
+			// key are what make a preserved explicit value observable here.
+			settings.set("theme.dark", "titanium");
+
+			releaseFirstSave.resolve();
+			await settings.flush();
+
+			expect(settings.isConfigured("theme.dark")).toBe(true);
+			expect((await readSettings()).theme).toEqual({ dark: "titanium" });
+		});
+
+		it("does not replay a preserved path over a later external edit", async () => {
+			await writeSettings({ setupVersion: 1 });
+			const settings = await Settings.init({ cwd: projectDir, agentDir });
+
+			const firstSaveEntered = Promise.withResolvers<void>();
+			const releaseFirstSave = Promise.withResolvers<void>();
+			const withFileLock = fileLock.withFileLock;
+			vi.spyOn(fileLock, "withFileLock").mockImplementation(async (filePath, fn, options) => {
+				firstSaveEntered.resolve();
+				await releaseFirstSave.promise;
+				return withFileLock(filePath, fn, options);
+			});
+
+			settings.set("setupVersion", 2);
+			await firstSaveEntered.promise;
+			settings.set("theme.dark", "dracula");
+
+			releaseFirstSave.resolve();
+			await settings.flush();
+
+			expect((await readSettings()).theme).toEqual({ dark: "dracula" });
+
+			// Another omp instance (or a manual edit) rewrites the file while
+			// this process's follow-up save would otherwise still hold the
+			// preserved path pending. The follow-up must not clobber it.
+			await writeSettings({ setupVersion: 2, theme: { dark: "midnight" } });
+			await settings.flush();
+
+			expect((await readSettings()).theme).toEqual({ dark: "midnight" });
+		});
+	});
+
 	describe("getEditVariantForModel", () => {
 		it("matches configured model variants case-insensitively", async () => {
 			await writeSettings({

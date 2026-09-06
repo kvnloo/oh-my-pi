@@ -76,6 +76,18 @@ function formatJsTimeoutAnnotation(timeoutMs: number | undefined): string {
 
 export async function executeJs(code: string, options: JsExecutorOptions): Promise<JsResult> {
 	const displayOutputs: JsDisplayOutput[] = [];
+	// Buffer agent-progress events keyed by agent id so that only the final
+	// (latest) snapshot per agent is emitted via onStatus and stored in
+	// displayOutputs.  Intermediate "running" snapshots are collapsed into the
+	// terminal "completed"/"failed" one before the cell result is returned.
+	const latestAgentEventById = new Map<string, JsStatusEvent>();
+	const flushAgentEvents = (): void => {
+		for (const event of latestAgentEventById.values()) {
+			options.onStatus?.(event);
+			displayOutputs.push({ type: "status", event });
+		}
+		latestAgentEventById.clear();
+	};
 	const outputSink = new OutputSink({
 		artifactPath: options.artifactPath,
 		artifactId: options.artifactId,
@@ -117,13 +129,23 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 					if (output.type === "status") {
 						// Timeout-control events drive the eval watchdog only; never
 						// store or render them as cell output.
+						if (isEvalTimeoutControlEvent(output.event)) {
+							options.onStatus?.(output.event);
+							return;
+						}
+						// Coalesce agent-progress events: buffer by agent id so only
+						// the final snapshot (completed/failed) is forwarded.
+						if (output.event.op === "agent" && typeof output.event.id === "string") {
+							latestAgentEventById.set(output.event.id, output.event);
+							return;
+						}
 						options.onStatus?.(output.event);
-						if (isEvalTimeoutControlEvent(output.event)) return;
 					}
 					displayOutputs.push(output);
 				},
 			},
 		});
+		flushAgentEvents();
 		const summary = await outputSink.dump();
 		return {
 			output: summary.output,
@@ -143,6 +165,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 			if (timedOut) {
 				outputSink.push(formatJsTimeoutAnnotation(legacyTimeoutMs ?? options.idleTimeoutMs));
 			}
+			flushAgentEvents();
 			const summary = await outputSink.dump();
 			return {
 				output: summary.output,
@@ -159,6 +182,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 		}
 		const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
 		outputSink.push(message);
+		flushAgentEvents();
 		const summary = await outputSink.dump();
 		return {
 			output: summary.output,
