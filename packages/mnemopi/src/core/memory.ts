@@ -106,7 +106,6 @@ export interface RecallFacadeOptions extends Omit<
 	readonly from_date?: string | null;
 	readonly to_date?: string | null;
 	readonly source?: string | null;
-	readonly topic?: string | null;
 	readonly temporalWeight?: number;
 	readonly temporal_weight?: number;
 	readonly query_time?: string | Date | null;
@@ -138,7 +137,6 @@ export interface MemoryFacadeStats {
 type Row = Record<string, unknown>;
 type BeamRecallFacadeOptions = RecallOptions & {
 	source?: string | null;
-	topic?: string | null;
 	temporalWeight?: number;
 	temporalHalflife?: number;
 	vecWeight?: number;
@@ -315,7 +313,6 @@ function toRecallOptions(options: RecallFacadeOptions): BeamRecallFacadeOptions 
 		includeWorking: options.includeWorking,
 		queryTime: options.queryTime ?? options.query_time ?? null,
 		source: options.source ?? null,
-		topic: options.topic ?? null,
 		temporalWeight: options.temporalWeight ?? options.temporal_weight ?? undefined,
 		temporalHalflife: options.temporalHalflife ?? options.temporal_halflife ?? undefined,
 		vecWeight: options.vecWeight ?? options.vec_weight ?? undefined,

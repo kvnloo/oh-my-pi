@@ -25,7 +25,6 @@ export interface MemoryRow {
 	author_id?: string | null;
 	author_type?: string | null;
 	channel_id?: string | null;
-	topic?: string | null;
 }
 
 export type WorkingMemoryRow = MemoryRow;
