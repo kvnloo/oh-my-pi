@@ -286,6 +286,19 @@ class RelaxedJson {
 	}
 }
 
+function containsNonFinite(value: unknown): boolean {
+	if (typeof value === "number") return !Number.isFinite(value);
+	if (Array.isArray(value)) {
+		for (let i = 0; i < value.length; i++) if (containsNonFinite(value[i])) return true;
+		return false;
+	}
+	if (value && typeof value === "object") {
+		for (const key in value) if (containsNonFinite((value as Record<string, unknown>)[key])) return true;
+		return false;
+	}
+	return false;
+}
+
 /**
  * Final-parse a JSON value, repairing the common LLM malformations
  * ({@link RelaxedJson}). Tries strict `JSON.parse` first (fast path, exact JSON
@@ -295,7 +308,9 @@ class RelaxedJson {
  */
 export function parseJsonWithRepair<T>(json: string): T {
 	try {
-		return JSON.parse(json) as T;
+		const parsed = JSON.parse(json) as T;
+		if (containsNonFinite(parsed)) throw new SyntaxError("non-finite number in JSON");
+		return parsed;
 	} catch {
 		return new RelaxedJson(json, false).parse() as T;
 	}
@@ -310,7 +325,9 @@ export function parseStreamingJson<T = Record<string, unknown>>(partialJson: str
 	const trimmed = partialJson?.trimStart();
 	if (!trimmed) return {} as T;
 	try {
-		return JSON.parse(trimmed) as T;
+		const parsed = JSON.parse(trimmed) as T;
+		if (containsNonFinite(parsed)) throw new SyntaxError("non-finite number in JSON");
+		return parsed;
 	} catch {
 		try {
 			return (new RelaxedJson(trimmed, true).parse() ?? {}) as T;
