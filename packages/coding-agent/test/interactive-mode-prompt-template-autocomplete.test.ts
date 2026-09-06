@@ -221,4 +221,38 @@ describe("InteractiveMode prompt-template autocomplete (#2462)", () => {
 		// out so autocomplete follows the interactive slash-command resolution path.
 		expect(matches.filter(name => name === "models")).toHaveLength(1);
 	});
+
+	it("deduplicates project/user prompt templates that collide by name (project wins)", async () => {
+		// `loadPromptTemplates` orders project templates before user ones, and
+		// `expandPromptTemplate` resolves `/name` with first-match — so a same-named
+		// project template overrides the user one. The picker mirrors that by
+		// deduping same-named templates (first wins), surfacing only the invocable
+		// project entry rather than a phantom `(user)` row `/name` would never hit.
+		const created = createHarness([
+			{
+				name: "review",
+				description: "Review code (project)",
+				content: "PROJECT PROMPT BODY",
+				source: "(project)",
+			},
+			{
+				name: "review",
+				description: "Review code (user)",
+				content: "USER PROMPT BODY",
+				source: "(user)",
+			},
+		]);
+		const slot = captureAutocompleteProvider(created.mode);
+
+		await created.mode.refreshSlashCommandState(tempDir.path());
+
+		const provider = slot.current;
+		expect(provider).toBeDefined();
+		const matches = await fetchSlashSuggestions(provider!, "/review");
+		expect(matches.filter(name => name === "review")).toHaveLength(1);
+		const items = await fetchSlashItems(provider!, "/review");
+		const reviewItems = items.filter(item => item.value === "review");
+		expect(reviewItems).toHaveLength(1);
+		expect(reviewItems[0].description).toBe("Review code (project)");
+	});
 });

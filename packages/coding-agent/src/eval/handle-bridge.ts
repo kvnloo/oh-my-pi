@@ -189,7 +189,14 @@ export async function runEvalWait(
 	return await withBridgeTimeoutPause(
 		options.emitStatus,
 		async () => {
-			for (const handle of resolved) emitProgress(handle, options.emitStatus);
+			// Emit an initial snapshot only for handles that are still running —
+			// already-settled jobs will be emitted by the post-settlement call below,
+			// and emitting here too would produce a duplicate event.
+			for (const handle of resolved) {
+				if ("job" in handle && handle.job.status === "running") {
+					emitProgress(handle, options.emitStatus);
+				}
+			}
 			const interval = setInterval(() => {
 				for (const handle of resolved) emitProgress(handle, options.emitStatus);
 			}, 1_000);

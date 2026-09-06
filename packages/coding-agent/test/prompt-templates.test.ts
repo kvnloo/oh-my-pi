@@ -11,12 +11,16 @@
 import { describe, expect, test } from "bun:test";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { expandPromptTemplate, type PromptTemplate } from "@oh-my-pi/pi-coding-agent/config/prompt-templates";
+import {
+	expandPromptTemplate,
+	loadPromptTemplates,
+	type PromptTemplate,
+} from "@oh-my-pi/pi-coding-agent/config/prompt-templates";
 import { expandSlashCommand, type FileSlashCommand } from "@oh-my-pi/pi-coding-agent/extensibility/slash-commands";
 import { AgentRegistry, MAIN_AGENT_ID } from "@oh-my-pi/pi-coding-agent/registry/agent-registry";
 import { collectIrcPeerRoster } from "@oh-my-pi/pi-coding-agent/task/executor";
 import { parseCommandArgs, substituteArgs } from "@oh-my-pi/pi-coding-agent/utils/command-args";
-import { prompt } from "@oh-my-pi/pi-utils";
+import { prompt, TempDir } from "@oh-my-pi/pi-utils";
 
 // ============================================================================
 // substituteArgs
@@ -451,5 +455,74 @@ describe("subagent peer roster prompt", () => {
 		expect(rendered).not.toContain("ParkedSecretId");
 		expect(rendered).not.toContain("secret parked label");
 		expect(rendered).not.toContain("reviewing classified.diff");
+	});
+});
+
+// ============================================================================
+// loadPromptTemplates precedence (project overrides user)
+// ============================================================================
+//
+// Regression coverage for the project-over-user precedence rule. The loader
+// must place project templates (cwd/.omp/prompts) before user/global templates
+// (agentDir/prompts) so `expandPromptTemplate`'s first-match resolution lets a
+// shared project prompt override a personal user prompt on a name collision.
+// This matches the `prompts` capability provider in `discovery/builtin.ts`,
+// which loads the same `.omp/prompts` files project-first under the capability
+// framework's "project before user, first one wins" dedup rule.
+
+describe("loadPromptTemplates precedence (project overrides user)", () => {
+	async function writePromptFile(filePath: string, body: string): Promise<void> {
+		await fs.mkdir(path.dirname(filePath), { recursive: true });
+		await fs.writeFile(filePath, body, "utf-8");
+	}
+
+	function freshDirs(): { agent: TempDir; project: TempDir } {
+		return {
+			agent: TempDir.createSync("@pi-pt-precedence-agent-"),
+			project: TempDir.createSync("@pi-pt-precedence-project-"),
+		};
+	}
+
+	async function loadFrom(agent: TempDir, project: TempDir): Promise<PromptTemplate[]> {
+		return loadPromptTemplates({ cwd: project.path(), agentDir: agent.path() });
+	}
+
+	test("project template overrides user template on a name collision", async () => {
+		const { agent, project } = freshDirs();
+		try {
+			await writePromptFile(path.join(agent.path(), "prompts", "review.md"), "USER PROMPT BODY");
+			await writePromptFile(path.join(project.path(), ".omp", "prompts", "review.md"), "PROJECT PROMPT BODY");
+
+			const templates = await loadFrom(agent, project);
+			const reviews = templates.filter(t => t.name === "review");
+			// Both entries load, but project must come first so first-match expansion
+			// (Array.prototype.find in expandPromptTemplate) resolves to it.
+			expect(reviews).toHaveLength(2);
+			expect(reviews[0].source).toBe("(project)");
+			expect(reviews[0].content).toBe("PROJECT PROMPT BODY");
+			expect(reviews[1].source).toBe("(user)");
+			expect(reviews[1].content).toBe("USER PROMPT BODY");
+
+			expect(expandPromptTemplate("/review", templates)).toBe("PROJECT PROMPT BODY");
+		} finally {
+			agent.removeSync();
+			project.removeSync();
+		}
+	});
+
+	test("expandPromptTemplate appends inline args to the winning project body on collision", async () => {
+		const { agent, project } = freshDirs();
+		try {
+			await writePromptFile(path.join(agent.path(), "prompts", "review.md"), "USER PROMPT BODY");
+			await writePromptFile(path.join(project.path(), ".omp", "prompts", "review.md"), "PROJECT PROMPT BODY");
+
+			const templates = await loadFrom(agent, project);
+			// No inline-arg placeholders in the project body, so args fall back to
+			// being appended — from the *project* body, confirming which one won.
+			expect(expandPromptTemplate("/review extra args", templates)).toBe("PROJECT PROMPT BODY\n\nextra args");
+		} finally {
+			agent.removeSync();
+			project.removeSync();
+		}
 	});
 });

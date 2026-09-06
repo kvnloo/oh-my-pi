@@ -158,9 +158,19 @@ export interface LoadPromptTemplatesOptions {
 }
 
 /**
- * Load all prompt templates from:
- * 1. Global: agentDir/prompts/
- * 2. Project: cwd/.omp/prompts/
+ * Load all prompt templates, project-local before user-global.
+ *
+ * Precedence: on a name collision, the project template (cwd/.omp/prompts/)
+ * overrides the user-global template (agentDir/prompts/). This matches the
+ * `prompts` capability provider in `discovery/builtin.ts`, which loads the same
+ * `.omp/prompts` files project-first under the capability framework's
+ * "project before user, first one wins" rule. `expandPromptTemplate` resolves
+ * `/name` invocations with `Array.prototype.find` (first-match), so the array
+ * order here fully determines precedence.
+ *
+ * Load order:
+ * 1. Project: cwd/.omp/prompts/
+ * 2. Global: agentDir/prompts/
  */
 export async function loadPromptTemplates(options: LoadPromptTemplatesOptions = {}): Promise<PromptTemplate[]> {
 	const resolvedCwd = options.cwd ?? getProjectDir();
@@ -168,14 +178,14 @@ export async function loadPromptTemplates(options: LoadPromptTemplatesOptions = 
 
 	const templates: PromptTemplate[] = [];
 
-	// 1. Load global templates from agentDir/prompts/
+	// 1. Load project templates from cwd/.omp/prompts/ (project overrides user)
+	const projectPromptsDir = getProjectPromptsDir(resolvedCwd);
+	templates.push(...(await loadTemplatesFromDir(projectPromptsDir, "project")));
+
+	// 2. Load global templates from agentDir/prompts/
 	// Note: if agentDir is provided, it should be the agent dir, not the prompts dir
 	const globalPromptsDir = options.agentDir ? path.join(options.agentDir, "prompts") : resolvedAgentDir;
 	templates.push(...(await loadTemplatesFromDir(globalPromptsDir, "user")));
-
-	// 2. Load project templates from cwd/.omp/prompts/
-	const projectPromptsDir = getProjectPromptsDir(resolvedCwd);
-	templates.push(...(await loadTemplatesFromDir(projectPromptsDir, "project")));
 
 	return templates;
 }
