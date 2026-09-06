@@ -1519,6 +1519,12 @@ export class InteractiveMode implements InteractiveModeContext {
 		}
 		const promptTemplateCommands: SlashCommand[] = this.session.promptTemplates
 			.filter(template => !reservedNames.has(template.name))
+			// `loadPromptTemplates` orders project templates before user ones and
+			// `expandPromptTemplate` resolves `/name` with first-match, so a same-named
+			// project template overrides the user one. Dedup by name here (first wins)
+			// so the picker only surfaces the invocable entry and never a phantom
+			// shadowed `(user)` entry that `/name` would not expand to.
+			.filter((template, index, all) => all.findIndex(t => t.name === template.name) === index)
 			.map(template => ({
 				name: template.name,
 				// `PromptTemplate.description` from `loadTemplatesFromDir` already includes the
