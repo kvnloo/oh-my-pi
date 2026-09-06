@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Vertex AI requests no longer carry a stale access token minted for a previous Google Application Default Credentials identity after the active source changes mid-process (e.g. `gcloud auth application-default login`/`revoke`, or repointing `GOOGLE_APPLICATION_CREDENTIALS`); the new identity now takes effect on the next request instead of waiting up to the full token lifetime ({{detail_github_issue_ref}}).
 - GitHub Copilot sign-in now requests only basic profile access, restoring login for Enterprise organizations that reject repository, gist, and Codespaces permissions ([#10656](https://github.com/can1357/oh-my-pi/issues/10656)).
 
 ## [18.1.9] - 2026-09-04
