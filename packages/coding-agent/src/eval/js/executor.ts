@@ -76,6 +76,18 @@ function formatJsTimeoutAnnotation(timeoutMs: number | undefined): string {
 
 export async function executeJs(code: string, options: JsExecutorOptions): Promise<JsResult> {
 	const displayOutputs: JsDisplayOutput[] = [];
+	// Agent events are progress snapshots keyed by id. Coalesce them so that
+	// each agent id contributes at most one event to both the onStatus callback
+	// and displayOutputs — matching the deduplication that upsertStatusEvent
+	// provides when the eval tool persists events into cellResult.statusEvents.
+	const latestAgentEventById = new Map<string, JsStatusEvent>();
+	const flushAgentEvents = (): void => {
+		for (const event of latestAgentEventById.values()) {
+			options.onStatus?.(event);
+			displayOutputs.push({ type: "status", event });
+		}
+		latestAgentEventById.clear();
+	};
 	const outputSink = new OutputSink({
 		artifactPath: options.artifactPath,
 		artifactId: options.artifactId,
@@ -117,6 +129,11 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 					if (output.type === "status") {
 						// Timeout-control events drive the eval watchdog only; never
 						// store or render them as cell output.
+						if (output.event.op === "agent" && typeof output.event.id === "string") {
+							// Coalesce: keep only the latest snapshot per agent id.
+							latestAgentEventById.set(output.event.id, output.event);
+							return;
+						}
 						options.onStatus?.(output.event);
 						if (isEvalTimeoutControlEvent(output.event)) return;
 					}
@@ -125,6 +142,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 			},
 		});
 		const summary = await outputSink.dump();
+		flushAgentEvents();
 		return {
 			output: summary.output,
 			exitCode: 0,
@@ -144,6 +162,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 				outputSink.push(formatJsTimeoutAnnotation(legacyTimeoutMs ?? options.idleTimeoutMs));
 			}
 			const summary = await outputSink.dump();
+			flushAgentEvents();
 			return {
 				output: summary.output,
 				exitCode: undefined,
@@ -160,6 +179,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 		const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
 		outputSink.push(message);
 		const summary = await outputSink.dump();
+		flushAgentEvents();
 		return {
 			output: summary.output,
 			exitCode: 1,
