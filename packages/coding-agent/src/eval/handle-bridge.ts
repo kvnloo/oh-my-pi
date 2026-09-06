@@ -132,8 +132,13 @@ function cancelResolved(resolved: ResolvedHandle, reason?: unknown): boolean {
 	return true;
 }
 
-function emitProgress(resolved: ResolvedHandle, emitStatus: ((event: JsStatusEvent) => void) | undefined): void {
+function emitProgress(
+	resolved: ResolvedHandle,
+	emitStatus: ((event: JsStatusEvent) => void) | undefined,
+	onlyIfRunning = false,
+): void {
 	if (!emitStatus || !("job" in resolved)) return;
+	if (onlyIfRunning && resolved.job.status !== "running") return;
 	const progress = resolved.job.latestDetails?.progress;
 	const first = Array.isArray(progress) ? progress[0] : undefined;
 	if (!isUnknownRecord(first)) return;
@@ -189,9 +194,9 @@ export async function runEvalWait(
 	return await withBridgeTimeoutPause(
 		options.emitStatus,
 		async () => {
-			for (const handle of resolved) emitProgress(handle, options.emitStatus);
+			for (const handle of resolved) emitProgress(handle, options.emitStatus, true);
 			const interval = setInterval(() => {
-				for (const handle of resolved) emitProgress(handle, options.emitStatus);
+				for (const handle of resolved) emitProgress(handle, options.emitStatus, true);
 			}, 1_000);
 			interval.unref?.();
 			let outcome: "settled" | "timeout" | "aborted";
