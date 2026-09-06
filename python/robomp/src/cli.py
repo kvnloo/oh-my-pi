@@ -14,6 +14,7 @@ from robomp.db import INACTIVE_EVENT_STATES, get_database
 from robomp.logging_config import configure_logging
 from robomp.manual_triage import (
     InvalidIssueRef,
+    ManualTriageConflict,
     ManualTriageError,
     ManualTriageTimeout,
     await_terminal_state,
@@ -106,6 +107,9 @@ def triage(issue_ref: str, wait_timeout: float | None) -> None:
                 repo_full=repo_full,
                 number=number,
             )
+        except ManualTriageConflict as exc:
+            click.echo(f"refusing: {exc}", err=True)
+            sys.exit(2)
         except ManualTriageError as exc:
             click.echo(f"refusing: {exc}", err=True)
             sys.exit(2)
