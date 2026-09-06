@@ -427,9 +427,12 @@ export async function harmonize(
 		}
 	}
 	if (tableExists(db, "episodic_memory")) {
+		const now = new Date().toISOString();
 		const rows = db
-			.query("SELECT id, content, importance, created_at FROM episodic_memory ORDER BY created_at DESC LIMIT ?")
-			.all(Math.max(1, Math.floor(batchSize / 2))) as EpisodeRow[];
+			.query(
+				"SELECT id, content, importance, created_at FROM episodic_memory WHERE superseded_by IS NULL AND (valid_until IS NULL OR valid_until > ?) ORDER BY created_at DESC LIMIT ?",
+			)
+			.all(now, Math.max(1, Math.floor(batchSize / 2))) as EpisodeRow[];
 		for (const row of rows)
 			if (row.content.length > 10) {
 				bare.push({

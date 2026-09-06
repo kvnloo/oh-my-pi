@@ -40,6 +40,9 @@
 
 - Fixed an explicitly invalidated memory still being returned by an identical repeat query until the recall cache expired.
 - Fixed recall continuing to serve a stale, pre-embedding ranking for up to an hour after background embeddings finished, when the enhanced recall cache is enabled.
+### Fixed
+
+- Fixed SHMR memory consolidation surfacing retired (superseded or expired) episodic memories as consolidated beliefs by applying the canonical `superseded_by IS NULL AND (valid_until IS NULL OR valid_until > ?)` retirement filter to the `harmonize()` episodic candidate query.
 
 ## [18.0.11] - 2026-08-29
 
