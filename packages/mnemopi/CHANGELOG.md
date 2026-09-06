@@ -40,6 +40,9 @@
 
 - Fixed an explicitly invalidated memory still being returned by an identical repeat query until the recall cache expired.
 - Fixed recall continuing to serve a stale, pre-embedding ranking for up to an hour after background embeddings finished, when the enhanced recall cache is enabled.
+### Fixed
+
+- Fixed recall `topic` filter silently filtering by the `source` column instead of a topic column, which produced wrong results when `topic` was passed alone and an empty set when `source` and `topic` differed; removed the non-functional `topic` option (no `topic` column exists on the recalled memory tables). ([{{detail_github_issue_ref}}]({{detail_github_issue_url}}))
 
 ## [18.0.11] - 2026-08-29
 

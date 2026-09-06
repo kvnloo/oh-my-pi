@@ -17,7 +17,6 @@ type TierLabel = "working" | "episodic";
 
 type RecallOptionsInternal = RecallOptions & {
 	source?: string | null;
-	topic?: string | null;
 	veracity?: string | null;
 	memoryType?: string | null;
 	temporalWeight?: number;
@@ -453,10 +452,6 @@ function buildWhere(
 	if (options.source) {
 		clauses.push(`${prefix}source = ?`);
 		params.push(options.source);
-	}
-	if (options.topic) {
-		clauses.push(`${prefix}source = ?`);
-		params.push(options.topic);
 	}
 	if (options.veracity) {
 		clauses.push(`${prefix}veracity = ?`);
