@@ -189,7 +189,14 @@ export async function runEvalWait(
 	return await withBridgeTimeoutPause(
 		options.emitStatus,
 		async () => {
-			for (const handle of resolved) emitProgress(handle, options.emitStatus);
+			// Only emit an initial snapshot for handles that are still actively
+			// running. If the job already settled synchronously (e.g. in tests
+			// that use a synchronous mock), skip the pre-wait emission so the
+			// post-settlement call below is the sole agent-progress event.
+			for (const handle of resolved) {
+				if ("job" in handle && handle.job.status !== "running") continue;
+				emitProgress(handle, options.emitStatus);
+			}
 			const interval = setInterval(() => {
 				for (const handle of resolved) emitProgress(handle, options.emitStatus);
 			}, 1_000);
