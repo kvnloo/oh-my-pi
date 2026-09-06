@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Cursor-hosted WebFetch calls interrupted by a mid-fetch transport drop are now paired with a tool result instead of vanishing from the rebuilt transcript on the next turn ([{{detail_github_issue_ref}}]({{detail_github_issue_url}})).
 - GitHub Copilot sign-in now requests only basic profile access, restoring login for Enterprise organizations that reject repository, gist, and Codespaces permissions ([#10656](https://github.com/can1357/oh-my-pi/issues/10656)).
 
 ## [18.1.9] - 2026-09-04
