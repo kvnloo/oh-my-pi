@@ -31,6 +31,7 @@ export class BankManager {
 	}
 
 	createBank(name: string): string {
+		if (name === "default") throw new ValueError("Bank name 'default' is reserved");
 		this.validateName(name);
 		const bankDir = join(this.banksDir, name);
 		if (existsSync(bankDir)) throw new ValueError(`Bank '${name}' already exists`);
@@ -68,6 +69,7 @@ export class BankManager {
 	}
 	renameBank(oldName: string, newName: string): string {
 		if (oldName === "default") throw new ValueError("Cannot rename 'default' bank");
+		if (newName === "default") throw new ValueError("Bank name 'default' is reserved");
 		this.validateName(newName);
 		const oldDir = join(this.banksDir, oldName);
 		const newDir = join(this.banksDir, newName);
