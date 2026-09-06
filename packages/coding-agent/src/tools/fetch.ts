@@ -1140,11 +1140,12 @@ async function renderUrl(
 		};
 	}
 
-	const { finalUrl, content: rawContent } = response;
+	const { finalUrl } = response;
+	let rawContent = response.content;
 	if (response.truncated) {
 		notes.push(`Response body exceeded ${formatBytes(MAX_BYTES)} and was cut mid-stream; content is incomplete`);
 	}
-	const mime = normalizeMime(response.contentType);
+	let mime = normalizeMime(response.contentType);
 	const extHint = getExtensionHint(finalUrl);
 
 	const imageMimeType = resolveImageMimeType(mime, extHint);
@@ -1249,6 +1250,7 @@ async function renderUrl(
 	}
 
 	// Step 3: Handle convertible binary files (PDF, DOCX, etc.)
+	let bodyRecovered = false;
 	if (!skipConvertibleBinaryRetry && isConvertible(mime, extHint)) {
 		const binary = await fetchBinary(finalUrl, timeout, signal);
 		if (binary.ok) {
@@ -1275,6 +1277,21 @@ async function renderUrl(
 			} else {
 				notes.push("markit conversion failed");
 			}
+			// Markit didn't yield a returnable result and the body was skipped
+			// (rawContent is empty). Inspect the already-fetched bytes: real
+			// binaries stay on the binary path (sampleLooksBinary rejects them),
+			// but a mislabeled response whose bytes are actually readable
+			// text/HTML is recovered and reclassified from the bytes so the
+			// text/HTML pipeline below renders it instead of dropping it for an
+			// opaque byte-count notice.
+			if (response.bodySkipped) {
+				const decoded = new TextDecoder("utf-8", { fatal: false }).decode(binary.buffer);
+				if (!sampleLooksBinary(decoded)) {
+					rawContent = decoded;
+					bodyRecovered = true;
+					mime = looksLikeHtml(decoded) ? "text/html" : "text/plain";
+				}
+			}
 		} else if (binary.error) {
 			notes.push(`Binary fetch failed: ${binary.error}`);
 		} else {
@@ -1288,7 +1305,7 @@ async function renderUrl(
 		mime,
 		extHint,
 		rawContent,
-		response.bodySkipped === true,
+		response.bodySkipped === true && !bodyRecovered,
 		timeout,
 		signal,
 		fetchedAt,
