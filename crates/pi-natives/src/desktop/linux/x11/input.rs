@@ -131,9 +131,11 @@ impl X11Input {
 						 cannot safely redirect keyboard focus",
 					));
 				}
-				for ch in text.chars() {
-					self.send_key(window, KeyName::Char(ch), true)?;
-					self.send_key(window, KeyName::Char(ch), false)?;
+				for character in text.chars() {
+					let plan = self.keymap().chord_plan(&[KeyName::Char(character)])?;
+					execute_plan(&plan, |event| {
+						self.send_keycode(window, event.keycode, event.press, event.state)
+					})?;
 				}
 				self.conn.flush().map_err(input_failed)
 			},
@@ -161,26 +163,12 @@ impl X11Input {
 						"the target toolkit filters XSendEvent keyboard input",
 					));
 				}
-				let mut pressed = Vec::with_capacity(keys.len());
-				for &key in keys {
-					if let Err(error) = self.send_key(window, key, true) {
-						for &held in pressed.iter().rev() {
-							let _ = self.send_key(window, held, false);
-						}
-						return Err(error);
-					}
-					pressed.push(key);
-				}
-				let mut first_error = None;
-				for &key in pressed.iter().rev() {
-					if let Err(error) = self.send_key(window, key, false)
-						&& first_error.is_none()
-					{
-						first_error = Some(error);
-					}
-				}
+				let plan = self.keymap().chord_plan(keys)?;
+				let result = execute_plan(&plan, |event| {
+					self.send_keycode(window, event.keycode, event.press, event.state)
+				});
 				self.conn.flush().map_err(input_failed)?;
-				first_error.map_or(Ok(()), Err)
+				result
 			},
 		}
 	}
@@ -394,39 +382,20 @@ impl X11Input {
 	}
 
 	fn type_text_xtest(&self, text: &str) -> CoreResult<()> {
-		for ch in text.chars() {
-			let key = KeyName::Char(ch);
-			self.xtest_key(key, true)?;
-			self.xtest_key(key, false)?;
+		for character in text.chars() {
+			let plan = self.keymap().chord_plan(&[KeyName::Char(character)])?;
+			execute_plan(&plan, |event| self.xtest_keycode(event.keycode, event.press))?;
 		}
 		self.conn.flush().map_err(input_failed)
 	}
 
 	fn chord_xtest(&self, keys: &[KeyName]) -> CoreResult<()> {
-		let mut pressed = Vec::with_capacity(keys.len());
-		for &key in keys {
-			if let Err(error) = self.xtest_key(key, true) {
-				for &held in pressed.iter().rev() {
-					let _ = self.xtest_key(held, false);
-				}
-				return Err(error);
-			}
-			pressed.push(key);
-		}
-		let mut first_error = None;
-		for &key in pressed.iter().rev() {
-			if let Err(error) = self.xtest_key(key, false)
-				&& first_error.is_none()
-			{
-				first_error = Some(error);
-			}
-		}
-		self.conn.flush().map_err(input_failed)?;
-		first_error.map_or(Ok(()), Err)
+		let plan = self.keymap().chord_plan(keys)?;
+		execute_plan(&plan, |event| self.xtest_keycode(event.keycode, event.press))?;
+		self.conn.flush().map_err(input_failed)
 	}
 
-	fn xtest_key(&self, key: KeyName, press: bool) -> CoreResult<()> {
-		let keycode = self.keycode(key)?;
+	fn xtest_keycode(&self, keycode: u8, press: bool) -> CoreResult<()> {
 		self
 			.conn
 			.xtest_fake_input(
@@ -447,26 +416,31 @@ impl X11Input {
 			.map_err(input_failed)
 	}
 
-	fn send_key(&self, window: Window, key: KeyName, press: bool) -> CoreResult<()> {
-		let keycode = self.keycode(key)?;
+	fn send_keycode(
+		&self,
+		window: Window,
+		keycode: u8,
+		press: bool,
+		state: KeyButMask,
+	) -> CoreResult<()> {
 		let event = KeyPressEvent {
 			response_type: if press {
 				KEY_PRESS_EVENT
 			} else {
 				KEY_RELEASE_EVENT
 			},
-			detail:        keycode,
-			sequence:      0,
-			time:          CURRENT_TIME,
-			root:          self.root,
-			event:         window,
-			child:         0,
-			root_x:        0,
-			root_y:        0,
-			event_x:       0,
-			event_y:       0,
-			state:         KeyButMask::default(),
-			same_screen:   true,
+			detail: keycode,
+			sequence: 0,
+			time: CURRENT_TIME,
+			root: self.root,
+			event: window,
+			child: 0,
+			root_x: 0,
+			root_y: 0,
+			event_x: 0,
+			event_y: 0,
+			state,
+			same_screen: true,
 		};
 		self
 			.conn
@@ -485,24 +459,17 @@ impl X11Input {
 			.map_err(input_failed)
 	}
 
-	fn keycode(&self, key: KeyName) -> CoreResult<u8> {
-		let keysym = keysym_for_key(key);
-		let width = usize::from(self.keysyms_per_keycode);
-		if width == 0 {
-			return Err(DesktopError::input_failed("X11 keyboard map has zero keysyms per keycode"));
+	/// Borrowed view of the keyboard mapping for pure keymap lookups. The
+	/// shift-column tracking dropped by the modular rewrite (which made
+	/// `keycode` match the base or shift column indistinguishably) lives here:
+	/// `chord_plan` resolves every char to a keycode plus a `needs_shift` flag
+	/// and synthesizes a Shift wrap around shifted keysyms.
+	fn keymap(&self) -> KeymapView<'_> {
+		KeymapView {
+			min_keycode:         self.min_keycode,
+			keysyms_per_keycode: self.keysyms_per_keycode,
+			keysyms:             &self.keysyms,
 		}
-		for (row, keysyms) in self.keysyms.chunks_exact(width).enumerate() {
-			if keysyms.iter().take(2).any(|&candidate| candidate == keysym) {
-				return self
-					.min_keycode
-					.checked_add(
-						u8::try_from(row)
-							.map_err(|_| DesktopError::input_failed("X11 keymap is too large"))?,
-					)
-					.ok_or_else(|| DesktopError::input_failed("X11 keycode overflow"));
-			}
-		}
-		Err(DesktopError::input_failed(format!("X11 keymap has no keycode for keysym {keysym:#x}")))
 	}
 
 	fn coordinates(&self, window: Window, x: f64, y: f64) -> CoreResult<(i16, i16, i16, i16)> {
@@ -842,6 +809,154 @@ fn keysym_for_key(key: KeyName) -> u32 {
 		},
 	};
 	keysym.raw()
+}
+
+/// Borrowed view of a `GetKeyboardMapping` reply for pure keymap lookups.
+struct KeymapView<'a> {
+	min_keycode:         u8,
+	keysyms_per_keycode: u8,
+	keysyms:             &'a [u32],
+}
+
+/// One synthesized key transition in a planned injection sequence.
+///
+/// `state` carries the modifier mask advertised on the event: the XTEST
+/// executor ignores it (the server's XKB state is updated by the faked
+/// modifier presses themselves), while the background `XSendEvent` executor
+/// writes it into the `state` field of every synthetic `KeyPressEvent`/
+/// `KeyReleaseEvent` so the receiving client decodes the intended level.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PlannedKey {
+	keycode: u8,
+	press:   bool,
+	state:   KeyButMask,
+}
+
+impl KeymapView<'_> {
+	/// Resolve `keysym` to a keycode and whether the shift column (level 2) is
+	/// required to produce it. Any unshifted (base-column) binding is preferred
+	/// over any shifted one, so `XK_a` resolves to the `a` keycode with
+	/// `shifted=false` even on a row whose shift slot is also `XK_a`. Returns
+	/// `None` for `NoSymbol` (0), an empty keymap, or an absent keysym.
+	fn position(&self, keysym: u32) -> Option<(u8, bool)> {
+		if keysym == 0 || self.keysyms_per_keycode == 0 {
+			return None;
+		}
+		let per = usize::from(self.keysyms_per_keycode);
+		let mut shifted = None;
+		for (row, chunk) in self.keysyms.chunks_exact(per).enumerate() {
+			let keycode = self.min_keycode.checked_add(u8::try_from(row).ok()?)?;
+			if chunk[0] == keysym {
+				return Some((keycode, false));
+			}
+			if shifted.is_none() && per > 1 && chunk[1] == keysym {
+				shifted = Some(keycode);
+			}
+		}
+		shifted.map(|keycode| (keycode, true))
+	}
+
+	/// Keycode of the left Shift modifier.
+	fn shift_keycode(&self) -> Option<u8> {
+		self
+			.position(Keysym::Shift_L.raw())
+			.map(|(keycode, _)| keycode)
+	}
+
+	/// Plan the key sequence to inject `keys` as a chord. Non-shifted keys are
+	/// held and released in reverse at the end (standard chord semantics),
+	/// while any `Char` whose keysym lives in the shift column is tapped inline
+	/// wrapped in its own Shift press/release — unless `Shift` is already a
+	/// chord member, in which case the defect is masked and the char is simply
+	/// held like any other key. Wrapping the Shift around only the shifted key
+	/// guarantees the held Shift never bleeds into a neighbouring non-shifted
+	/// key (e.g. `ctrl+a+!` keeps `a` lowercase). Every event carries the
+	/// modifier mask that should be advertised on it: starting from zero, each
+	/// held modifier sets its bit before its own `KeyPress` and clears it
+	/// after its own `KeyRelease`; a synthesized Shift for a shifted `Char`
+	/// contributes `KeyButMask::SHIFT` to that char's two events only.
+	fn chord_plan(&self, keys: &[KeyName]) -> CoreResult<Vec<PlannedKey>> {
+		let shift_in_chord = keys.contains(&KeyName::Shift);
+		let shift_keycode = self.shift_keycode();
+		let mut plan = Vec::with_capacity(keys.len() * 2 + 4);
+		// Held keys (keycode, modifier mask) for the release-in-reverse phase;
+		// the mask is empty for non-modifier keys (`Char` and named non-mods).
+		let mut held: Vec<(u8, KeyButMask)> = Vec::with_capacity(keys.len());
+		let mut state = KeyButMask::default();
+		for &key in keys {
+			let keysym = keysym_for_key(key);
+			let (keycode, needs_shift) = self.position(keysym).ok_or_else(|| {
+				DesktopError::input_failed(format!("X11 keymap has no keycode for keysym {keysym:#x}"))
+			})?;
+			if needs_shift && !shift_in_chord {
+				let shift_kc = shift_keycode.ok_or_else(|| {
+					DesktopError::input_failed("X11 keyboard map has no Shift keycode")
+				})?;
+				plan.push(PlannedKey { keycode: shift_kc, press: true, state });
+				state |= KeyButMask::SHIFT;
+				plan.push(PlannedKey { keycode, press: true, state });
+				plan.push(PlannedKey { keycode, press: false, state });
+				state = without_mask(state, KeyButMask::SHIFT);
+				plan.push(PlannedKey { keycode: shift_kc, press: false, state });
+			} else {
+				plan.push(PlannedKey { keycode, press: true, state });
+				let mask = modifier_mask_of(key);
+				state |= mask;
+				held.push((keycode, mask));
+			}
+		}
+		for &(keycode, mask) in held.iter().rev() {
+			// `state` still carries this modifier's bit just prior to its release.
+			plan.push(PlannedKey { keycode, press: false, state });
+			state = without_mask(state, mask);
+		}
+		Ok(plan)
+	}
+}
+
+/// Modifier mask contributed by a single held key, or empty for non-modifiers.
+fn modifier_mask_of(key: KeyName) -> KeyButMask {
+	match key {
+		KeyName::Shift => KeyButMask::SHIFT,
+		KeyName::Ctrl => KeyButMask::CONTROL,
+		KeyName::Alt => KeyButMask::MOD1,
+		KeyName::Meta => KeyButMask::MOD4,
+		_ => KeyButMask::default(),
+	}
+}
+
+/// `state` with the bits in `mask` cleared. `KeyButMask` does not implement
+/// `Not` (x11rb-protocol ships it as a plain newtype without `bitflags`'s
+/// `Not`), so the single-bit clear goes through `u16` like `pointer_send_event`
+/// already does for button masks.
+fn without_mask(state: KeyButMask, mask: KeyButMask) -> KeyButMask {
+	KeyButMask::from(u16::from(state) & !u16::from(mask))
+}
+
+/// Execute a planned key sequence, releasing any keys still held when an
+/// individual emit fails. Each event is passed to `emit`, which fakes it
+/// (XTEST) or `XSendEvent`s it (background); on error the still-pressed
+/// keycodes are released in reverse with an empty modifier state and the
+/// first error is propagated.
+fn execute_plan<E>(
+	plan: &[PlannedKey],
+	mut emit: impl FnMut(PlannedKey) -> Result<(), E>,
+) -> Result<(), E> {
+	let mut held: Vec<u8> = Vec::new();
+	for event in plan {
+		if let Err(error) = emit(*event) {
+			for &keycode in held.iter().rev() {
+				let _ = emit(PlannedKey { keycode, press: false, state: KeyButMask::default() });
+			}
+			return Err(error);
+		}
+		if event.press {
+			held.push(event.keycode);
+		} else if let Some(index) = held.iter().rposition(|&keycode| keycode == event.keycode) {
+			held.swap_remove(index);
+		}
+	}
+	Ok(())
 }
 
 fn mpx_cheap_probe(conn: &RustConnection) -> bool {
@@ -1269,5 +1384,341 @@ fn ioctl_ptr(fd: libc::c_int, request: libc::Ioctl, setup: &UInputSetup) -> Core
 		)))
 	} else {
 		Ok(())
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::desktop::error::ErrorCode;
+
+	/// A minimal US-QWERTY-shaped keymap (`min_keycode` 8, two keysyms per row)
+	/// covering the rows the `chord_plan` tests exercise. Zero padding marks an
+	/// unused shift slot (e.g. modifiers and `Return` only have a base keysym).
+	fn us_keymap() -> KeymapView<'static> {
+		const KEYMAP: &[u32] = &[
+			0x61, 0x41, // kc8  a/A
+			0x62, 0x42, // kc9  b/B
+			0x31, 0x21, // kc10 1/!
+			0x32, 0x40, // kc11 2/@
+			0x39, 0x28, // kc12 9/parenleft
+			0x30, 0x29, // kc13 0/parenright
+			0x20, 0x20, // kc14 space
+			0xff0d, 0, // kc15 Return
+			0xffe1, 0, // kc16 Shift_L
+			0xffe3, 0, // kc17 Control_L
+			0xffe9, 0, // kc18 Alt_L
+			0xffeb, 0, // kc19 Super_L
+			0x70, 0x50, // kc20 p/P
+		];
+		KeymapView { min_keycode: 8, keysyms_per_keycode: 2, keysyms: KEYMAP }
+	}
+
+	#[test]
+	fn keysym_for_char_maps_ascii_verbatim() {
+		// xkeysym 1:1 maps the Latin-1 printable range, so the case and the
+		// shifted-symbol keysyms survive verbatim. This is the input to the
+		// shift-column resolution below.
+		assert_eq!(keysym_for_key(KeyName::Char('a')), 0x61);
+		assert_eq!(keysym_for_key(KeyName::Char('A')), 0x41);
+		assert_eq!(keysym_for_key(KeyName::Char('1')), 0x31);
+		assert_eq!(keysym_for_key(KeyName::Char('!')), 0x21);
+		assert_eq!(keysym_for_key(KeyName::Char('(')), 0x28);
+		assert_eq!(keysym_for_key(KeyName::Char('p')), 0x70);
+		assert_eq!(keysym_for_key(KeyName::Char('\n')), 0xff0d);
+		assert_eq!(keysym_for_key(KeyName::Char('\t')), Keysym::Tab.raw());
+		assert_eq!(keysym_for_key(KeyName::Enter), 0xff0d);
+		assert_eq!(keysym_for_key(KeyName::Shift), 0xffe1);
+		assert_eq!(keysym_for_key(KeyName::Ctrl), 0xffe3);
+		assert_eq!(keysym_for_key(KeyName::Space), 0x20);
+	}
+
+	#[test]
+	fn position_prefers_base_column_and_reports_shift_level() {
+		let view = us_keymap();
+		// Base-column keysyms resolve with `shifted=false`.
+		assert_eq!(view.position(0x61), Some((8, false))); // 'a'
+		assert_eq!(view.position(0x31), Some((10, false))); // '1'
+		assert_eq!(view.position(0x70), Some((20, false))); // 'p'
+		assert_eq!(view.position(0xffe1), Some((16, false))); // Shift_L
+		// Shift-column keysyms resolve to the SAME keycode with `shifted=true`.
+		assert_eq!(view.position(0x41), Some((8, true))); // 'A' -> kc of 'a'
+		assert_eq!(view.position(0x21), Some((10, true))); // '!' -> kc of '1'
+		assert_eq!(view.position(0x50), Some((20, true))); // 'P'
+		// Absent keysym and NoSymbol do not resolve.
+		assert_eq!(view.position(0x63), None); // 'c' is unbound
+		assert_eq!(view.position(0), None);
+	}
+
+	#[test]
+	fn position_resolves_uppercase_and_lowercase_to_the_same_keycode() {
+		// The mechanism the bug report pins: a shifted keysym shares the
+		// keycode of its base key. After the fix this is paired with a Shift
+		// wrap in `chord_plan`; the resolution equality itself is a invariant.
+		let view = us_keymap();
+		assert_eq!(view.position(0x41).map(|(kc, _)| kc), view.position(0x61).map(|(kc, _)| kc));
+		assert_eq!(view.position(0x21).map(|(kc, _)| kc), view.position(0x31).map(|(kc, _)| kc));
+	}
+
+	#[test]
+	fn position_prefers_an_unshifted_binding_over_a_shifted_one() {
+		// `0x61` is at the base of row 0 AND the shift slot of row 1; the base
+		// binding (kc 8, unshifted) must win, mirroring `keysym_position` from
+		// the pre-regression X11 backend.
+		let keysyms = [0x61u32, 0x41, 0x62, 0x61];
+		let view = KeymapView {
+			min_keycode:         8,
+			keysyms_per_keycode: 2,
+			keysyms:             &keysyms,
+		};
+		assert_eq!(view.position(0x61), Some((8, false)));
+	}
+
+	#[test]
+	fn position_treats_a_both_columns_match_as_unshifted() {
+		// A degenerate row whose shift slot duplicates its base keysym still
+		// resolves as unshifted — the base already produces the char.
+		let keysyms = [0x61u32, 0x61];
+		let view = KeymapView {
+			min_keycode:         8,
+			keysyms_per_keycode: 2,
+			keysyms:             &keysyms,
+		};
+		assert_eq!(view.position(0x61), Some((8, false)));
+	}
+
+	#[test]
+	fn position_handles_single_width_keymaps() {
+		// A width-1 keymap has no shift column, so shifted keysyms are absent.
+		let keysyms = [0x61u32];
+		let view = KeymapView {
+			min_keycode:         8,
+			keysyms_per_keycode: 1,
+			keysyms:             &keysyms,
+		};
+		assert_eq!(view.position(0x61), Some((8, false)));
+		assert_eq!(view.position(0x41), None);
+	}
+
+	#[test]
+	fn position_errors_on_zero_width_keymap() {
+		let view =
+			KeymapView { min_keycode: 8, keysyms_per_keycode: 0, keysyms: &[] };
+		assert_eq!(view.position(0x61), None);
+	}
+
+	#[test]
+	fn chord_plan_wraps_an_uppercase_letter_in_shift_press_release() {
+		let view = us_keymap();
+		// `A` lives in the shift column of the `a` key (kc 8); `Shift_L` is kc16.
+		// The plan must press Shift, press `8` with SHIFT advertised, release
+		// `8` with SHIFT advertised, then release Shift.
+		let plan = view.chord_plan(&[KeyName::Char('A')]).unwrap();
+		assert_eq!(plan.len(), 4);
+		assert_eq!(plan[0], PlannedKey {
+			keycode: 16,
+			press:   true,
+			state:   KeyButMask::default(),
+		});
+		assert_eq!(plan[1], PlannedKey { keycode: 8, press: true, state: KeyButMask::SHIFT });
+		assert_eq!(plan[2], PlannedKey { keycode: 8, press: false, state: KeyButMask::SHIFT });
+		assert_eq!(plan[3], PlannedKey {
+			keycode: 16,
+			press:   false,
+			state:   KeyButMask::default(),
+		});
+	}
+
+	#[test]
+	fn chord_plan_wraps_a_shifted_symbol_in_shift_press_release() {
+		let view = us_keymap();
+		// `!` (0x21) lives in the shift column of the `1` key (kc 10).
+		let plan = view.chord_plan(&[KeyName::Char('!')]).unwrap();
+		assert_eq!(plan.len(), 4);
+		assert_eq!(plan[0], PlannedKey {
+			keycode: 16,
+			press:   true,
+			state:   KeyButMask::default(),
+		});
+		assert_eq!(plan[1], PlannedKey { keycode: 10, press: true, state: KeyButMask::SHIFT });
+		assert_eq!(plan[2], PlannedKey { keycode: 10, press: false, state: KeyButMask::SHIFT });
+		assert_eq!(plan[3], PlannedKey {
+			keycode: 16,
+			press:   false,
+			state:   KeyButMask::default(),
+		});
+	}
+
+	#[test]
+	fn chord_plan_does_not_wrap_an_unshifted_char() {
+		let view = us_keymap();
+		// `a` lives in the base column — no Shift wrap, no SHIFT in `state`.
+		assert_eq!(view.chord_plan(&[KeyName::Char('a')]).unwrap(), vec![
+			PlannedKey { keycode: 8, press: true, state: KeyButMask::default() },
+			PlannedKey { keycode: 8, press: false, state: KeyButMask::default() },
+		]);
+	}
+
+	#[test]
+	fn chord_plan_for_empty_chord_is_empty() {
+		let view = us_keymap();
+		assert!(view.chord_plan(&[]).unwrap().is_empty());
+	}
+
+	#[test]
+	fn chord_plan_skips_the_wrap_when_shift_is_a_chord_member() {
+		let view = us_keymap();
+		// With `Shift` explicitly in the chord the defect is masked: no extra
+		// inline Shift wrap, and the `!` events carry SHIFT from the held Shift.
+		let plan = view
+			.chord_plan(&[KeyName::Shift, KeyName::Char('!')])
+			.unwrap();
+		assert_eq!(plan.len(), 4);
+		assert_eq!(plan[0], PlannedKey {
+			keycode: 16,
+			press:   true,
+			state:   KeyButMask::default(),
+		});
+		assert_eq!(plan[1], PlannedKey { keycode: 10, press: true, state: KeyButMask::SHIFT });
+		assert_eq!(plan[2], PlannedKey { keycode: 10, press: false, state: KeyButMask::SHIFT });
+		assert_eq!(plan[3], PlannedKey { keycode: 16, press: false, state: KeyButMask::SHIFT });
+	}
+
+	#[test]
+	fn chord_plan_holds_modifiers_and_taps_shifted_char_with_full_state() {
+		let view = us_keymap();
+		// `ctrl+!`: Ctrl (kc17) held, then `!` tapped with a synthesized Shift.
+		// The `!` events must advertise CONTROL|SHIFT so the background
+		// `XSendEvent` client decodes `Ctrl+!` rather than `1`.
+		let plan = view
+			.chord_plan(&[KeyName::Ctrl, KeyName::Char('!')])
+			.unwrap();
+		assert_eq!(plan.len(), 6);
+		let ctrl_press = plan[0];
+		assert_eq!(ctrl_press, PlannedKey {
+			keycode: 17,
+			press:   true,
+			state:   KeyButMask::default(),
+		});
+		// The `!` press/release carry CONTROL | SHIFT.
+		assert_eq!(plan[2], PlannedKey {
+			keycode: 10,
+			press:   true,
+			state:   KeyButMask::CONTROL | KeyButMask::SHIFT,
+		});
+		assert_eq!(plan[3], PlannedKey {
+			keycode: 10,
+			press:   false,
+			state:   KeyButMask::CONTROL | KeyButMask::SHIFT,
+		});
+		// Ctrl releases last, still advertising CONTROL just before its release.
+		assert_eq!(plan[5], PlannedKey { keycode: 17, press: false, state: KeyButMask::CONTROL });
+	}
+
+	#[test]
+	fn chord_plan_does_not_bleed_shift_into_a_following_unshifted_key() {
+		let view = us_keymap();
+		// `ctrl+a+!`: the `a` (kc8) is pressed BEFORE the `!`'s Shift wrap, so
+		// its Shift state must contain CONTROL but NOT SHIFT — otherwise the
+		// held Shift would silently capitalize it (the `foo90` class of bug).
+		let plan = view
+			.chord_plan(&[KeyName::Ctrl, KeyName::Char('a'), KeyName::Char('!')])
+			.unwrap();
+		let a_press = plan
+			.iter()
+			.find(|event| event.keycode == 8 && event.press)
+			.expect("a press present");
+		assert_eq!(a_press.state, KeyButMask::CONTROL);
+		assert_eq!(u16::from(a_press.state) & u16::from(KeyButMask::SHIFT), 0);
+		// The `!` key (kc10) still gets the full CONTROL|SHIFT.
+		let bang_press = plan
+			.iter()
+			.find(|event| event.keycode == 10 && event.press)
+			.expect("! press present");
+		assert_eq!(bang_press.state, KeyButMask::CONTROL | KeyButMask::SHIFT);
+	}
+
+	#[test]
+	fn chord_plan_does_not_bleed_shift_into_a_preceding_unshifted_key() {
+		let view = us_keymap();
+		// `ctrl+!+a`: the inline Shift wrap for `!` is fully closed (Shift
+		// released) before `a` is pressed, so `a` stays lowercase. The XTEST
+		// path relies on the same ordering for the server's XKB state.
+		let plan = view
+			.chord_plan(&[KeyName::Ctrl, KeyName::Char('!'), KeyName::Char('a')])
+			.unwrap();
+		let a_press = plan
+			.iter()
+			.find(|event| event.keycode == 8 && event.press)
+			.expect("a press present");
+		assert_eq!(a_press.state, KeyButMask::CONTROL);
+		assert_eq!(u16::from(a_press.state) & u16::from(KeyButMask::SHIFT), 0);
+	}
+
+	#[test]
+	fn chord_plan_errors_on_an_absent_keysym_and_emits_nothing() {
+		let view = us_keymap();
+		// `c` (0x63) is absent; the plan must fail (no partial plan returned).
+		let error = view.chord_plan(&[KeyName::Char('c')]).unwrap_err();
+		assert_eq!(error.code, ErrorCode::InputFailed);
+		// A shifted char following the missing one must still fail atomically.
+		let error = view
+			.chord_plan(&[KeyName::Char('c'), KeyName::Char('A')])
+			.unwrap_err();
+		assert_eq!(error.code, ErrorCode::InputFailed);
+	}
+
+	#[test]
+	fn execute_plan_emits_the_full_sequence_on_success() {
+		let plan =
+			vec![PlannedKey { keycode: 10, press: true, state: KeyButMask::default() }, PlannedKey {
+				keycode: 10,
+				press:   false,
+				state:   KeyButMask::default(),
+			}];
+		let mut emitted = Vec::new();
+		execute_plan(&plan, |event| {
+			emitted.push(event);
+			Ok::<_, ()>(())
+		})
+		.unwrap();
+		assert_eq!(
+			emitted
+				.iter()
+				.map(|e| (e.keycode, e.press))
+				.collect::<Vec<_>>(),
+			[(10, true), (10, false)]
+		);
+	}
+
+	#[test]
+	fn execute_plan_releases_still_held_keys_on_failure() {
+		// Press two keys, fail mid-tap of the second: the still-held first key
+		// must be released before the error propagates.
+		let plan = vec![
+			PlannedKey { keycode: 17, press: true, state: KeyButMask::default() },
+			PlannedKey { keycode: 10, press: true, state: KeyButMask::default() },
+			PlannedKey { keycode: 10, press: false, state: KeyButMask::default() },
+			PlannedKey { keycode: 17, press: false, state: KeyButMask::default() },
+		];
+		let mut emitted = Vec::new();
+		let error = execute_plan(&plan, |event| {
+			emitted.push(event);
+			if event.keycode == 10 && event.press {
+				Err("boom")
+			} else {
+				Ok(())
+			}
+		})
+		.unwrap_err();
+		assert_eq!(error, "boom");
+		// Ctrl press, failing `10` press, then the rollback release of Ctrl.
+		assert_eq!(
+			emitted
+				.iter()
+				.map(|e| (e.keycode, e.press))
+				.collect::<Vec<_>>(),
+			[(17, true), (10, true), (17, false)]
+		);
 	}
 }
