@@ -5,6 +5,7 @@
 ### Fixed
 
 - GitHub Copilot sign-in now requests only basic profile access, restoring login for Enterprise organizations that reject repository, gist, and Codespaces permissions ([#10656](https://github.com/can1357/oh-my-pi/issues/10656)).
+- Fixed GLM in-band tool-call parsing corrupting string arguments that contain prompt-permitted literal `arg_key`/`arg_value` tag runs; the value-heal heuristic no longer fires when the recovered key is already assigned in the current call.
 
 ## [18.1.9] - 2026-09-04
 
