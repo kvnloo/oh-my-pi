@@ -438,4 +438,16 @@ describe("incoming JSON cursors", () => {
 		expect(sum).toBe((count * (count - 1)) / 2);
 		expect(performance.now() - started).toBeLessThan(2_000);
 	});
+
+	it("makes the array-end sentinel sticky across repeated next() calls", async () => {
+		const { feed, doc } = IncomingDoc.channel();
+		feed.push("[10,20,30]");
+		feed.finish();
+		const arr = doc.root().array();
+		expect(await (await arr.next())?.number()).toBe(10);
+		expect(await (await arr.next())?.number()).toBe(20);
+		expect(await (await arr.next())?.number()).toBe(30);
+		expect(await arr.next()).toBeUndefined();
+		for (let i = 0; i < 8; i++) expect(await arr.next()).toBeUndefined();
+	});
 });
