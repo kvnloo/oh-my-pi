@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed macOS `F22`/`F24` key injection to fail with `InvalidKey` instead of silently sending `F12`/`F15`, which reused the same virtual keycodes ([{{detail_github_issue_ref}}]({{detail_github_issue_url}})).
+
 ## [18.1.9] - 2026-09-04
 
 ### Added
