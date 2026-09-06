@@ -6,7 +6,7 @@
  */
 import type { AgentMessage, AgentToolResult, ThinkingLevel, ToolLoadMode } from "@oh-my-pi/pi-agent-core";
 import type { CompactionResult } from "@oh-my-pi/pi-agent-core/compaction";
-import type { AssistantMessageEvent, Effort, ImageContent, Model, ToolExample } from "@oh-my-pi/pi-ai";
+import type { AssistantMessageEvent, ImageContent, Model, ToolExample } from "@oh-my-pi/pi-ai";
 import type { BashResult } from "../../exec/bash-executor";
 import type { ContextUsage } from "../../extensibility/extensions/types";
 import type { AgentSessionEvent, SessionStats } from "../../session/agent-session";
@@ -15,6 +15,7 @@ import type { FileEntry, SessionEntry, SessionTreeNode } from "../../session/ses
 import type { AvailableSlashCommandSource } from "../../slash-commands/available-commands";
 import type { AgentProgress } from "@oh-my-pi/pi-tui/tools/task";
 import type { SubagentEventPayload, SubagentLifecyclePayload, SubagentProgressPayload } from "../../task";
+import type { ConfiguredThinkingLevel } from "../../thinking";
 import type { TodoPhase } from "@oh-my-pi/pi-tui/tools/todo";
 import type { LivePhase } from "@oh-my-pi/pi-tui/apps/live-visualizer";
 import type { RpcMessagesPage } from "./rpc-messages";
@@ -446,7 +447,7 @@ export type RpcResponse =
 			type: "response";
 			command: "cycle_thinking_level";
 			success: true;
-			data: { level: Effort } | null;
+			data: { level: ConfiguredThinkingLevel } | null;
 	  }
 	| {
 			id?: string;
