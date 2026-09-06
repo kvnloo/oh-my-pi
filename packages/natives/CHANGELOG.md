@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed X11 `type_text`/`key_chord` injecting the unshifted base character (e.g. `A`→`a`, `!`→`1`, `(`→`9`) on US layouts by synthesizing a Shift press/release around keysyms that live in the shift column of the keymap.
+
 ## [18.1.9] - 2026-09-04
 
 ### Added
