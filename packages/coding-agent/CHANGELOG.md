@@ -114,6 +114,7 @@
 - Fixed `readlink` in the bash tool printing a provider-backed path (e.g. `local://file`) with a `\\?\` prefix on Windows
 - Fixed the daemon broker on Windows dying with the omp process that started it, which stopped the shared browser relay (and every other broker daemon) while other omp sessions were still using it
 - Fixed the `browser` tool's Tern backend being refused by any Tern newer than the protocol omp was built against; it now speaks Tern's JSON script protocol, which no Tern build ties it to, and a Tern from before it reports as unavailable (update Tern) so the Chromium fallback takes over.
+- History search now shows "No matching history" for symbol/punctuation-only queries (e.g. `!!!`, `@`, `...`) over non-empty history, instead of the misleading "No history yet" message ([{{detail_github_issue_ref}}]({{detail_github_issue_url}})).
 
 ## [18.4.12] - 2026-10-02
 

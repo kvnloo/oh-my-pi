@@ -106,13 +106,15 @@ class HistoryResultsList implements Component {
 	#menu: MenuSelection<HistorySearchEntry>;
 	#tokens: string[] = [];
 	#maxVisible = MAX_VISIBLE;
+	#hadQuery = false;
 
 	constructor(menu: MenuSelection<HistorySearchEntry>) {
 		this.#menu = menu;
 	}
 
-	setTokens(tokens: string[]): void {
+	setTokens(tokens: string[], hadQuery: boolean): void {
 		this.#tokens = tokens;
+		this.#hadQuery = hadQuery;
 	}
 
 	invalidate(): void {
@@ -124,7 +126,7 @@ class HistoryResultsList implements Component {
 		const items = this.#menu.visibleItems;
 
 		if (items.length === 0) {
-			const message = this.#tokens.length > 0 ? "No matching history" : "No history yet";
+			const message = this.#hadQuery ? "No matching history" : "No history yet";
 			lines.push(theme.fg("muted", `  ${theme.status.info} ${message}`));
 			return lines;
 		}
@@ -406,6 +408,6 @@ export class HistorySearchComponent extends OverlayPanel {
 			: this.#historyStorage.getRecent(this.#resultLimit);
 		this.#menu.setItems(results);
 		this.#menu.moveToBoundary("first");
-		this.#resultsList.setTokens(query ? queryTokens(query) : []);
+		this.#resultsList.setTokens(query ? queryTokens(query) : [], query.length > 0);
 	}
 }
