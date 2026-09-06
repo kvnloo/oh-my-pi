@@ -51,7 +51,17 @@ async function processStartToken(pid: number): Promise<string | null> {
 		const starttime = stat.slice(commEnd + 2).split(" ")[19];
 		return starttime && starttime.length > 0 ? starttime : null;
 	}
-	const res = await $`ps -o lstart= -p ${pid}`.quiet().nothrow();
+	// Pin `LC_ALL=C` on the spawn so `ps -o lstart` formats via the C locale's
+	// `%c` (asctime-style English) regardless of the caller's `LC_TIME`/
+	// `LC_ALL`/`LANG`. Bun's `$`-template shell prefix (`LC_ALL=C ps …`) does
+	// not reliably override an inherited `LC_ALL` for an ELF target — passing
+	// the env explicitly via `.env()` does — so a live owner's token is
+	// byte-identical across invocations even when the writer and the later
+	// `omp worktree clear` ran under different locales.
+	const res = await $`ps -o lstart= -p ${pid}`
+		.env({ ...Bun.env, LC_ALL: "C" })
+		.quiet()
+		.nothrow();
 	if (res.exitCode !== 0) return null;
 	const started = res.text().trim();
 	return started.length > 0 ? started : null;
