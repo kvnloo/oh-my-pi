@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed SHMR memory consolidation surfacing retired (superseded or expired) episodic memories as consolidated beliefs by applying the canonical `superseded_by IS NULL AND (valid_until IS NULL OR valid_until > ?)` retirement filter to the `harmonize()` episodic candidate query.
+
 ## [18.0.11] - 2026-08-29
 
 ### Fixed
