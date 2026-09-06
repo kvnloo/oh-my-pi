@@ -549,3 +549,61 @@ describe("resolveArmLaunch", () => {
 		expect(() => resolveArmLaunch(store, "ghost", { arm: "x", model: "m/y" })).toThrow(/no runs to inherit/);
 	});
 });
+
+describe("launch job-name confinement", () => {
+	it("rejects traversal / separator-bearing / dot job names before any path is built, leaving no row or escaped dir", () => {
+		const jobsDir = makeJobsDir();
+		const manager = new ManagerServer(jobsDir);
+		cleanups.push(() => void manager.stop());
+		const parent = path.dirname(jobsDir);
+		// Every value here would either escape jobsDir ("../evil", "..") or carry
+		// a path separator ("a/b", "a\\b", "../harbor/victim") — all rejected by
+		// the same assertSafeJobName guard deletion already relied on.
+		const unsafe = ["../evil", "..", ".", "a/b", "a\\b", "", "../harbor/victim", "../../tmp/pwn"];
+		for (const jobName of unsafe) {
+			expect(() => manager.launch({ model: "test/model", jobName })).toThrow(/invalid job name/);
+		}
+		// The guard runs before mkdirSync / registerLaunch, so nothing persists:
+		// no DB row, no directory escaped outside jobsDir, no escaped log file.
+		expect(manager.store.listRuns()).toHaveLength(0);
+		expect(fs.existsSync(path.join(parent, "evil"))).toBe(false);
+		expect(fs.existsSync(path.join(parent, "tmp"))).toBe(false);
+		expect(fs.existsSync(path.join(parent, "pwn"))).toBe(false);
+		expect(fs.existsSync(path.join(jobsDir, "_manager", "logs", "evil.log"))).toBe(false);
+	});
+
+	it("accepts safe single-segment job names — the guard passes them on to the already-running check", () => {
+		const jobsDir = makeJobsDir();
+		const manager = new ManagerServer(jobsDir);
+		cleanups.push(() => void manager.stop());
+		// Pre-register two safe runs as running so launch() trips the
+		// already-running check AFTER passing assertSafeJobName (and before any
+		// spawn / mkdir). Reaching "already running" — not "invalid job name" —
+		// is the proof the guard let the safe name through.
+		for (const jobName of ["safe-arm", "exp.base-v2"]) {
+			manager.store.registerLaunch({
+				benchmark: "harbor",
+				jobName,
+				dataset: "terminal-bench@2.0",
+				agent: "omp",
+				models: ["test/model"],
+				pid: process.pid,
+			});
+		}
+		expect(() => manager.launch({ model: "test/model", jobName: "safe-arm" })).toThrow(/already running/);
+		// A dotted-but-segmentless token is a legitimate literal dir name, not a
+		// parent reference: the guard accepts it.
+		expect(() => manager.launch({ model: "test/model", jobName: "exp.base-v2" })).toThrow(/already running/);
+		// The traversal twin of a safe name is rejected at the guard, before the
+		// already-running check ever fires for it.
+		expect(() => manager.launch({ model: "test/model", jobName: "../safe-arm" })).toThrow(/invalid job name/);
+		// Dot-only names that resolve to a parent / self are rejected.
+		for (const jobName of ["..", "."]) {
+			expect(() => manager.launch({ model: "test/model", jobName })).toThrow(/invalid job name/);
+		}
+		// Separator-bearing names are rejected regardless of the safe prefix.
+		for (const jobName of ["safe/arm", "safe\\arm"]) {
+			expect(() => manager.launch({ model: "test/model", jobName })).toThrow(/invalid job name/);
+		}
+	});
+});

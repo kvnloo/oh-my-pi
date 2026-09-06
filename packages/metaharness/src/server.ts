@@ -389,6 +389,7 @@ export class ManagerServer {
 		const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 		const modelSlug = request.model.replace(/[^a-zA-Z0-9]+/g, "-");
 		const jobName = request.jobName ?? `${modelSlug}-${stamp}`;
+		assertSafeJobName(jobName);
 		if (this.#children.has(jobName) || this.#store.getRun(jobName)?.status === "running") {
 			throw new Error(`run ${jobName} is already running`);
 		}
