@@ -382,6 +382,40 @@ describe("Editor component", () => {
 			lines[0] = "mutated";
 			expect(editor.getLines()).toEqual(["a", "b"]);
 		});
+
+		it("returns the character immediately before the cursor", () => {
+			const editor = new Editor(defaultEditorTheme);
+
+			// Empty buffer at the very start: no preceding character.
+			expect(editor.getCharBeforeCursor()).toBe("");
+
+			editor.handleInput("fix the bug");
+			// Cursor at end of line: the last typed character.
+			expect(editor.getCharBeforeCursor()).toBe("g");
+
+			editor.handleInput("\x1b[D"); // Left — cursor now between "bu" and "g"
+			expect(editor.getCharBeforeCursor()).toBe("u");
+
+			editor.handleInput(" "); // Insert a space — the preceding char becomes the space
+			expect(editor.getCharBeforeCursor()).toBe(" ");
+		});
+
+		it("reports a newline preceding the cursor at the start of a non-first line", () => {
+			const editor = new Editor(defaultEditorTheme);
+			editor.setText("fix the bug\nsecond line");
+			// setText leaves the cursor at the end of the last line; jump to that line's start.
+			editor.moveToLineStart();
+			expect(editor.getCursor()).toEqual({ line: 1, col: 0 });
+			expect(editor.getCharBeforeCursor()).toBe("\n");
+		});
+
+		it("returns an empty string at the start of the first line", () => {
+			const editor = new Editor(defaultEditorTheme);
+			editor.setText("fix the bug\nsecond line");
+			editor.moveToMessageStart();
+			expect(editor.getCursor()).toEqual({ line: 0, col: 0 });
+			expect(editor.getCharBeforeCursor()).toBe("");
+		});
 	});
 
 	describe("autocomplete triggers", () => {
