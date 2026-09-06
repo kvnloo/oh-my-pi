@@ -49,6 +49,7 @@ from .protocol import (
     CancellationResult,
     CompactionResult,
     CompactionSummaryMessage,
+    ConfiguredThinkingLevel,
     ContextUsage,
     CustomMessage,
     DeveloperMessage,
@@ -97,6 +98,7 @@ from .protocol import (
     message_text_with_thinking,
     parse_notification,
     parse_session_state,
+    parse_thinking_level_cycle_result,
     parse_todo_phases,
 )
 
@@ -117,6 +119,7 @@ __all__ = [
     "CancellationResult",
     "CompactionResult",
     "CompactionSummaryMessage",
+    "ConfiguredThinkingLevel",
     "ContextUsage",
     "CustomMessage",
     "DeveloperMessage",
@@ -191,6 +194,7 @@ __all__ = [
     "message_text_with_thinking",
     "parse_notification",
     "parse_session_state",
+    "parse_thinking_level_cycle_result",
     "parse_todo_phases",
     "host_tool",
     "host_uri",

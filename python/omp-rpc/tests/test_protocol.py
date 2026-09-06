@@ -9,11 +9,13 @@ from omp_rpc import (
     ExtensionUiRequest,
     MessageUpdateEvent,
     SessionState,
+    ThinkingLevelCycleResult,
     TodoReminderEvent,
     assistant_text,
     assistant_text_with_thinking,
     parse_notification,
     parse_session_state,
+    parse_thinking_level_cycle_result,
 )
 
 
@@ -550,6 +552,30 @@ class ProtocolParsingTests(unittest.TestCase):
 
         self.assertIsInstance(notification, AgentEndEvent)
         self.assertEqual(notification.messages[0]["content"][0]["text"], "hello")
+
+
+class ThinkingLevelCycleResultTests(unittest.TestCase):
+    def test_parses_off_selector(self) -> None:
+        result = parse_thinking_level_cycle_result({"level": "off"})
+        assert result is not None
+        self.assertEqual(result.level, "off")
+        self.assertIsInstance(result, ThinkingLevelCycleResult)
+
+    def test_parses_auto_selector(self) -> None:
+        # The server emits "auto" for the per-turn AUTO_THINKING sentinel; the
+        # wire contract must carry it verbatim rather than the narrower Effort set.
+        result = parse_thinking_level_cycle_result({"level": "auto"})
+        assert result is not None
+        self.assertEqual(result.level, "auto")
+
+    def test_parses_effort_selector(self) -> None:
+        result = parse_thinking_level_cycle_result({"level": "high"})
+        assert result is not None
+        self.assertEqual(result.level, "high")
+
+    def test_rejects_unknown_level(self) -> None:
+        with self.assertRaises(ValueError):
+            parse_thinking_level_cycle_result({"level": "extreme"})
 
 
 if __name__ == "__main__":

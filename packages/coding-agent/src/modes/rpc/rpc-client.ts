@@ -12,6 +12,7 @@ import { isRecord, ptree, readJsonl } from "@oh-my-pi/pi-utils";
 import type { FileSink } from "bun";
 import type { BashResult } from "../../exec/bash-executor";
 import type { AgentSessionEvent, SessionStats } from "../../session/agent-session";
+import type { ConfiguredThinkingLevel } from "../../thinking";
 import { MAX_RPC_FRAME_BYTES, MAX_RPC_REASSEMBLED_BYTES, RpcFrameDecoder, type RpcProtocolVersion } from "./rpc-frame";
 import {
 	RPC_MESSAGES_PAGE_BUSY_ERROR,
@@ -737,7 +738,7 @@ export class RpcClient {
 	/**
 	 * Cycle thinking level.
 	 */
-	async cycleThinkingLevel(): Promise<{ level: ThinkingLevel } | null> {
+	async cycleThinkingLevel(): Promise<{ level: ConfiguredThinkingLevel } | null> {
 		const response = await this.#send({ type: "cycle_thinking_level" });
 		return this.#getData(response);
 	}
