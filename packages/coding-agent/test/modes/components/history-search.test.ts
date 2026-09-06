@@ -23,7 +23,11 @@ function fakeStorage(entries: HistoryEntry[]): HistoryStorage {
 	return {
 		getRecent: (limit: number) => entries.slice(0, limit),
 		search: (query: string, limit: number) => {
+			// Mirror the real HistoryStorage.search, which early-returns when the
+			// query has no word tokens (e.g. "!!!", "@", "...") — otherwise the
+			// vacuous `tokens.every(...)` below would wrongly return every entry.
 			const tokens = tokenize(query);
+			if (tokens.length === 0) return [];
 			return entries.filter(e => tokens.every(t => e.prompt.toLowerCase().includes(t))).slice(0, limit);
 		},
 	} as unknown as HistoryStorage;
@@ -88,5 +92,34 @@ describe("HistorySearchComponent", () => {
 		);
 		type(unmatched, "zzzz");
 		expect(render(unmatched).plain).toContain("No matching history");
+	});
+
+	it("treats a symbol-only query as unmatched rather than as empty history", () => {
+		// `queryTokens` drops every non-alphanumeric run, so these inputs tokenize
+		// to [] and the underlying search returns no results. The empty-state
+		// message must still reflect that a query was entered.
+		for (const query of ["!!!", "@", "...", "#", "--->", "???"]) {
+			const component = new HistorySearchComponent(
+				fakeStorage([makeEntry(1, "hello world")]),
+				() => {},
+				() => {},
+			);
+			type(component, query);
+			const { plain } = render(component);
+			expect(plain).toContain("No matching history");
+			expect(plain).not.toContain("No history yet");
+		}
+	});
+
+	it("reports 'No matching history' for any entered query, even when history is empty", () => {
+		const component = new HistorySearchComponent(
+			fakeStorage([]),
+			() => {},
+			() => {},
+		);
+		type(component, "!!!");
+		const { plain } = render(component);
+		expect(plain).toContain("No matching history");
+		expect(plain).not.toContain("No history yet");
 	});
 });

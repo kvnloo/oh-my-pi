@@ -82,11 +82,13 @@ class HistoryResultsList implements Component {
 	#tokens: string[] = [];
 	#selectedIndex = 0;
 	#maxVisible = MAX_VISIBLE;
+	#hadQuery = false;
 
-	setResults(results: HistoryEntry[], selectedIndex: number, tokens: string[]): void {
+	setResults(results: HistoryEntry[], selectedIndex: number, tokens: string[], hadQuery: boolean): void {
 		this.#results = results;
 		this.#selectedIndex = selectedIndex;
 		this.#tokens = tokens;
+		this.#hadQuery = hadQuery;
 	}
 
 	setSelectedIndex(selectedIndex: number): void {
@@ -101,7 +103,7 @@ class HistoryResultsList implements Component {
 		const lines: string[] = [];
 
 		if (this.#results.length === 0) {
-			const message = this.#tokens.length > 0 ? "No matching history" : "No history yet";
+			const message = this.#hadQuery ? "No matching history" : "No history yet";
 			lines.push(theme.fg("muted", `  ${theme.status.info} ${message}`));
 			return lines;
 		}
@@ -256,6 +258,11 @@ export class HistorySearchComponent extends OverlayPanel {
 			? this.#historyStorage.search(query, this.#resultLimit)
 			: this.#historyStorage.getRecent(this.#resultLimit);
 		this.#selectedIndex = 0;
-		this.#resultsList.setResults(this.#results, this.#selectedIndex, query ? queryTokens(query) : []);
+		this.#resultsList.setResults(
+			this.#results,
+			this.#selectedIndex,
+			query ? queryTokens(query) : [],
+			query.length > 0,
+		);
 	}
 }
