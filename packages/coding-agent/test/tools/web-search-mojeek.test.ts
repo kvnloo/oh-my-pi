@@ -52,7 +52,7 @@ describe("Mojeek web search provider", () => {
 		const response = await searchMojeek({
 			...makeParams("browser headers & parsing", fetchMock),
 			numSearchResults: 99,
-			recency: "week",
+			recency: "month",
 		});
 
 		const url = new URL(capturedUrl);
@@ -63,7 +63,7 @@ describe("Mojeek web search provider", () => {
 		expect(url.searchParams.get("lang")).toBe("en");
 		expect(url.searchParams.get("lb")).toBe("en");
 		expect(url.searchParams.get("theme")).toBe("dark");
-		expect(url.searchParams.get("since")).toBe("week");
+		expect(url.searchParams.get("since")).toBe("month");
 		expect(capturedInit?.method).toBeUndefined();
 		const headers = new Headers(capturedInit?.headers);
 		expect(headers.get("accept")).toContain("text/html");
@@ -89,6 +89,41 @@ describe("Mojeek web search provider", () => {
 		const url = new URL(capturedUrl);
 		expect(url.searchParams.get("t")).toBe("10");
 		expect(url.searchParams.get("since")).toBeNull();
+	});
+
+	it("maps week to a YYYYMMDD date 7 days ago rather than the undocumented 'week' since token", async () => {
+		let capturedUrl = "";
+		const fetchMock: FetchImpl = input => {
+			capturedUrl = typeof input === "string" ? input : input.toString();
+			return Promise.resolve(new Response(resultsPage(""), { status: 200 }));
+		};
+
+		const expected = new Date();
+		expected.setUTCDate(expected.getUTCDate() - 7);
+		const expectedSince = expected.toISOString().slice(0, 10).replace(/-/g, "");
+
+		await searchMojeek({ ...makeParams("recent news", fetchMock), recency: "week" });
+
+		const since = new URL(capturedUrl).searchParams.get("since");
+		expect(since).not.toBe("week");
+		expect(since).toMatch(/^\d{8}$/);
+		expect(since).toBe(expectedSince);
+	});
+
+	it("forwards documented recency tokens day/month/year verbatim as the since param", async () => {
+		const capturedUrls: string[] = [];
+		const fetchMock: FetchImpl = input => {
+			capturedUrls.push(typeof input === "string" ? input : input.toString());
+			return Promise.resolve(new Response(resultsPage(""), { status: 200 }));
+		};
+
+		for (const recency of ["day", "month", "year"] as const) {
+			await searchMojeek({ ...makeParams("tokens", fetchMock), recency });
+		}
+
+		expect(new URL(capturedUrls[0]).searchParams.get("since")).toBe("day");
+		expect(new URL(capturedUrls[1]).searchParams.get("since")).toBe("month");
+		expect(new URL(capturedUrls[2]).searchParams.get("since")).toBe("year");
 	});
 
 	it("re-emits supported operators (phrases, -, site:) and strips unsupported date bounds from the query", async () => {
