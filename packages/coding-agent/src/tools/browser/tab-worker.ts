@@ -13,6 +13,7 @@ import type {
 	HTTPResponse,
 	KeyboardTypeOptions,
 	KeyInput,
+	Mouse,
 	Page,
 	SerializedAXNode,
 	Target,
@@ -202,6 +203,38 @@ export async function dispatchScroll(
 		await Promise.race([dispatch(), deadline.promise]);
 	} finally {
 		clearTimeout(timer);
+	}
+}
+
+/** The mouse surface a drag drives: move to start, press, drag to end, release. */
+export type DragMouse = Pick<Mouse, "move" | "down" | "up">;
+
+/**
+ * Runs the press→drag→release mouse sequence for `tab.drag`, releasing the
+ * button best-effort in `finally` once `down()` committed. Without this, an
+ * abort/timeout/protocol error between `down()` and `up()` leaves puppeteer's
+ * per-`Page` `CdpMouse` with the left button held, so every later
+ * `mouse.down()` (e.g. `tab.click`, another `tab.drag`) throws
+ * `"left is already pressed."` for the rest of the worker's life. `up()` is
+ * safe to call when the button is no longer pressed — `CdpMouse` throws
+ * `"left is not pressed."` before any CDP send — so the success path's
+ * redundant release is an in-memory no-op swallowed by the catch.
+ */
+export async function dispatchDragMouseSequence(
+	mouse: DragMouse,
+	from: { x: number; y: number },
+	to: { x: number; y: number },
+	signal: AbortSignal,
+): Promise<void> {
+	let downIssued = false;
+	try {
+		await untilAborted(signal, () => mouse.move(from.x, from.y));
+		await untilAborted(signal, () => mouse.down());
+		downIssued = true;
+		await untilAborted(signal, () => mouse.move(to.x, to.y, { steps: 12 }));
+		await untilAborted(signal, () => mouse.up());
+	} finally {
+		if (downIssued) await mouse.up().catch(() => undefined);
 	}
 }
 
@@ -2002,10 +2035,7 @@ export class WorkerCore {
 		let end: { x: number; y: number; handle?: ElementHandle } | undefined;
 		try {
 			end = await resolveDragPoint(to, "to");
-			await untilAborted(signal, () => page.mouse.move(start.x, start.y));
-			await untilAborted(signal, () => page.mouse.down());
-			await untilAborted(signal, () => page.mouse.move(end!.x, end!.y, { steps: 12 }));
-			await untilAborted(signal, () => page.mouse.up());
+			await dispatchDragMouseSequence(page.mouse, start, end, signal);
 		} finally {
 			if (start.handle) await start.handle.dispose().catch(() => undefined);
 			if (end?.handle) await end.handle.dispose().catch(() => undefined);
