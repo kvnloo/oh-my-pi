@@ -11,6 +11,7 @@
 - Report oversized selected lines that cannot fit after read context, with a working raw recovery selector instead of a looping continuation hint ([#10775](https://github.com/can1357/oh-my-pi/issues/10775)).
 - Fixed WorkPool child sessions crashing during startup while constructing their incremental `yield` tool schema.
 - Commit summaries written in Vietnamese, Korean, and other accented scripts are no longer rejected for exceeding the length limit, and keep their accents as typed.
+- Fixed dictated speech-to-text fusing the first phrase onto preceding non-whitespace draft text in the composer (e.g. `fix the bug` + `hello world` no longer becomes `fix the bughello world`); the first phrase now gets a leading space when the cursor follows existing text.
 
 ## [18.1.10] - 2026-09-04
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `Editor.getCharBeforeCursor()` so callers (e.g. the speech-to-text controller) can inspect the character preceding the cursor and decide whether inserted text needs a leading separator.
+
 ## [18.1.9] - 2026-09-04
 
 ### Added

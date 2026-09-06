@@ -1981,6 +1981,19 @@ export class Editor implements Component, Focusable {
 		return { line: this.#state.cursorLine, col: this.#state.cursorCol };
 	}
 
+	/** The single character immediately preceding the cursor, `"\n"` when the cursor sits at the
+	 *  start of a non-first line, or `""` at the very start of the buffer. Used by STT to decide
+	 *  whether the first dictated phrase needs a leading space separating it from preceding
+	 *  non-whitespace draft text (the volatile/commit inserters splice text verbatim). */
+	getCharBeforeCursor(): string {
+		const { cursorLine, cursorCol, lines } = this.#state;
+		if (cursorCol > 0) {
+			const line = lines[cursorLine] ?? "";
+			return line.slice(cursorCol - 1, cursorCol);
+		}
+		return cursorLine > 0 ? "\n" : "";
+	}
+
 	moveToLineStart(): void {
 		this.#moveToLineStart();
 	}

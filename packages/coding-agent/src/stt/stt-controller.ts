@@ -24,6 +24,9 @@ interface Editor {
 	commitVolatileText(text: string): void;
 	submit(): void;
 	deleteBeforeCursor(count: number): void;
+	/** Character immediately before the cursor when streaming starts, used to decide whether the
+	 *  first dictated phrase needs a leading space separating it from preceding draft text. */
+	getCharBeforeCursor(): string;
 }
 
 interface CaptureHandle {
@@ -48,6 +51,9 @@ export class STTController {
 	#streamCommitted = false;
 	#streamAbort: AbortController | null = null;
 	#streamUtterance = "";
+	/** The character preceding the cursor when streaming started, snapshotted so the first
+	 *  dictated phrase can be separated from existing non-whitespace draft text. */
+	#streamPreceding = "";
 
 	/** Creates a controller; tests may replace the hardware capture boundary. */
 	constructor(createCapture: CaptureFactory = onAudio => new AudioCapture(16_000, onAudio)) {
@@ -156,12 +162,16 @@ export class STTController {
 
 	// ── Live streaming ──────────────────────────────────────────────
 
-	/** Segment text gets a leading space once a prior segment is committed, so
-	 *  phrases join naturally; the first phrase is inserted at the cursor as-is. */
+	/** Segment text gets a leading space once a prior segment is committed, so phrases join
+	 *  naturally; the first phrase is also separated from preceding non-whitespace draft text
+	 *  (snapshotted in #streamPreceding when streaming starts) so it doesn't fuse onto existing
+	 *  buffer content. Whitespace is normalized/trimmed, so a model-emitted leading separator
+	 *  cannot substitute for this — the controller owns the seam. */
 	#prefixed(text: string): string {
 		const normalized = text.replace(/\s+/g, " ").trim();
 		if (!normalized) return "";
-		return this.#streamCommitted ? ` ${normalized}` : normalized;
+		if (this.#streamCommitted) return ` ${normalized}`;
+		return this.#streamPreceding && !/\s$/.test(this.#streamPreceding) ? ` ${normalized}` : normalized;
 	}
 
 	async #startStreaming(editor: Editor, options: ToggleOptions): Promise<void> {
@@ -170,6 +180,10 @@ export class STTController {
 		this.#streamEditor = editor;
 		this.#streamCommitted = false;
 		this.#streamUtterance = "";
+		// Snapshot the char preceding the cursor before any volatile text is inserted: the live
+		// preview replaces itself each partial, so the seam char stays constant during recording
+		// and this snapshot correctly reflects it for the first phrase's leading-space decision.
+		this.#streamPreceding = editor.getCharBeforeCursor();
 		this.#streamAbort = new AbortController();
 		const stream = sttClient.startStream(modelKey, {
 			language: language || undefined,
@@ -299,6 +313,7 @@ export class STTController {
 		this.#streamCommitted = false;
 		this.#streamAbort = null;
 		this.#streamUtterance = "";
+		this.#streamPreceding = "";
 	}
 
 	dispose(): void {
