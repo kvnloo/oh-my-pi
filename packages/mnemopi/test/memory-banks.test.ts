@@ -56,6 +56,42 @@ describe("BankManager", () => {
 		}
 	});
 
+	it("rejects the reserved 'default' name on create/rename without leaving an orphan", () => {
+		const root = mkdtempSync(join(tmpdir(), "mnemopi-banks-"));
+		try {
+			const manager = new BankManager(root);
+			const reservedDir = join(root, "banks", "default");
+
+			expect(() => manager.createBank("default")).toThrow(ValueError);
+			expect(() => manager.createBank("default")).toThrow("reserved");
+			expect(existsSync(reservedDir)).toBe(false);
+			expect(manager.listBanks()).toEqual(["default"]);
+			expect(manager.getBankDbPath("default")).toBe(join(root, "mnemopi.db"));
+
+			manager.createBank("work");
+			expect(() => manager.renameBank("work", "default")).toThrow(ValueError);
+			expect(() => manager.renameBank("work", "default")).toThrow("reserved");
+			expect(existsSync(reservedDir)).toBe(false);
+			expect(manager.bankExists("work")).toBe(true);
+			expect(manager.listBanks()).toEqual(["default", "work"]);
+
+			expect(() => manager.renameBank("default", "elsewhere")).toThrow("Cannot rename 'default' bank");
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("module-level helpers reject the reserved 'default' name on create", () => {
+		const root = mkdtempSync(join(tmpdir(), "mnemopi-banks-"));
+		try {
+			expect(() => createBank("default", root)).toThrow(ValueError);
+			expect(existsSync(join(root, "banks", "default"))).toBe(false);
+			expect(listBanks(root)).toEqual(["default"]);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
 	it("module-level helpers operate on the requested data dir", () => {
 		const root = mkdtempSync(join(tmpdir(), "mnemopi-banks-"));
 		try {

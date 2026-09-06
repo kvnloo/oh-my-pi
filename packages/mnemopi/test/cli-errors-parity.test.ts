@@ -135,6 +135,7 @@ describe("CLI usage and operation failure parity", () => {
 	it("bank validation errors are user-facing", async () => {
 		for (const [args, expected, code] of [
 			[["bank", "create", "bad/name"], "Invalid bank name", 2],
+			[["bank", "create", "default"], "Bank name 'default' is reserved", 2],
 			[["bank", "create"], "Usage: mnemopi bank create <name>", 2],
 			[["bank", "delete"], "Usage: mnemopi bank delete <name>", 2],
 			[["bank", "nope"], "Unknown bank command: nope", 2],
