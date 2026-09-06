@@ -273,7 +273,7 @@ export class GLMInbandScanner implements InbandScanner {
 	#consumeValue(final: boolean, events: InbandScanEvent[]): boolean {
 		const close = this.#buffer.indexOf(ARG_VALUE_CLOSE);
 		const heal = scanValueHeal(this.#buffer, close === -1 ? this.#buffer.length : close);
-		if (heal.kind === "heal") {
+		if (heal.kind === "heal" && !this.#healKeyIsDuplicate(heal.key)) {
 			this.#streamValue(this.#buffer.slice(0, heal.valueEnd), events);
 			if (heal.trimValue && this.#call) this.#call.valueRaw = this.#call.valueRaw.trimEnd();
 			this.#appendCallRaw(this.#buffer.slice(heal.valueEnd, heal.resumeAt));
@@ -332,6 +332,10 @@ export class GLMInbandScanner implements InbandScanner {
 		call.arguments[call.key] = call.stringArgs.has(call.key) ? call.valueRaw : decodeValue(call.valueRaw);
 		call.key = null;
 		call.valueRaw = "";
+	}
+
+	#healKeyIsDuplicate(key: string | null): boolean {
+		return key !== null && this.#call !== null && Object.hasOwn(this.#call.arguments, key);
 	}
 
 	#endCall(events: InbandScanEvent[]): void {
@@ -416,11 +420,17 @@ const HEAL_KEY_MAX = 128;
  * - `partial`: a signature may be forming at `start` but the buffer ends
  *   before it can be confirmed; the caller must hold `start..` back from
  *   streaming.
+ *
+ * The `key` of a `heal` result names the argument key that the recovered
+ * `arg_key` run would introduce (or `null` for the wrong-closer signature).
+ * It is reported so the caller can refuse to heal when that key is already
+ * assigned in the current call, which would mean the run is prompt-legal
+ * literal text inside a value rather than a forgotten closer.
  */
 type ValueHealScan =
 	| { kind: "none" }
 	| { kind: "partial"; start: number }
-	| { kind: "heal"; valueEnd: number; resumeAt: number; trimValue: boolean };
+	| { kind: "heal"; valueEnd: number; resumeAt: number; trimValue: boolean; key: string | null };
 
 type HealFollow = { kind: "match"; resumeAt: number } | { kind: "partial" } | { kind: "none" };
 
@@ -454,7 +464,7 @@ function matchHealSignature(text: string, start: number): ValueHealScan {
 		const follow = matchHealFollow(text, start + ARG_KEY_CLOSE.length);
 		if (follow.kind === "partial") return { kind: "partial", start };
 		if (follow.kind === "match")
-			return { kind: "heal", valueEnd: start, resumeAt: follow.resumeAt, trimValue: false };
+			return { kind: "heal", valueEnd: start, resumeAt: follow.resumeAt, trimValue: false, key: null };
 		return { kind: "none" };
 	}
 
@@ -466,6 +476,7 @@ function matchHealSignature(text: string, start: number): ValueHealScan {
 	while (at < keyEnd && text[at] !== "<" && text[at] !== "\n") at++;
 	if (at === text.length) return { kind: "partial", start };
 	if (text[at] !== "<") return { kind: "none" };
+	const keyName = text.slice(start + ARG_KEY_OPEN.length, at).trim();
 	const keyClose = matchTagPrefix(text, at, ARG_KEY_CLOSE);
 	if (keyClose === "partial") return { kind: "partial", start };
 	if (keyClose === "none") return { kind: "none" };
@@ -475,7 +486,7 @@ function matchHealSignature(text: string, start: number): ValueHealScan {
 	const value = matchTagPrefix(text, at, ARG_VALUE_OPEN);
 	if (value === "partial") return { kind: "partial", start };
 	if (value === "none") return { kind: "none" };
-	return { kind: "heal", valueEnd: start, resumeAt: start, trimValue: true };
+	return { kind: "heal", valueEnd: start, resumeAt: start, trimValue: true, key: keyName };
 }
 
 /** Matches the tag expected after a wrong `</arg_key>` closer. */
