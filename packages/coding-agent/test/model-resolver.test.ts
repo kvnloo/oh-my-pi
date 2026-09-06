@@ -2016,6 +2016,20 @@ describe("extractExplicitThinkingSelector", () => {
 		});
 		expect(result).toBe("auto");
 	});
+
+	test("does not carry strict thinking levels from literal role model ids", () => {
+		const result = extractExplicitThinkingSelector("nanogpt/anthropic/claude-opus-4.6:thinking:low", undefined, {
+			isLiteralModelId: () => true,
+		});
+		expect(result).toBeUndefined();
+	});
+
+	test("does not suppress a strict selector when only the bare base is a literal model", () => {
+		const result = extractExplicitThinkingSelector("anthropic/claude-sonnet-4-5:high", undefined, {
+			isLiteralModelId: (provider, id) => provider === "anthropic" && id === "claude-sonnet-4-5",
+		});
+		expect(result).toBe(Effort.High);
+	});
 });
 
 describe("provider routing selector (@upstream)", () => {
