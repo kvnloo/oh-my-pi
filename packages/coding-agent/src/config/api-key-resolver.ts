@@ -69,7 +69,7 @@ export function createApiKeyResolver(
 		});
 	return async ({ lastChance, error, signal, previousKey }) => {
 		if (error === undefined) {
-			return resolveKey(undefined);
+			return resolveKey(undefined, signal);
 		}
 		if (lastChance) {
 			// Account constraint (401 / usage / account-rate-limit): rotate to a
@@ -92,7 +92,7 @@ export function createApiKeyResolver(
 				// auth decline can instead mean a peer refreshed the bearer.
 				if (AIError.isUsageLimit(error) || isUsageLimitOutcome(status, message)) return undefined;
 			}
-			const resolved = await resolveKey(undefined);
+			const resolved = await resolveKey(undefined, signal);
 			return rotation.afterSiblingWait ? markAfterSiblingWait(resolved) : resolved;
 		}
 		return resolveKey(true, signal, AIError.status(error) === 401 ? "auth-recovery" : undefined);
