@@ -14,6 +14,7 @@
 
 - Fixed OpenCode Go usage polls (`GET /zen/go/v1/usage`) missing `x-opencode-session` and omp's `User-Agent`: background polls now attribute with the stable install id so the requests OpenCode flags as `Bun fetch` carry the required session header.
 - GitHub Copilot sign-in now requests only basic profile access, restoring login for Enterprise organizations that reject repository, gist, and Codespaces permissions ([#10656](https://github.com/can1357/oh-my-pi/issues/10656)).
+- Harmony (GPT-5.x / gpt-oss) tool calls no longer lose their arguments when the model output stream is truncated mid-tool-body (e.g. `max_tokens` or a dropped transport chunk): the scanner now finalizes the open body on `flush()` and emits the already-accumulated JSON arguments instead of leaving a placeholder `{}`.
 
 ## [18.1.9] - 2026-09-04
 
