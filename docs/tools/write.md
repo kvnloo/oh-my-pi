@@ -42,7 +42,7 @@ content: "{name: 'Ada', active: true}"
 Single-shot result.
 
 - Success always returns at least one text block, except that an `xd://` dispatch preserves the mounted tool's own content/error result.
-  - Plain file write: `Successfully wrote <chars> bytes to <relative-path>` (the count is `cleanContent.length`, not encoded byte length).
+  - Plain file write: `Successfully wrote <chars> bytes to <relative-path>` (the count is a UTF-16 code-unit length, not encoded byte length; LSP formatting may rewrite plain files, so the reported count can differ from the input length).
   - Internal URL write: `Successfully wrote <chars> bytes to <url>`.
   - Archive write: `Successfully wrote <chars> bytes to <relative-archive-path>:<entry-path>`.
   - SQLite write: one of `Inserted row into <table>`, `Updated row '<key>' in <table>`, `No row updated ...`, `Deleted row ...`, `No row deleted ...`.
@@ -204,7 +204,7 @@ content: ""
 - SQLite detection declines when an existing file with a `.sqlite` / `.db` suffix lacks SQLite magic bytes; the path falls back to a plain file write.
 - Archive rewriting uses the unified `readArchiveEntries()` / `writeArchive()` boundary and a temp-file rename. String members are encoded as UTF-8.
 - The prompt forbids two common anti-patterns: using `write` for routine edits that should use `edit`, and creating `*.md` / `README` files unless explicitly requested. It also forbids emojis unless requested.
-- Plain file and internal URL writes report `cleanContent.length` as “bytes”, which is UTF-16 code units in JS, not an on-disk byte measurement.
+- Plain file and internal URL writes report a UTF-16 code-unit length (not an on-disk byte measurement) as “bytes”; for plain files, LSP formatting may rewrite the content, so the count can differ from the input.
 - `stripWriteContent()` only removes hashline prefixes when the session’s file display mode has `hashLines` enabled; otherwise content is written unchanged.
 
 - The tool has `strict = true`, `loadMode = "essential"`, and exclusive concurrency. Its renderer shows a 12-line streaming preview and a 6-line completed preview by default; `xd://` results delegate rendering to the mounted device.
