@@ -168,7 +168,7 @@ the call's arguments in this order:
 1. Non-object values, `null`, and arrays at the top level become an empty
    argument object.
 2. The harness-injected intent field `i` is removed unless the MCP tool's own
-   `inputSchema.properties` declares `i`.
+   input schema declares or constrains `i`.
 3. For a property declared by the MCP schema but not listed in `required`, a
    value of `undefined`, an empty string, or an empty non-array object is
    omitted. Required properties, undeclared properties, `0`, `false`, `null`,
