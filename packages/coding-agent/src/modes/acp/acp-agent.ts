@@ -2070,6 +2070,19 @@ export class AcpAgent implements Agent {
 		// hasn't been told about yet. The pre-bootstrap thinking level is
 		// reported in the response's `configOptions`, so deferring the
 		// notification loses no state.
+		//
+		// The post-discovery rebind (`#rebindActiveModelAfterModelDiscovery`,
+		// fire-and-forget from the AgentSession constructor) can emit
+		// `model_changed` inside this guard window. On a 2nd+ session in a
+		// process whose ModelRegistry started from a cold cache, the sticky
+		// `#initialRefreshSettled` latch is already set, so
+		// `awaitInitialBackgroundRefresh` resolves on a microtask and the emit
+		// lands strictly before this timer installs the only
+		// `model_changed → config_option_update` subscription — the event is
+		// dropped and the client's Thinking picker stays pinned to the bundled
+		// model's reasoning config. Snapshot the model at response-build time
+		// so the callback can detect that drop and push a catch-up.
+		const modelAtBootstrap = this.#sessions.get(sessionId)?.session.model;
 		setTimeout(() => {
 			if (this.#connection.signal.aborted) {
 				return;
@@ -2082,6 +2095,16 @@ export class AcpAgent implements Agent {
 				record.lifetimeUnsubscribe = record.session.subscribe(event => {
 					void this.#handleLifetimeEvent(record, event);
 				});
+				// Catch up a `model_changed` that fired during the guard window
+				// before this subscription was installed. The reference
+				// comparison against the response-build snapshot avoids a
+				// double push for events that land *after* the subscription:
+				// those are delivered by `#handleLifetimeEvent` and, at this
+				// point, the model has not changed yet (the emit happens later
+				// once background discovery settles).
+				if (record.session.model !== modelAtBootstrap) {
+					void this.#pushConfigOptionUpdate(record);
+				}
 			}
 			void this.#emitBootstrapUpdates(sessionId, record);
 		}, ACP_BOOTSTRAP_RACE_GUARD_MS);
