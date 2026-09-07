@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Muse Code contributor models showing "Contributor" instead of the tier-marked "(C)" name in the model list before the first runtime refresh ([{{detail_github_issue_ref}}]({{detail_github_issue_url}})).
+
 ## [18.1.12] - 2026-09-06
 
 ### Added

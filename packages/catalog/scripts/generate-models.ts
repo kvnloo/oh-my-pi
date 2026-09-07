@@ -253,7 +253,7 @@ function createGlobalModelsDevReferenceMap(modelsDevModels: readonly ModelSpec[]
 	return references;
 }
 
-function applyGlobalModelsDevFallback(
+export function applyGlobalModelsDevFallback(
 	models: readonly ModelSpec[],
 	modelsDevModels: readonly ModelSpec[],
 ): ModelSpec[] {
@@ -266,7 +266,13 @@ function applyGlobalModelsDevFallback(
 			model.provider === "baseten" ||
 			// Meta's first-party rows come from the reviewed seed; a same-id
 			// gateway row would overwrite their display names.
-			model.provider === "meta"
+			model.provider === "meta" ||
+			// Muse Code ships the same reviewed first-party Muse Spark seed
+			// (MUSE_CODE_STATIC_MODELS = META_MUSE_STATIC_MODELS with provider
+			// swapped); keep its tier-marked "(C)" display name instead of
+			// letting a stencil.so "Contributor" overlay overwrite it (mirrors
+			// `meta`).
+			model.provider === "muse-code"
 		) {
 			return model;
 		}
