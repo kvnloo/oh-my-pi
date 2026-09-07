@@ -79,7 +79,7 @@ bash:
 
 - `deny` stops the call before `BashTool.execute()` runs, including in `yolo` mode.
 - `prompt` displays an approval request. Only an accepted request proceeds to `BashTool.execute()`.
-- `allow` can lower the approval tier for a simple command, but it cannot approve a compound command. For example, `match: "git *"` does not approve `git status && rm -rf build`.
+- By default, `allow` can lower the approval tier for a simple command, but it cannot approve a compound command. For example, `match: "git *"` does not approve `git status && rm -rf build`. Set `bash.allowCompoundCommands: true` to also allow flat, literal `&&` chains whose every segment explicitly resolves to `allow`; see `docs/bash-tool-runtime.md` for the segmentation rules.
 - `deny` and `prompt` check the complete command and each shell command segment. A rule such as `match: "rm -rf *"` therefore catches `cd /tmp && rm -rf build`.
 
 Use this setting for safety and user control. It remains useful for commands with no appropriate replacement tool, such as destructive removal, network access, deployment scripts, or project-specific scripts.
