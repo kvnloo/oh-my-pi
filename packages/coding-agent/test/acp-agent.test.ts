@@ -1024,6 +1024,124 @@ describe("ACP agent", () => {
 		await Bun.sleep(0);
 	});
 
+	it("replays a dropped model_changed as config_option_update after the bootstrap guard", async () => {
+		// Regression for the post-discovery rebind race (#10488): on a 2nd+
+		// ACP session in a cold-cache process, `#rebindActiveModelAfterModelDiscovery`
+		// emits `model_changed` within microtasks (the sticky
+		// `#initialRefreshSettled` latch makes `awaitInitialBackgroundRefresh`
+		// resolve immediately), strictly before the 50ms bootstrap guard
+		// installs the only `model_changed → config_option_update` lifetime
+		// subscription. The event fires into an empty listener set and is
+		// permanently dropped, leaving the client's Thinking picker pinned to
+		// the bundled model's reasoning config until the user next interacts.
+		// After installing the subscription, the guard must detect the dropped
+		// event (model changed since the response was built) and push a
+		// catch-up `config_option_update`.
+		const harness = await createHarness();
+		vi.useFakeTimers();
+		const created = await harness.agent.newSession({ cwd: harness.cwdA, mcpServers: [] });
+		const session = harness.findSession(created.sessionId)!;
+
+		// Simulate the rebind firing before the 50ms subscription is installed:
+		// change the model and emit `model_changed` to an empty listener set.
+		const updatesBefore = harness.updates.length;
+		await session.setModel(TEST_MODELS[1]!);
+
+		// No `config_option_update` reached the client during the guard window
+		// — the lifetime subscription is not installed yet, so the event is
+		// dropped by the empty listener set.
+		const duringGuard = harness.updates
+			.slice(updatesBefore)
+			.filter(
+				notification =>
+					notification.sessionId === created.sessionId &&
+					notification.update.sessionUpdate === "config_option_update",
+			);
+		expect(duringGuard.length).toBe(0);
+
+		// Advancing past the bootstrap guard installs the subscription and must
+		// catch up the dropped model_changed with a single config_option_update.
+		await advanceBootstrapGuard();
+		const catchUp = harness.updates
+			.slice(updatesBefore)
+			.filter(
+				notification =>
+					notification.sessionId === created.sessionId &&
+					notification.update.sessionUpdate === "config_option_update",
+			);
+		expect(catchUp.length).toBe(1);
+		expectAcpNotifications(catchUp);
+		const catchUpUpdate = catchUp[0]!.update;
+		if (catchUpUpdate.sessionUpdate !== "config_option_update") {
+			throw new Error("expected config_option_update");
+		}
+		const modelConfig = catchUpUpdate.configOptions.find(option => option.id === "model") as
+			| { currentValue?: unknown }
+			| undefined;
+		expect(modelConfig?.currentValue).toBe(`${TEST_MODELS[1]!.provider}/${TEST_MODELS[1]!.id}`);
+
+		vi.useRealTimers();
+		harness.abortController.abort();
+		await Bun.sleep(0);
+	});
+
+	it("does not push a catch-up config_option_update when the model is unchanged at bootstrap", async () => {
+		// Warm-cache / no-rebind path: the model at bootstrap time matches the
+		// response-build snapshot, so the guard must not push a redundant
+		// catch-up `config_option_update`. Only `available_commands_update`
+		// and `session_info_update` should fire from the bootstrap callback.
+		const harness = await createHarness();
+		vi.useFakeTimers();
+		const created = await harness.agent.newSession({ cwd: harness.cwdA, mcpServers: [] });
+
+		const updatesBefore = harness.updates.length;
+		await advanceBootstrapGuard();
+		const bootstrap = harness.updates
+			.slice(updatesBefore)
+			.filter(
+				notification =>
+					notification.sessionId === created.sessionId &&
+					notification.update.sessionUpdate === "config_option_update",
+			);
+		expect(bootstrap.length).toBe(0);
+
+		vi.useRealTimers();
+		harness.abortController.abort();
+		await Bun.sleep(0);
+	});
+
+	it("does not double-push config_option_update when model_changed lands after the bootstrap subscription", async () => {
+		// When the rebind fires *after* the 50ms guard has installed the
+		// subscription (the 1st-session / slow-discovery case), `model_changed`
+		// is delivered by `#handleLifetimeEvent` and the catch-up must NOT also
+		// fire — at guard time the model still matches the response-build
+		// snapshot because the emit happens later once discovery settles.
+		const harness = await createHarness();
+		vi.useFakeTimers();
+		const created = await harness.agent.newSession({ cwd: harness.cwdA, mcpServers: [] });
+		const session = harness.findSession(created.sessionId)!;
+		// Advance past the guard FIRST so the subscription is installed before
+		// the model change. The catch-up comparison sees no model change at this
+		// point, so no catch-up push.
+		await advanceBootstrapGuard();
+
+		const updatesBefore = harness.updates.length;
+		await session.setModel(TEST_MODELS[1]!);
+		const configUpdates = harness.updates
+			.slice(updatesBefore)
+			.filter(
+				notification =>
+					notification.sessionId === created.sessionId &&
+					notification.update.sessionUpdate === "config_option_update",
+			);
+		expect(configUpdates.length).toBe(1);
+		expectAcpNotifications(configUpdates);
+
+		vi.useRealTimers();
+		harness.abortController.abort();
+		await Bun.sleep(0);
+	});
+
 	it("lists static speech models for ACP mobile voice settings", async () => {
 		const harness = await createHarness();
 		const voices = TTS_LOCAL_VOICE_OPTIONS.map(({ value, label }) => ({ value, label }));

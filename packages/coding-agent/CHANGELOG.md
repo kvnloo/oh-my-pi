@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the ACP `Thinking` picker staying stale on 2nd+ sessions after a cold model-cache startup: the discovered model's reasoning/effort capabilities now reach the client instead of the bundled model's defaults until the next config interaction.
+
 ## [18.1.12] - 2026-09-06
 
 - Fixed edit and write results to report the formatted bytes actually committed by LSP writethrough.
