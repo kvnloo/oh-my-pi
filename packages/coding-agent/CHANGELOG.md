@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Aborted Python-defined eval tool calls now persist as cancelled/aborted instead of "Python tool call returned an invalid response" ([{{detail_github_issue_ref}}]({{detail_github_issue_url}})).
+
 ## [18.1.12] - 2026-09-06
 
 - Fixed edit and write results to report the formatted bytes actually committed by LSP writethrough.
