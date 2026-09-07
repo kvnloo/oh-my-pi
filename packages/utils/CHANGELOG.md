@@ -13,6 +13,7 @@
 ### Fixed
 
 - Fixed `extractRetryHint` dropping the longer timing signal when an error body carries both an account reset and an appended retry hint: competing signals now merge by longest window instead of first match, so retries honor the provider's full backoff.
+- Fixed `parseJsonWithRepair` / `parseStreamingJson` accepting IEEE-754 overflow exponents (e.g. `1e999`) that `JSON.parse` returns as `Infinity`: the fast path now applies the same `Number.isFinite` guard as the relaxed lexer, so non-finite numeric tool-call arguments are rejected (final parse throws, streaming rolls back) instead of leaking through as `Infinity`.
 
 ## [18.1.7] - 2026-09-03
 
