@@ -40,6 +40,14 @@ const reasoningVisionModel: Model<"openai-responses"> = {
 	thinking: { mode: "effort", efforts: [Effort.Minimal, Effort.Low, Effort.Medium, Effort.High] },
 };
 
+const literalSuffixVisionModel: Model<"openai-responses"> = {
+	...visionModel,
+	id: "claude-opus-4.6:thinking:low",
+	provider: "nanogpt",
+	reasoning: true,
+	thinking: { mode: "effort", efforts: [Effort.Minimal, Effort.Low, Effort.Medium, Effort.High] },
+};
+
 interface CreateSessionOptions {
 	availableModels?: Model<"openai-responses">[];
 	activeModel?: Model<"openai-responses">;
@@ -234,6 +242,36 @@ describe("read image questions", () => {
 
 		const options = stub.calls[0]?.[2] as { reasoning?: string } | undefined;
 		expect(options?.reasoning).toBe("high");
+	});
+
+	it("does not forward a strict suffix that is part of a literal vision model id", async () => {
+		const settings = Settings.isolated();
+		settings.setModelRole("vision", `${literalSuffixVisionModel.provider}/${literalSuffixVisionModel.id}`);
+		const stub = createCompleteSimpleSuccessStub("ok");
+		const session = createSession(testDir, literalSuffixVisionModel, "test-key", settings, {
+			configureVisionRole: false,
+			availableModels: [literalSuffixVisionModel],
+		});
+
+		await new ReadTool(session, stub.fn).execute("call", { path: `${imagePath}?q=What color?` });
+
+		const options = stub.calls[0]?.[2] as { reasoning?: string } | undefined;
+		expect(options?.reasoning).toBeUndefined();
+	});
+
+	it("does not forward a strict suffix carried by a literal default role model id", async () => {
+		const settings = Settings.isolated();
+		settings.setModelRole("default", `${literalSuffixVisionModel.provider}/${literalSuffixVisionModel.id}`);
+		const stub = createCompleteSimpleSuccessStub("ok");
+		const session = createSession(testDir, literalSuffixVisionModel, "test-key", settings, {
+			configureVisionRole: false,
+			availableModels: [literalSuffixVisionModel],
+		});
+
+		await new ReadTool(session, stub.fn).execute("call", { path: `${imagePath}?q=What color?` });
+
+		const options = stub.calls[0]?.[2] as { reasoning?: string } | undefined;
+		expect(options?.reasoning).toBeUndefined();
 	});
 
 	it("maps a stalled vision request to the image question timeout", async () => {

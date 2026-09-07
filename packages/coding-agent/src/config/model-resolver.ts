@@ -1462,8 +1462,9 @@ interface ExplicitThinkingSelectorOptions {
 }
 
 function isLiteralModelSelector(value: string, options?: ExplicitThinkingSelectorOptions): boolean {
-	const parsed = parseModelString(value);
-	return parsed !== undefined && options?.isLiteralModelId?.(parsed.provider, parsed.id) === true;
+	const slashIdx = value.indexOf("/");
+	if (slashIdx <= 0) return false;
+	return options?.isLiteralModelId?.(value.slice(0, slashIdx), value.slice(slashIdx + 1)) === true;
 }
 
 export function extractExplicitThinkingSelector(
@@ -1481,7 +1482,10 @@ export function extractExplicitThinkingSelector(
 		visited.add(current);
 		const rolePrefixLength = modelRoleAliasPrefixLength(current) ?? LEGACY_MODEL_ROLE_ALIAS_PREFIX.length;
 		const strictSelector = splitThinkingSuffix(current, rolePrefixLength).level;
-		if (strictSelector) {
+		if (
+			strictSelector &&
+			(modelRoleAliasPrefixLength(current) !== undefined || !isLiteralModelSelector(current, options))
+		) {
 			return strictSelector;
 		}
 		const maxSelector = splitThinkingSuffix(current, rolePrefixLength, MAX_THINKING_SUFFIX_OPTIONS).level;
