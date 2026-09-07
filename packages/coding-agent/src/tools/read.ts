@@ -1331,7 +1331,7 @@ export class ReadTool implements AgentTool<typeof readSchema, ReadToolDetails> {
 				);
 				return {
 					content: [{ type: "text", text: answer.text }],
-					details: { resolvedPath: absolutePath, contentType: imageInput.mimeType },
+					details: { resolvedPath: absolutePath, contentType: imageInput.mimeType, usage: answer.usage },
 					sourcePath: imageInput.resolvedPath,
 				};
 			}
