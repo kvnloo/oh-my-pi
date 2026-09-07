@@ -3,6 +3,11 @@
 provider "muse-code" {
 	default-model "muse-spark-1.3"
 	dynamic-models-authoritative #true
+	// Muse Code ships the same reviewed first-party Muse Spark seed as `meta`
+	// (MUSE_CODE_STATIC_MODELS = META_MUSE_STATIC_MODELS with the provider
+	// swapped), so keep its tier-marked "(C)" display name instead of letting
+	// a same-id stencil.so "Contributor" overlay overwrite it (mirrors `meta`).
+	skip-cross-provider-reference-fills #true
 
 	// Muse Code shares Meta Model API's model capabilities and equivalent token pricing.
 	seed api="openai-responses" base-url="https://api.meta.ai/v1" bundle="always" {

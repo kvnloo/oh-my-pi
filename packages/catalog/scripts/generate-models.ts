@@ -281,7 +281,7 @@ function createGlobalModelsDevReferenceMap(modelsDevModels: readonly ModelSpec[]
 	return references;
 }
 
-function applyGlobalModelsDevFallback(
+export function applyGlobalModelsDevFallback(
 	models: readonly ModelSpec[],
 	modelsDevModels: readonly ModelSpec[],
 ): ModelSpec[] {
