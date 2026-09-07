@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+### Fixed
+
+- `agent()` calls with a `label` colliding with an existing async job (e.g. a still-running or recently drained workpool's pool job) now throw instead of returning a handle that silently resolved `wait()`/`status()`/`cancel()` to the wrong job.
+
+## [18.1.12] - 2026-09-06
 
 - The `/models` Roles view shows which saved model preset is in effect, and Ctrl+←/→ (or `p`/`P` on the role rows, for macOS where Ctrl+←/→ switches Spaces) switches to the next or previous one, in Tern and text mode ([#14210](https://github.com/can1357/oh-my-pi/pull/14210) by [@H4vC](https://github.com/H4vC))
 
