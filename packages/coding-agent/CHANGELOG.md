@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed subagent isolation fatally aborting, and CoW worktree cloning silently falling back to a plain checkout, when the working tree contains untracked unix sockets, fifos, or device nodes (e.g. a dev server's `tmp/sockets/app.sock`); special files are now skipped instead of treated as fatal, matching the APFS backend.
+
 ## [18.1.12] - 2026-09-06
 
 - Fixed edit and write results to report the formatted bytes actually committed by LSP writethrough.

@@ -229,6 +229,14 @@ mod imp {
 			let src_path = entry.path();
 			let dst_path = dst.join(entry.file_name());
 
+			// Sockets, fifos, and devices are process-owned ephemera that cannot
+			// be block-cloned; skip them rather than aborting the clone (parity
+			// with `apfs::clone_tree`). Only directories, symlinks, and regular
+			// files are handled below.
+			if !(file_type.is_file() || file_type.is_dir() || file_type.is_symlink()) {
+				continue;
+			}
+
 			if file_type.is_symlink() {
 				clone_symlink(&src_path, &dst_path)?;
 				copy_metadata_best_effort(&src_path, &dst_path);
@@ -240,11 +248,6 @@ mod imp {
 			} else if file_type.is_file() {
 				clone_regular_file(&src_path, &dst_path)?;
 				copy_metadata_best_effort(&src_path, &dst_path);
-			} else {
-				return Err(IsoError::other(format!(
-					"unsupported filesystem entry for block clone: {}",
-					src_path.display()
-				)));
 			}
 		}
 		Ok(())
