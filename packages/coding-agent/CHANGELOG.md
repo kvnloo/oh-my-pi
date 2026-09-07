@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+### Fixed
+
+- Legacy SSE MCP servers that emit keep-alive bytes before stalling now classify the startup timeout as retryable, so the manager reconnects instead of marking the server failed for the session.
+
+## [18.1.12] - 2026-09-06
 
 - The `/models` Roles view shows which saved model preset is in effect, and Ctrl+←/→ (or `p`/`P` on the role rows, for macOS where Ctrl+←/→ switches Spaces) switches to the next or previous one, in Tern and text mode ([#14210](https://github.com/can1357/oh-my-pi/pull/14210) by [@H4vC](https://github.com/H4vC))
 
