@@ -1052,7 +1052,7 @@ LM Studio is a local OpenAI-compatible model server running on user hardware (de
 Meta Model API is Meta's commercial API platform hosting first-party models such as `muse-spark-1.1`. It interacts with the model service via the OpenAI Responses transport targeting `https://api.meta.ai/v1`.
 
 ### Special casings
-- **Output Token Clamp Bypass**: `resolveOpenAIResponsesOutputClamp` (`packages/ai/src/providers/openai-shared.ts`) checks `model.provider === "meta"` to allow Meta requests to output up to `model.maxTokens` (131,072 tokens) rather than being restricted by the default 64,000 token ceiling (`OPENAI_MAX_OUTPUT_TOKENS`).
+- **Output Token Clamp Bypass**: `resolveOpenAIResponsesOutputClamp` (`packages/ai/src/providers/openai-shared.ts`) honors `model.compat.clampOutputToModelMax` (set by `clamp-output-to-model-max #true` in `packages/catalog/src/compat/rules/providers/meta.kdl`) to allow Meta requests to output up to `model.maxTokens` (131,072 tokens) rather than being restricted by the default 64,000 token ceiling (`OPENAI_MAX_OUTPUT_TOKENS`).
 
 ### Auth & usage
 - **API Key Login**: Declared in `packages/catalog/src/compat/rules/auth/meta.kdl` as a `login "api-key"` rule (`packages/ai/src/registry/engine/api-key.ts`) with dashboard URL `https://developer.meta.com/ai/`. Validation issues a GET request to `https://api.meta.ai/v1/models` (`validate "models-endpoint"`).
