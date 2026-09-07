@@ -233,9 +233,30 @@ describe.skipIf(!e2eApiKey("ANTHROPIC_API_KEY"))("RPC mode", () => {
 		expect(result).toBeDefined();
 		expect(result!.level).not.toBe(initialLevel);
 
-		// Verify via state
+		// Verify via state. The cycled selector can be "auto", which is wider
+		// than the effective `ThinkingLevel` on state, so compare by value.
 		const newState = await client.getState();
-		expect(newState.thinkingLevel).toBe(result!.level);
+		expect(newState.thinkingLevel === result!.level).toBe(true);
+	}, 30000);
+
+	test("cycle_thinking_level returns off then auto over the wire", async () => {
+		await client.start();
+
+		// Park at the top of the claude-sonnet-4-5 ladder (xhigh) so the cycle
+		// wheel wraps back to "off", then advances to "auto", then the effort
+		// rungs. The RPC response must carry these selectors verbatim — the
+		// server emits the configured selector, not a narrowed Effort value.
+		await client.setThinkingLevel(Effort.XHigh);
+
+		const first = await client.cycleThinkingLevel();
+		expect(first).toEqual({ level: "off" });
+
+		const second = await client.cycleThinkingLevel();
+		expect(second).toEqual({ level: "auto" });
+
+		// The effort rungs are still emitted unchanged after the off/auto pair.
+		const third = await client.cycleThinkingLevel();
+		expect(third).toEqual({ level: Effort.Minimal });
 	}, 30000);
 
 	test("should get available models", async () => {

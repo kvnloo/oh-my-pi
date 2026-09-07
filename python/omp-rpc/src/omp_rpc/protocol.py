@@ -15,6 +15,9 @@ Effort: TypeAlias = Literal["minimal", "low", "medium", "high", "xhigh", "max"]
 ThinkingLevel: TypeAlias = Literal[
     "off", "minimal", "low", "medium", "high", "xhigh", "max"
 ]
+ConfiguredThinkingLevel: TypeAlias = Literal[
+    "off", "auto", "minimal", "low", "medium", "high", "xhigh", "max"
+]
 StreamingBehavior: TypeAlias = Literal["steer", "followUp"]
 SteeringMode: TypeAlias = Literal["all", "one-at-a-time"]
 InterruptMode: TypeAlias = Literal["immediate", "wait"]
@@ -70,6 +73,9 @@ _EFFORT_VALUES: Final[frozenset[str]] = frozenset(
     {"minimal", "low", "medium", "high", "xhigh", "max"}
 )
 _THINKING_LEVEL_VALUES: Final[frozenset[str]] = _EFFORT_VALUES | frozenset({"off"})
+_CONFIGURED_THINKING_LEVEL_VALUES: Final[frozenset[str]] = (
+    _THINKING_LEVEL_VALUES | frozenset({"auto"})
+)
 _STEERING_MODE_VALUES: Final[frozenset[str]] = frozenset({"all", "one-at-a-time"})
 _INTERRUPT_MODE_VALUES: Final[frozenset[str]] = frozenset({"immediate", "wait"})
 _STOP_REASON_VALUES: Final[frozenset[str]] = frozenset(
@@ -890,7 +896,7 @@ class ModelCycleResult:
 
 @dataclass(slots=True, frozen=True)
 class ThinkingLevelCycleResult:
-    level: ThinkingLevel
+    level: ConfiguredThinkingLevel
 
 
 @dataclass(slots=True, frozen=True)
@@ -1495,7 +1501,16 @@ def parse_thinking_level_cycle_result(
 ) -> ThinkingLevelCycleResult | None:
     if payload is None or payload.get("level") is None:
         return None
-    return ThinkingLevelCycleResult(level=cast(ThinkingLevel, payload["level"]))
+    return ThinkingLevelCycleResult(
+        level=cast(
+            ConfiguredThinkingLevel,
+            _require_literal(
+                payload["level"],
+                _CONFIGURED_THINKING_LEVEL_VALUES,
+                field="level",
+            ),
+        )
+    )
 
 
 def parse_cancellation_result(payload: JsonObject | None) -> CancellationResult:
