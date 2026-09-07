@@ -438,4 +438,50 @@ describe("GLM value-closer healing", () => {
 		expect(ends).toHaveLength(1);
 		expect(ends[0]?.arguments).toEqual({ path: "a.ts", content });
 	});
+
+	it("does not heal when the recovered arg_key is already assigned in the call", () => {
+		const AKO = "\u003Carg_key\u003E",
+			AKC = "\u003C/arg_key\u003E";
+		const AVO = "\u003Carg_value\u003E",
+			AVC = "\u003C/arg_value\u003E";
+		const litRun = AKO + "path" + AKC + AVO;
+		const text =
+			"\u003Ctool_call\u003Ewrite\n" +
+			AKO +
+			"path" +
+			AKC +
+			"\n" +
+			AVO +
+			"a.ts" +
+			AVC +
+			"\n" +
+			AKO +
+			"content" +
+			AKC +
+			"\n" +
+			AVO +
+			"example: " +
+			litRun +
+			"v end" +
+			AVC +
+			"\n" +
+			"\u003C/tool_call\u003E";
+		const events = feedText("glm", text);
+		const ends = toolEnds(events);
+		expect(ends).toHaveLength(1);
+		expect(ends[0]?.arguments).toEqual({
+			path: "a.ts",
+			content: "example: " + litRun + "v end",
+		});
+	});
+
+	it("still heals a genuine missing arg_value_close before the next pair", () => {
+		const events = feedText(
+			"glm",
+			"\u003Ctool_call\u003Ewrite\n\u003Carg_key\u003Epath\u003C/arg_key\u003E\n\u003Carg_value\u003Ea.ts\n\u003Carg_key\u003Econtent\u003C/arg_key\u003E\n\u003Carg_value\u003Ehello\u003C/arg_value\u003E\n\u003C/tool_call\u003E",
+		);
+		const ends = toolEnds(events);
+		expect(ends).toHaveLength(1);
+		expect(ends[0]?.arguments).toEqual({ path: "a.ts", content: "hello" });
+	});
 });
