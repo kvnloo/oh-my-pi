@@ -18,6 +18,8 @@ interface MCPTimeoutOperation {
 	signal?: AbortSignal;
 	clear: () => void;
 	isTimeoutAbort: (error: unknown) => boolean;
+	/** True when this operation's own timer fired (regardless of what error a consumer saw). */
+	timedOut: () => boolean;
 }
 
 interface PendingLegacySseRequest {
@@ -108,7 +110,7 @@ export class LegacySseTransport implements MCPTransport {
 			operation.clear();
 			if (this.#sseConnection === connection) this.#sseConnection = null;
 			connection.abort();
-			if (operation.isTimeoutAbort(error)) {
+			if (operation.timedOut()) {
 				throw new LegacySseConnectionTimeoutError(timeout);
 			}
 			throw error;

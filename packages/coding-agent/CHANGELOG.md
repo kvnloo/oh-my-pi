@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Legacy SSE MCP servers that emit keep-alive bytes before stalling now classify the startup timeout as retryable, so the manager reconnects instead of marking the server failed for the session.
+
 ## [18.1.12] - 2026-09-06
 
 - Fixed edit and write results to report the formatted bytes actually committed by LSP writethrough.
