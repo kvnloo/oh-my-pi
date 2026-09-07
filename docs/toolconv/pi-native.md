@@ -135,13 +135,15 @@ idle watchdogs use request options when supplied, otherwise the standard
 `PI_STREAM_FIRST_EVENT_TIMEOUT_MS` / `PI_STREAM_IDLE_TIMEOUT_MS` policy.
 The initial `start` event is not considered progress for the idle watchdog.
 
-If the SSE connection closes without a terminal event, the client synthesizes
-a terminal assistant boundary so `.result()` cannot hang. Caller cancellation
+If the SSE connection closes without a terminal event, the client closes the
+stream deterministically so `.result()` cannot hang. Caller cancellation
 emits `{type:"error", reason:"aborted", error: syntheticAssistant}`; the nested
 `AssistantMessage` has `stopReason:"aborted"` and
 `errorMessage:"stream closed without terminal event"`. Any other clean close
-emits `{type:"done", reason:"stop", message: syntheticAssistant}`, whose nested
-message has `stopReason:"stop"`. Thus `reason` is the top-level event field;
+fails the stream with an `AIError.ProviderResponseError`
+(`"pi-native stream read error: stream closed before a terminal response event"`,
+`kind: "incomplete-stream"`) so the turn is retried instead of resolving to
+an empty response. In emitted events, `reason` is the top-level field;
 `stopReason` exists only on the nested `AssistantMessage`.
 
 The client consumes streaming responses only. The server endpoint also
