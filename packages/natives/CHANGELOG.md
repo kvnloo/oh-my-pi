@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the CoW tree-clone backends (Linux reflink, Windows block clone) aborting on sockets, fifos, and device nodes instead of skipping them, so subagent isolation and worktree cloning no longer fail on checkouts containing untracked special files.
+
 ## [18.1.9] - 2026-09-04
 
 ### Added

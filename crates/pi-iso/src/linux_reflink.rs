@@ -199,17 +199,19 @@ mod imp {
 			})?;
 			let src_path = entry.path();
 			let dst_path = dst.join(entry.file_name());
+			// Sockets, fifos, and devices are process-owned ephemera that cannot be
+			// reflinked; skip them rather than aborting the clone (parity with
+			// `apfs::clone_tree`, which asserts a `debug.fifo` "must be skipped,
+			// not fatal"). Only directories, symlinks, and regular files below.
+			if !(file_type.is_file() || file_type.is_dir() || file_type.is_symlink()) {
+				continue;
+			}
 			if file_type.is_symlink() {
 				clone_symlink(&src_path, &dst_path)?;
 			} else if file_type.is_dir() {
 				recursive_reflink(&src_path, &dst_path, None)?;
 			} else if file_type.is_file() {
 				clone_file(&src_path, &dst_path)?;
-			} else {
-				return Err(IsoError::other(format!(
-					"unsupported file type in reflink source: {}",
-					src_path.display()
-				)));
 			}
 		}
 
@@ -292,5 +294,237 @@ mod imp {
 		} else {
 			Err(std::io::Error::last_os_error())
 		}
+	}
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod tests {
+	use std::{
+		ffi::{CString, OsStr},
+		fs,
+		os::unix::{ffi::OsStrExt, fs::symlink, net::UnixListener},
+		path::{Path, PathBuf},
+	};
+
+	use super::backend;
+
+	/// Create a fifo at `path` via `mkfifo(3)`.
+	fn mkfifo(path: &Path) {
+		let c_path = CString::new(path.as_os_str().as_bytes()).expect("fifo path has no NUL");
+		// SAFETY: `c_path` is a valid NUL-terminated path that outlives the call;
+		// `mkfifo` only creates the directory entry and does not retain the pointer.
+		assert_eq!(unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) }, 0, "mkfifo failed");
+	}
+
+	/// Create a `debug.sock` unix socket at `path`. The listener is dropped
+	/// immediately, but on Linux the socket directory entry persists until it
+	/// is unlinked, so the cloning walker observes a socket file type.
+	fn make_socket(path: &Path) {
+		let listener = UnixListener::bind(path).expect("bind unix socket");
+		drop(listener);
+	}
+
+	/// Builds a `lower/` tree containing symlinks, a nested directory, and
+	/// process-owned special files (fifos and unix sockets) at the root and
+	/// inside a nested directory, and optionally a top-level `.git/` with a
+	/// regular file for the skip list. No regular files are placed outside
+	/// `.git/`, so the tree can be cloned without a reflink-capable filesystem
+	/// (`FICLONE` is never reached) and the special-file branch is exercised
+	/// deterministically regardless of host filesystem.
+	struct Fixture {
+		root:   PathBuf,
+		merged: PathBuf,
+	}
+
+	impl Fixture {
+		fn new(label: &str, with_git: bool) -> Self {
+			let nonce = format!(
+				"pi-iso-reflink-{label}-{}-{}",
+				std::process::id(),
+				std::time::SystemTime::now()
+					.duration_since(std::time::UNIX_EPOCH)
+					.unwrap()
+					.as_nanos()
+			);
+			let root = std::env::temp_dir().join(&nonce);
+			fs::create_dir_all(root.join("nested")).expect("create nested dir");
+			if with_git {
+				fs::create_dir_all(root.join(".git")).expect("create .git");
+				fs::write(root.join(".git/config"), "skip").expect("write .git/config");
+			}
+			symlink("file", root.join("link")).expect("create symlink link");
+			symlink("child", root.join("nested/childlink")).expect("create nested symlink");
+			// Special files (sockets, fifos, devices) are process-owned
+			// ephemera; git cannot store them, so they are always untracked.
+			// The reflink walker must skip them, not abort — parity with
+			// `apfs::clone_tree_skips_top_level_entry_and_preserves_symlink`.
+			mkfifo(&root.join("debug.fifo"));
+			mkfifo(&root.join("nested/sub.fifo"));
+			make_socket(&root.join("debug.sock"));
+			make_socket(&root.join("nested/sub.sock"));
+			let merged = root
+				.parent()
+				.expect("temp dir has a parent")
+				.join(format!("merged-{nonce}"));
+			Self { root, merged }
+		}
+
+		fn root(&self) -> &Path {
+			&self.root
+		}
+
+		fn merged(&self) -> &Path {
+			&self.merged
+		}
+	}
+
+	impl Drop for Fixture {
+		fn drop(&mut self) {
+			let _ = fs::remove_dir_all(&self.root);
+			let _ = fs::remove_dir_all(&self.merged);
+		}
+	}
+
+	/// `clone_tree` skips process-owned special files (fifos, sockets) at the
+	/// checkout root and inside nested directories, honours the top-level skip
+	/// list, and preserves symlinks — without aborting. No reflink-capable
+	/// filesystem is required: the tree has no regular files outside the
+	/// skipped `.git/`, so `FICLONE` is never reached.
+	#[test]
+	fn clone_tree_skips_special_files_and_preserves_symlink() {
+		let fixture = Fixture::new("clone", true);
+		backend()
+			.clone_tree(fixture.root(), fixture.merged(), &[OsStr::new(".git")])
+			.expect("clone_tree must skip special files, not error");
+
+		let merged = fixture.merged();
+		assert!(!merged.join(".git").exists(), ".git must be skipped");
+		assert!(
+			fs::symlink_metadata(merged.join("debug.fifo")).is_err(),
+			"top-level fifo must be skipped",
+		);
+		assert!(
+			fs::symlink_metadata(merged.join("debug.sock")).is_err(),
+			"top-level socket must be skipped",
+		);
+		assert!(
+			fs::symlink_metadata(merged.join("nested/sub.fifo")).is_err(),
+			"nested fifo must be skipped",
+		);
+		assert!(
+			fs::symlink_metadata(merged.join("nested/sub.sock")).is_err(),
+			"nested socket must be skipped",
+		);
+		assert_eq!(
+			fs::read_link(merged.join("link")).unwrap(),
+			Path::new("file"),
+			"top-level symlink must be preserved",
+		);
+		assert!(
+			fs::symlink_metadata(merged.join("link"))
+				.unwrap()
+				.file_type()
+				.is_symlink(),
+			"link must remain a symlink",
+		);
+		assert_eq!(
+			fs::read_link(merged.join("nested/childlink")).unwrap(),
+			Path::new("child"),
+			"nested symlink must be preserved",
+		);
+		assert!(merged.join("nested").is_dir(), "nested directory must be created");
+	}
+
+	/// `start` (subagent isolation) shares `recursive_reflink` and skips
+	/// process-owned special files rather than returning `IsoError::Other`
+	/// (which `ensureIsolation` does not retry). The fixture has no regular
+	/// files and no `.git`, so the call must succeed on every Linux filesystem
+	/// regardless of reflink support.
+	#[test]
+	fn start_skips_special_files_and_preserves_symlink() {
+		let fixture = Fixture::new("start", false);
+		backend()
+			.start(fixture.root(), fixture.merged())
+			.expect("start must skip special files, not error");
+
+		let merged = fixture.merged();
+		assert!(
+			fs::symlink_metadata(merged.join("debug.fifo")).is_err(),
+			"top-level fifo must be skipped, not fatal",
+		);
+		assert!(
+			fs::symlink_metadata(merged.join("debug.sock")).is_err(),
+			"top-level socket must be skipped, not fatal",
+		);
+		assert!(
+			fs::symlink_metadata(merged.join("nested/sub.fifo")).is_err(),
+			"nested fifo must be skipped, not fatal",
+		);
+		assert!(
+			fs::symlink_metadata(merged.join("nested/sub.sock")).is_err(),
+			"nested socket must be skipped, not fatal",
+		);
+		assert_eq!(
+			fs::read_link(merged.join("link")).unwrap(),
+			Path::new("file"),
+			"top-level symlink must be preserved",
+		);
+		assert_eq!(
+			fs::read_link(merged.join("nested/childlink")).unwrap(),
+			Path::new("child"),
+			"nested symlink must be preserved",
+		);
+		assert!(merged.join("nested").is_dir(), "nested directory must be created");
+	}
+
+	/// Regression guard: a regular file is still cloned (or surfaces
+	/// `IsoError::Unavailable` on a reflink-incapable filesystem so
+	/// `ensureIsolation` can fall back) — it is never silently skipped and
+	/// never surfaces as `IsoError::Other`.
+	#[test]
+	fn regular_file_clone_is_not_affected_by_special_file_skip() {
+		let nonce = format!(
+			"pi-iso-reflink-reg-{}-{}",
+			std::process::id(),
+			std::time::SystemTime::now()
+				.duration_since(std::time::UNIX_EPOCH)
+				.unwrap()
+				.as_nanos()
+		);
+		let root = std::env::temp_dir().join(&nonce);
+		let merged = root
+			.parent()
+			.expect("temp dir has a parent")
+			.join(format!("merged-{nonce}"));
+		fs::create_dir_all(&root).expect("create root");
+		fs::write(root.join("file"), "data").expect("write regular file");
+		struct Guard(PathBuf, PathBuf);
+		impl Drop for Guard {
+			fn drop(&mut self) {
+				let _ = fs::remove_dir_all(&self.0);
+				let _ = fs::remove_dir_all(&self.1);
+			}
+		}
+		let guard = Guard(root.clone(), merged.clone());
+
+		let result = backend().start(&root, &merged);
+		match result {
+			Ok(()) => {
+				assert_eq!(
+					fs::read_to_string(merged.join("file")).unwrap(),
+					"data",
+					"reflink-capable fs must clone the regular file",
+				);
+			},
+			Err(crate::IsoError::Unavailable(_)) => {
+				// Reflink-incapable filesystem (e.g. ext4/tmpfs): `FICLONE`
+				// returns `EOPNOTSUPP` and `map_clone_error` surfaces
+				// `Unavailable` so `ensureIsolation` can fall back.
+			},
+			Err(crate::IsoError::Other(msg)) => {
+				panic!("regular-file clone must surface Unavailable, not Other: {msg}");
+			},
+		}
+		drop(guard);
 	}
 }
