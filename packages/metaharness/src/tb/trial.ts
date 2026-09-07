@@ -1,7 +1,9 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
+import type { AgentMessage } from "@oh-my-pi/pi-agent-core";
 import { RpcClient } from "@oh-my-pi/pi-coding-agent/modes/rpc/rpc-client";
+import { isRecord } from "@oh-my-pi/pi-utils";
 
 import { installAgent } from "./agent";
 import type { AgentBinaries, GatewayConfig, TbTask, TrialResult, TrialUsage, VmonConfig } from "./types";
@@ -32,6 +34,28 @@ async function ensureHostDir(dir: string): Promise<void> {
 
 async function writeArtifact(dir: string, name: string, content: string): Promise<void> {
 	await Bun.write(path.join(dir, name), content);
+}
+
+/**
+ * Fold delegated vision-model usage from `read <image>?q=<question>` tool
+ * results into the trial totals. The oneshot is invoked directly by the read
+ * tool and never becomes an assistant message in the transcript, so
+ * `getSessionStats()` does not see it; `read` surfaces it on
+ * `toolResult.details.usage` and this reader restores it into `TrialUsage`.
+ */
+export function addDelegatedUsage(messages: AgentMessage[], usage: TrialUsage): void {
+	for (const message of messages) {
+		if (message.role !== "toolResult" || message.toolName !== "read" || !isRecord(message.details)) continue;
+		const delegated = message.details.usage;
+		if (!isRecord(delegated)) continue;
+		if (typeof delegated.input === "number") usage.input += delegated.input;
+		if (typeof delegated.output === "number") usage.output += delegated.output;
+		if (typeof delegated.cacheRead === "number") usage.cacheRead += delegated.cacheRead;
+		if (typeof delegated.cacheWrite === "number") usage.cacheWrite += delegated.cacheWrite;
+		if (isRecord(delegated.cost) && typeof delegated.cost.total === "number") {
+			usage.costUsd += delegated.cost.total;
+		}
+	}
 }
 
 function modelParts(value: string): { provider: string; model: string } {
@@ -178,6 +202,7 @@ export async function runTrial(opts: {
 		let transcript = "[]\n";
 		try {
 			const messages = await client.getMessages();
+			addDelegatedUsage(messages, usage);
 			transcript = `${JSON.stringify(messages, null, 2)}\n`;
 		} catch (error) {
 			agentCollectionError ??= errorMessage(error);

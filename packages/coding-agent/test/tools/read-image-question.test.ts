@@ -190,6 +190,53 @@ describe("read image questions", () => {
 		expect(parts[1]).toEqual({ type: "text", text: "What text is visible?" });
 	});
 
+	it("surfaces the vision model oneshot usage on the ?q= tool result details", async () => {
+		const calls: unknown[][] = [];
+		const usage = {
+			input: 7,
+			output: 3,
+			cacheRead: 2,
+			cacheWrite: 1,
+			totalTokens: 13,
+			cost: { input: 0.01, output: 0.02, cacheRead: 0.003, cacheWrite: 0.004, total: 0.037 },
+		};
+		const fn = (async (...args: unknown[]) => {
+			calls.push(args);
+			return {
+				role: "assistant",
+				api: visionModel.api,
+				provider: visionModel.provider,
+				model: visionModel.id,
+				usage,
+				stopReason: "stop",
+				timestamp: Date.now(),
+				content: [{ type: "text", text: "red" }],
+			};
+		}) as typeof completeSimple;
+
+		const result = await new ReadTool(createSession(testDir, visionModel), fn).execute("call", {
+			path: `${imagePath}?q=What color?`,
+		});
+
+		expect(result.content).toEqual([{ type: "text", text: "red" }]);
+		expect(result.details).toMatchObject({
+			resolvedPath: imagePath,
+			contentType: "image/png",
+		});
+		expect(result.details?.usage).toEqual(usage);
+		expect(calls).toHaveLength(1);
+	});
+
+	it("does not surface delegated usage on inline image reads without ?q=", async () => {
+		const stub = createCompleteSimpleForbiddenStub();
+		const result = await new ReadTool(createSession(testDir, visionModel), stub.fn).execute("call", {
+			path: imagePath,
+		});
+
+		expect(stub.calls).toHaveLength(0);
+		expect(result.details?.usage).toBeUndefined();
+	});
+
 	it("answers questions about attachment URLs", async () => {
 		const image: ImageContent = { type: "image", data: TINY_PNG_BASE64, mimeType: "image/png" };
 		const stub = createCompleteSimpleSuccessStub("Attached image");

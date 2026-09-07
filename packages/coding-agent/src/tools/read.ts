@@ -9,7 +9,7 @@ import type {
 	AgentToolUpdateCallback,
 	ToolTier,
 } from "@oh-my-pi/pi-agent-core";
-import { completeSimple, type ImageContent, type TextContent } from "@oh-my-pi/pi-ai";
+import { completeSimple, type ImageContent, type TextContent, type Usage } from "@oh-my-pi/pi-ai";
 import {
 	BINARY_SNIFF_BYTES,
 	type ImageMetadata,
@@ -657,6 +657,12 @@ export interface ReadToolDetails {
 	conflictCount?: number;
 	/** Paths recovered from a delimited read argument; used only by the TUI to render one call as multiple read rows. */
 	displayReadTargets?: string[];
+	/**
+	 * Delegated vision-model usage from a `read <image>?q=<question>` oneshot.
+	 * The oneshot never enters the transcript as an assistant message, so trial
+	 * accounting folds this into the trial totals to avoid under-reporting.
+	 */
+	usage?: Usage;
 }
 type ReadParams = ReadToolInput;
 
@@ -1052,7 +1058,7 @@ export class ReadTool implements AgentTool<typeof readSchema, ReadToolDetails> {
 				);
 				return {
 					content: [{ type: "text", text: answer.text }],
-					details: { resolvedPath: absolutePath, contentType: imageInput.mimeType },
+					details: { resolvedPath: absolutePath, contentType: imageInput.mimeType, usage: answer.usage },
 					sourcePath: imageInput.resolvedPath,
 				};
 			}
