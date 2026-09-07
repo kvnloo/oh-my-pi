@@ -113,7 +113,7 @@ Backoff sequence with default settings, before jitter:
 
 The actual local sleep is 75–100% of the nominal value, matching Anthropic-style retry jitter so concurrent sessions do not retry in lockstep.
 
-Delay override inputs can come from parsed retry headers (`retry-after-ms`, `retry-after`, `x-ratelimit-reset-ms`, `x-ratelimit-reset`) or usage-limit backoff. Credential/model fallback switches set delay to `0`; otherwise parsed hints can extend the capped local delay. If the computed delay is greater than `retry.maxDelayMs` and no switch succeeded, retry ends immediately with a final error instead of sleeping.
+Delay override inputs can come from parsed retry headers (`retry-after-ms`, `retry-after`, `x-ratelimit-reset-ms`, `x-ratelimit-reset`) or usage-limit backoff. Credential/model fallback switches set delay to `0`; otherwise parsed hints can extend the capped local delay. If the computed delay is greater than `retry.maxDelayMs` and no switch succeeded, retry ends immediately with a final error instead of sleeping. Setting `retry.waitForUsageReset` opts out for usage-limit resets: with it on and a usage limit carrying a provider-stated reset (parsed hint or a complete usage-report window), the session sleeps to that reset (abortable via `Esc`) instead of failing fast past the cap.
 
 ## Abort mechanics
 
@@ -165,6 +165,7 @@ Defined in settings schema under retry group:
 - `retry.maxRetries`
 - `retry.baseDelayMs`
 - `retry.maxDelayMs`
+- `retry.waitForUsageReset` (default `false`; lets a provider-stated usage-limit reset sleep past `retry.maxDelayMs` instead of failing fast — abortable via `Esc`)
 - `retry.modelFallback` (default `true`; gates retry model-fallback switching)
 - `retry.fallbackChains`
 - `retry.fallbackRevertPolicy` (`"cooldown-expiry"` by default; `"never"` disables automatic restoration)
@@ -223,7 +224,7 @@ Retry stops and will not auto-continue when any of these occur:
 - error is not retry-classified
 - error is context overflow (delegated to compaction path)
 - max retries are exceeded and no fallback model is available
-- provider-requested delay exceeds `retry.maxDelayMs` and no credential/model switch is available
+- provider-requested delay exceeds `retry.maxDelayMs` and no credential/model switch is available (unless `retry.waitForUsageReset` is on for a provider-stated usage-limit reset, which sleeps to the reset instead)
 - user cancels retry (`abort_retry` or `Esc` during retry loader)
 - global abort (`abort`) cancels retry first
 
