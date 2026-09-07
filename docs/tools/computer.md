@@ -12,7 +12,6 @@ User setup, permissions, safety guidance, examples, and platform limitations: [S
 - Model-facing prelude documentation: `packages/coding-agent/src/prompts/tools/computer.md`
 - Safety prompt: `packages/coding-agent/src/prompts/system/computer-safety.md`
 - Prelude registration/gate: `packages/coding-agent/src/tools/index.ts`
-- Exposure policy: `packages/coding-agent/src/tools/computer/exposure.ts`
 - Persistent worker: `packages/coding-agent/src/tools/computer/{supervisor,protocol,worker,worker-entry}.ts`
 - Native implementation: `crates/pi-natives/src/desktop/`
 - Native public types: `packages/natives/native/index.d.ts`
