@@ -174,11 +174,13 @@ mod imp {
 		}
 
 		fn file(&self, src: &Path, dst: &Path, file_type: FileType) -> IsoResult<()> {
+			// Sockets, fifos, and devices are process-owned ephemera that cannot
+			// be block-cloned; skip them rather than aborting the clone (parity
+			// with `apfs::clone_tree`). Directories and symlinks are dispatched
+			// by `tree::copy_dir_contents`, so only regular files and special
+			// files reach here; skip anything that is not a regular file.
 			if !file_type.is_file() {
-				return Err(IsoError::other(format!(
-					"unsupported filesystem entry for block clone: {}",
-					src.display()
-				)));
+				return Ok(());
 			}
 			clone_regular_file(src, dst)
 		}
