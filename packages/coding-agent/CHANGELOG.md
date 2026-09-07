@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `agent()` calls with a `label` colliding with an existing async job (e.g. a still-running or recently drained workpool's pool job) now throw instead of returning a handle that silently resolved `wait()`/`status()`/`cancel()` to the wrong job.
+
 ## [18.1.12] - 2026-09-06
 
 - Fixed edit and write results to report the formatted bytes actually committed by LSP writethrough.

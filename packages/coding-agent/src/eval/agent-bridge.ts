@@ -204,7 +204,7 @@ export async function runEvalAgent(args: unknown, options: EvalAgentBridgeOption
 		}
 		const id = await reserveStructuredSubagentId(options.session, { label: parsed.label });
 		const ownerId = options.session.getAgentId?.() ?? MAIN_AGENT_ID;
-		manager.register(
+		const registeredId = manager.register(
 			"task",
 			id,
 			async ({ signal, reportProgress, markRunning }) => {
@@ -243,6 +243,19 @@ export async function runEvalAgent(args: unknown, options: EvalAgentBridgeOption
 			},
 			{ id, agentId: id, ownerId },
 		);
+		// `manager.register` resolves the final job id against its own `#jobs`
+		// set and silently suffixes it (`X` -> `X-2`) when `id` is already taken
+		// — `reserveStructuredSubagentId` consults a separate namespace and cannot
+		// detect that. Returning the pre-allocated `id` here would hand the caller
+		// a handle that resolves to the pre-existing job, silently orphaning the
+		// just-spawned subagent under a suffixed id the caller never sees (every
+		// later `wait`/`status`/`cancel` would operate on the wrong job). Mirror
+		// `WorkPool.#ensurePoolJob` and surface the collision as an error instead.
+		if (registeredId !== id) {
+			manager.cancel(registeredId, { ownerId });
+			const descriptor = parsed.label !== undefined ? `label "${parsed.label}"` : `id "${id}"`;
+			throw new ToolError(`agent ${descriptor} is unavailable (already in use)`);
+		}
 		return { id, agent: policy.agentName };
 	} catch (error) {
 		if (error instanceof StructuredSubagentError) throw new ToolError(error.message);
