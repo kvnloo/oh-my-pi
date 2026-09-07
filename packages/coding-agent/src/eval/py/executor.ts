@@ -434,6 +434,27 @@ function pythonToolError(execution: KernelExecuteResult): string {
 	return error.value || error.name || "Python tool request failed";
 }
 
+/**
+ * Surface an aborted Python tool request as a cancellation error instead of
+ * the misleading "invalid response" branch. Mirrors the cell-execution sibling
+ * (`executeWithKernelBase`'s `result.cancelled || abortShield.abortRequested`
+ * gate): `BaseKernel.#submit` finalises a `interruptOnCancel: false` request
+ * with `status: "ok", cancelled: true` and no envelope when its signal aborts,
+ * so the wrappers must branch on cancellation before envelope validation.
+ *
+ * Throwing (rather than returning `{ ok: false, error: "invalid response" }`)
+ * lets the agent loop classify the result as `abortedDuringExecution` and emit
+ * the truthful `createSkippedToolResult` / abort wording instead.
+ */
+function throwPythonToolCancellation(execution: KernelExecuteResult, signal: AbortSignal | undefined): never {
+	const reason = signal?.reason;
+	if (execution.timedOut || isTimedOutCancellation(reason, PythonExecutionCancelledError, signal)) {
+		throw new PythonExecutionCancelledError(true);
+	}
+	if (reason instanceof Error) throw reason;
+	throw new PythonExecutionCancelledError(false);
+}
+
 async function invokePythonToolRequest(
 	request: PythonToolRequest,
 	options: PythonToolInvokeOptions,
@@ -484,6 +505,9 @@ export async function describePythonTools(
 	options: PythonToolInvokeOptions,
 ): Promise<{ tools: EvalToolDescriptor[]; missing: string[] }> {
 	const { execution, envelope } = await invokePythonToolRequest({ op: "describe", names }, options);
+	if (execution.cancelled || options.signal?.aborted) {
+		throwPythonToolCancellation(execution, options.signal);
+	}
 	if (execution.status === "error") throw new Error(pythonToolError(execution));
 	if (!isUnknownRecord(envelope) || envelope.ok !== true) {
 		throw new Error("Python tool describe request returned an invalid response");
@@ -510,6 +534,9 @@ export async function callPythonTool(
 	options: PythonToolInvokeOptions,
 ): Promise<EvalToolInvokeResult> {
 	const { execution, envelope } = await invokePythonToolRequest({ op: "call", name, args }, options);
+	if (execution.cancelled || options.signal?.aborted) {
+		throwPythonToolCancellation(execution, options.signal);
+	}
 	if (execution.status === "error") return { ok: false, error: pythonToolError(execution) };
 	if (!isUnknownRecord(envelope) || envelope.ok !== true || !("value" in envelope)) {
 		return { ok: false, error: "Python tool call returned an invalid response" };
