@@ -1,0 +1,12 @@
+Manage configuration settings
+
+USAGE
+  $ omp config [ACTION] [KEY] [VALUE...] [FLAGS]
+
+ARGUMENTS
+  ACTION   Config action (list|get|set|reset|path|init-xdg)
+  KEY      Setting key
+  VALUE    Value (for set/reset)
+
+FLAGS
+      --json  Output JSON
