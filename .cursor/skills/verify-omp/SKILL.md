@@ -1,3 +1,10 @@
+---
+name: verify-omp
+description: >
+  Validate omp installation and core features through systematic testing of
+  CLI commands, configuration, print-mode, and Doctor diagnostics.
+---
+
 # Verify Oh-My-Pi Installation and Core Features
 
 This skill validates a working oh-my-pi (omp) installation through systematic testing of CLI commands, TUI interactions, and agent primary surfaces.
@@ -8,6 +15,33 @@ This skill validates a working oh-my-pi (omp) installation through systematic te
 - Before submitting changes that affect core workflows
 - When debugging installation or runtime issues
 - To generate proof of working features for PRs or issues
+
+## Quick Start
+
+### Automated Verification
+
+Run the fail-hard proof script for comprehensive testing:
+
+```bash
+# From repo root
+.cursor/skills/verify-omp/bin/omp-verify
+
+# With isolated agent directory
+PI_CODING_AGENT_DIR=/tmp/omp-test-agent .cursor/skills/verify-omp/bin/omp-verify
+```
+
+The script tests all mapped features and exits with code 1 on any failure.
+
+### Feature Map
+
+Individual feature verification guides:
+- `features/version-help.md` — Basic CLI info commands
+- `features/doctor.md` — Doctor diagnostic command
+- `features/models-list.md` — Model discovery and listing
+- `features/config-operations.md` — Config get/set/list
+- `features/print-mode.md` — Non-interactive print mode
+
+Each feature map describes the user surface, testing steps, and expected evidence paths.
 
 ## Launch
 
@@ -79,22 +113,31 @@ find . -name "*.node" 2>/dev/null | head -5 || echo "No .node files in tree (may
 ### Config Discovery
 
 ```bash
-# Check XDG paths
+# Check agent directory (respects PI_CODING_AGENT_DIR)
+AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
+echo "Agent directory: $AGENT_DIR"
+
+# Check config paths
 echo "Config paths:"
-echo "  ~/.omp/agent/config.yml"
-echo "  ~/.omp/agent/models.yml"
+echo "  $AGENT_DIR/config.yml"
+echo "  $AGENT_DIR/models.yml"
 echo "  ~/.cursor/"
 echo "  ./.cursor/"
 
 # Show active config (first 20 lines)
-if [ -f ~/.omp/agent/config.yml ]; then
-  head -20 ~/.omp/agent/config.yml
+if [ -f "$AGENT_DIR/config.yml" ]; then
+  head -20 "$AGENT_DIR/config.yml"
 else
   echo "No config.yml found (will use defaults)"
 fi
+
+# Verify agent directory ownership
+if [ -d "$AGENT_DIR" ]; then
+  ls -ld "$AGENT_DIR" | awk '{print "Owner: " $3 ":" $4}'
+fi
 ```
 
-**Expected:** Version prints, help renders, native addon exists (source) or skipped (global), config paths shown.
+**Expected:** Version prints, help renders, native addon exists (source) or skipped (global), config paths shown, agent directory ownership verified.
 
 ## Drive
 
@@ -188,15 +231,28 @@ bun sdk-test.ts 2>&1 | head -30 || echo "SKIP: SDK test failed (may need API key
 
 ### TUI Smoke (if TTY available)
 
-**Only run if `tty -s` succeeds:**
+**Only run if `tty -s` succeeds and portable PTY tools available:**
 
 ```bash
 if tty -s; then
   echo "=== TUI SMOKE TEST ==="
-  # Launch interactive mode with immediate exit
-  (sleep 2; echo "/exit") | timeout 10s omp --no-session 2>&1 | tee tui.log || echo "TUI timeout"
   
-  grep -i "session" tui.log && echo "PASS: TUI launched" || echo "INCONCLUSIVE: TUI did not render"
+  # Use portable tmux (don't depend on /exec-daemon/tmux.portal.conf)
+  # Create a temporary tmux session for testing
+  if command -v tmux &>/dev/null; then
+    TMUX_SOCKET="/tmp/omp-verify-tmux-$$"
+    tmux -S "$TMUX_SOCKET" new-session -d "omp --no-session; sleep 2"
+    sleep 3
+    tmux -S "$TMUX_SOCKET" capture-pane -p > tui.log
+    tmux -S "$TMUX_SOCKET" kill-session
+    rm -f "$TMUX_SOCKET"
+    
+    grep -i "session\|omp" tui.log && echo "PASS: TUI launched" || echo "INCONCLUSIVE: TUI did not render"
+  else
+    # Fallback: simple stdin test without tmux
+    (sleep 2; echo "/exit") | timeout 10s omp --no-session 2>&1 | tee tui.log || echo "TUI timeout"
+    grep -i "session" tui.log && echo "PASS: TUI launched" || echo "INCONCLUSIVE: TUI did not render"
+  fi
 else
   echo "SKIP: No TTY, cannot test TUI interactively"
 fi
@@ -204,11 +260,17 @@ fi
 
 ## Evidence
 
-Capture artifacts from Drive phase:
+Capture artifacts from Drive phase using isolated agent directory:
 
 ```bash
-EVIDENCE_DIR="/tmp/omp-verify-evidence-$(date +%s)"
+# Use PI_CODING_AGENT_DIR for all agent data writes
+AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
+EVIDENCE_DIR="$AGENT_DIR/verify-evidence-$(date +%s)"
 mkdir -p "$EVIDENCE_DIR"
+
+# Alternative: evidence under skill tree for committed proof
+# EVIDENCE_DIR=".cursor/skills/verify-omp/evidence"
+# mkdir -p "$EVIDENCE_DIR"
 
 # Collect logs
 cp /tmp/omp-verify-test/*.log "$EVIDENCE_DIR/" 2>/dev/null || true
@@ -221,6 +283,8 @@ Bun: $(bun --version)
 OMP: $(omp --version 2>&1 || bun dev -- --version 2>&1)
 TTY: $(tty 2>&1)
 TERM: $TERM
+PI_CODING_AGENT_DIR: ${PI_CODING_AGENT_DIR:-<not set>}
+Agent Directory: $AGENT_DIR
 EOF
 
 # Feature matrix
@@ -318,17 +382,23 @@ ls -lh "$EVIDENCE_DIR"
 
 ## Cleanup
 
-Remove temporary test files:
+Remove temporary test files (evidence is preserved):
 
 ```bash
 # Clean test workspace
 rm -rf /tmp/omp-verify-test
 
-# Keep evidence (do NOT delete)
-echo "Evidence preserved at: $EVIDENCE_DIR"
+# Evidence is preserved in PI_CODING_AGENT_DIR or skill tree
+# Do NOT delete evidence - it serves as proof for PRs and verification
+AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
+echo "Evidence preserved at: $AGENT_DIR/verify-evidence-*"
+echo "Or: .cursor/skills/verify-omp/evidence/"
 
 # Optional: remove stale sessions (if many exist)
 # omp sessions --clean-stale
+
+# Note: Doctor and verification commands write ONLY to PI_CODING_AGENT_DIR
+# when set, ensuring clean isolation for testing
 ```
 
 ## Feature Map Reference

@@ -1,0 +1,23 @@
+Configuration Values:
+====================
+
+default_model: claude-3-5-sonnet-20241022
+max_context_tokens: 100000
+session_dir: /tmp/test-agent/sessions
+log_level: info
+enable_tui: true
+theme: default
+
+Provider Configuration:
+-----------------------
+anthropic_api_key: [configured]
+openai_api_key: [configured]
+google_api_key: [configured]
+
+Agent Settings:
+---------------
+memory_enabled: true
+skill_discovery: true
+auto_save_sessions: true
+
+Config file: /tmp/test-agent/config.yml

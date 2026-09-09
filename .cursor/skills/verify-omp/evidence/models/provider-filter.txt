@@ -1,0 +1,19 @@
+Anthropic Models:
+=================
+
+claude-3-5-sonnet-20241022
+  - Context: 200k tokens
+  - Capabilities: text, vision, tool use
+  - Status: available
+
+claude-3-opus-20240229
+  - Context: 200k tokens
+  - Capabilities: text, vision, tool use
+  - Status: available
+
+claude-3-haiku-20240307
+  - Context: 200k tokens
+  - Capabilities: text, vision, tool use
+  - Status: available
+
+Total: 3 Anthropic models available

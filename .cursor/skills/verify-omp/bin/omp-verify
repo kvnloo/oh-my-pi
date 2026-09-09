@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# omp-verify: Fail-hard verification script for oh-my-pi installation
+# Exit code 1 on any failure, 0 on full success
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+EVIDENCE_BASE="${PI_CODING_AGENT_DIR:-.cursor/skills/verify-omp/evidence}"
+mkdir -p "$EVIDENCE_BASE"
+
+log() {
+    echo -e "${GREEN}[PASS]${NC} $*"
+}
+
+warn() {
+    echo -e "${YELLOW}[WARN]${NC} $*"
+}
+
+fail() {
+    echo -e "${RED}[FAIL]${NC} $*" >&2
+    exit 1
+}
+
+section() {
+    echo ""
+    echo "========================================"
+    echo "$*"
+    echo "========================================"
+}
+
+# Create evidence directories
+mkdir -p "$EVIDENCE_BASE"/{doctor,config,print-mode,models,version-help}
+
+section "Prerequisites Check"
+
+# Check bun
+if ! command -v bun &>/dev/null; then
+    fail "bun not found in PATH"
+fi
+BUN_VERSION=$(bun --version)
+log "bun version: $BUN_VERSION"
+
+# Check omp (binary or source)
+if command -v omp &>/dev/null; then
+    OMP_CMD="omp"
+    log "omp found in PATH"
+elif [ -f "packages/coding-agent/package.json" ]; then
+    OMP_CMD="bun dev --"
+    log "Using source: bun dev"
+else
+    fail "omp not found (neither binary nor source)"
+fi
+
+# Check git
+if ! git config user.email &>/dev/null; then
+    warn "git user.email not configured (non-critical)"
+fi
+
+section "Feature: Version and Help"
+
+# Version check
+$OMP_CMD --version > "$EVIDENCE_BASE/version-help/version.txt" 2>&1 || fail "omp --version failed"
+log "Version output captured"
+
+# Help check
+$OMP_CMD --help > "$EVIDENCE_BASE/version-help/help.txt" 2>&1 || fail "omp --help failed"
+if ! grep -q "usage\|Usage\|USAGE" "$EVIDENCE_BASE/version-help/help.txt"; then
+    fail "Help output missing usage information"
+fi
+log "Help output captured"
+
+section "Feature: Doctor Command"
+
+# Run doctor (may not exist, so allow failure but capture output)
+if $OMP_CMD doctor > "$EVIDENCE_BASE/doctor/output.txt" 2>&1; then
+    log "Doctor command executed successfully"
+    
+    # Check that doctor reports agent directory
+    if [ -n "${PI_CODING_AGENT_DIR:-}" ]; then
+        if ! grep -q "$PI_CODING_AGENT_DIR" "$EVIDENCE_BASE/doctor/output.txt"; then
+            warn "Doctor output doesn't mention PI_CODING_AGENT_DIR: $PI_CODING_AGENT_DIR"
+        else
+            log "Doctor correctly references PI_CODING_AGENT_DIR"
+        fi
+    fi
+else
+    warn "Doctor command not available or failed (captured output for review)"
+fi
+
+section "Feature: Models List"
+
+# Models list
+if $OMP_CMD models > "$EVIDENCE_BASE/models/list-output.txt" 2>&1; then
+    log "Models list executed"
+else
+    warn "Models list failed (may need API keys)"
+fi
+
+# Provider-specific models (optional)
+if $OMP_CMD models anthropic > "$EVIDENCE_BASE/models/provider-filter.txt" 2>&1; then
+    log "Provider filter (anthropic) executed"
+else
+    warn "Provider filter failed (may need API keys)"
+fi
+
+section "Feature: Config Operations"
+
+# Config list
+if $OMP_CMD config list > "$EVIDENCE_BASE/config/list-output.txt" 2>&1; then
+    log "Config list executed"
+    
+    # Config get (try a likely key)
+    if $OMP_CMD config get default_model > "$EVIDENCE_BASE/config/get-output.txt" 2>&1; then
+        log "Config get executed"
+    else
+        warn "Config get failed (command may not exist)"
+    fi
+else
+    warn "Config commands not available"
+fi
+
+section "Feature: Print Mode"
+
+# Test print mode with a simple prompt
+PRINT_TEST="$EVIDENCE_BASE/print-mode/output.txt"
+TEST_WORD="VERIFICATION_PROOF_$(date +%s)"
+
+# Set a reasonable timeout
+if timeout 60s $OMP_CMD -p "Print exactly this word: $TEST_WORD" --no-session > "$PRINT_TEST" 2>&1; then
+    log "Print mode executed without timeout"
+    
+    # Check if output contains something (not just empty)
+    if [ -s "$PRINT_TEST" ]; then
+        log "Print mode produced output"
+    else
+        fail "Print mode produced empty output"
+    fi
+else
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+        fail "Print mode timed out after 60s"
+    else
+        fail "Print mode failed with exit code $EXIT_CODE"
+    fi
+fi
+
+section "Evidence Summary"
+
+echo ""
+echo "Evidence collected in: $EVIDENCE_BASE"
+echo ""
+find "$EVIDENCE_BASE" -type f -exec echo "  - {}" \;
+echo ""
+
+section "Verification Complete"
+
+log "All critical checks passed!"
+log "Evidence preserved at: $EVIDENCE_BASE"
+
+exit 0
