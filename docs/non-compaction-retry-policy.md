@@ -68,7 +68,7 @@ Flow (`#handleRetryableError`):
 2. Increment the retry attempt and create the shared retry lifecycle promise on the first attempt.
 3. Calculate whether the current model's retry budget is exhausted.
 4. Classify the error, parse retry timing, and compute capped jittered backoff: `min(retry.baseDelayMs * 2^(attempt-1), 8000ms) * (75–100% jitter)`. Stale OpenAI Responses replay errors reset the provider session and use delay `0`.
-5. For usage limits, apply a successful credential switch or banked Codex reset immediately; otherwise wait for the earlier of the provider hint and the next temporarily blocked sibling credential.
+5. For usage limits, apply a successful credential switch or banked Codex reset immediately; otherwise wait for the earlier of the current account's unblock deadline (the later of the error-text hint and any exhausted usage-report window) and the next temporarily blocked sibling credential.
 6. When allowed, consult configured model fallback chains. A switch uses delay `0`; classifier refusals only continue when a fallback is applied.
 7. If the current model's retry budget is exhausted, stop unless a fallback model was found. A fallback receives a fresh retry budget.
 8. If the final delay exceeds `retry.maxDelayMs` and no credential/model switch happened, emit final failure without sleeping.
