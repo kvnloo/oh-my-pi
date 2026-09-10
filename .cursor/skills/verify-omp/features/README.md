@@ -36,4 +36,4 @@ Feature maps test **real commands against real installations**. Evidence must be
 - Committed to the evidence tree for regression tracking
 - Never fabricated or templated
 
-When bun or omp are unavailable, the harness exits with code 2 (INCONCLUSIVE) and reports the exact blocker. It never creates fake files or theater output.
+When neither an `omp` binary nor a runnable source checkout is available (source mode also needs bun), the harness exits with code 2 (INCONCLUSIVE) and reports the exact blocker. It never creates fake files or theater output.

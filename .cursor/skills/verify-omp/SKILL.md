@@ -47,8 +47,8 @@ See `features/README.md` for the standard feature map structure.
 
 ### Required
 
-- **bun** ≥1.3.14 — Runtime for oh-my-pi
-- **omp** — Binary in PATH or source checkout with `bun.lockb`
+- **omp** — Binary in PATH, **or** source checkout with `bun.lock`/`bun.lockb`
+- **bun** ≥1.3.14 — Required only for source-mode runs (not needed when `omp` is on PATH)
 
 ### Optional
 
@@ -193,9 +193,9 @@ A feature that should work is broken:
 ### Exit 2: Inconclusive
 
 Environment is not ready, with exact blocker reported:
-- `bun not found in PATH`
 - `omp not found (neither binary nor source)`
-- `Found monorepo but bun.lockb missing. Run 'bun install' first.`
+- `bun not found in PATH` (source mode only; binary-mode `omp` on PATH does not need bun)
+- `Found monorepo but bun.lock/bun.lockb missing. Run 'bun install' first.`
 
 **NEVER** create fake evidence when inconclusive. Report the blocker honestly and exit.
 
