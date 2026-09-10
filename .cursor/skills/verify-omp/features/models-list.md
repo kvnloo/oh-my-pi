@@ -1,17 +1,12 @@
 # Feature: Models Discovery
 
-## User Surface
+## Sub-features
 
-`omp models [provider]` — List available models, optionally filtered by provider.
+- `omp models` — List all available models across providers
+- `omp models <provider>` — List models for a specific provider
+- `omp models --help` — Show models command usage
 
-## What It Does
-
-- Queries available AI models across configured providers
-- Displays model names, capabilities, and metadata
-- Supports filtering by provider (e.g., `omp models anthropic`, `omp models openai`)
-- Shows model availability based on API keys and configuration
-
-## How to Test
+## How to get to it
 
 ```bash
 # List all models
@@ -20,21 +15,24 @@ omp models
 # List provider-specific models
 omp models anthropic
 omp models openai
-omp models ollama
 
-# Check help
+# Show help
 omp models --help
 ```
 
-## Success Criteria
+## Driving it with the harness
 
-- Command executes without error
-- Output lists model identifiers
-- Provider filtering works when specified
-- Handles missing API keys gracefully (shows available vs unavailable)
-- Help text displays usage information
+The verification harness tests model discovery:
 
-## Evidence Path
+1. Runs `omp models` and captures output to `evidence/models/list-output.txt`
+2. Attempts `omp models anthropic` and captures to `evidence/models/provider-filter.txt`
+3. Treats API key errors as non-fatal (warns but continues)
+4. Fails hard (exit 1) only if the command itself is broken, not if API keys are missing
 
-`.cursor/skills/verify-omp/evidence/models/list-output.txt`
-`.cursor/skills/verify-omp/evidence/models/provider-filter.txt`
+## Gotchas
+
+- Model availability depends on configured API keys
+- Missing keys result in empty lists or authentication errors (expected)
+- Provider names are case-sensitive (e.g., `anthropic` not `Anthropic`)
+- Some providers (like Ollama) require local services to be running
+- Output format may vary based on terminal width and available models

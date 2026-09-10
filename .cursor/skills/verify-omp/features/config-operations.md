@@ -1,43 +1,45 @@
 # Feature: Configuration Operations
 
-## User Surface
+## Sub-features
 
-Configuration management commands:
-- `omp config list` — List all configuration keys and values
+- `omp config list` — List all configuration keys and current values
 - `omp config get <key>` — Get a specific configuration value
 - `omp config set <key> <value>` — Set a configuration value
+- `omp config reset <key>` — Reset a key to default
+- `omp config path` — Show configuration file path
+- `omp config init-xdg` — Initialize XDG configuration directories
 
-## What It Does
-
-- Manages agent configuration in `~/.omp/agent/config.yml` (or `PI_CODING_AGENT_DIR/config.yml`)
-- Provides read/write access to configuration settings
-- Lists all available configuration options
-- Validates configuration values
-
-## How to Test
+## How to get to it
 
 ```bash
 # List all config
 omp config list
 
 # Get specific value
-omp config get default_model
+omp config get theme
 
-# Set a test value (if supported)
-omp config set test_key test_value
+# Set a value in isolated test directory
+PI_CODING_AGENT_DIR=/tmp/omp-test-$$ omp config set theme dark
 
-# Verify it was set
-omp config get test_key
+# Show config path
+omp config path
 ```
 
-## Success Criteria
+## Driving it with the harness
 
-- `list` command shows configuration keys
-- `get` command retrieves values without error
-- `set` command (if implemented) persists values
-- Commands respect `PI_CODING_AGENT_DIR` when set
+The verification harness tests config operations under an isolated `PI_CODING_AGENT_DIR`:
 
-## Evidence Path
+1. Sets `PI_CODING_AGENT_DIR` to a disposable temp directory
+2. Runs `omp config list` and captures output to `evidence/config/list-output.txt`
+3. Runs `omp config get theme` and captures to `evidence/config/get-output.txt`
+4. Runs `omp config path` to verify the isolated directory is used
+5. Lists `~/.omp/agent` after tests to prove the real config was untouched
+6. Fails hard (exit 1) if any config command fails
 
-`.cursor/skills/verify-omp/evidence/config/list-output.txt`
-`.cursor/skills/verify-omp/evidence/config/get-output.txt`
+## Gotchas
+
+- Config commands respect `PI_CODING_AGENT_DIR` environment variable
+- First run may initialize default config.yml automatically
+- Some keys may not exist in fresh installations
+- Config path differs: `~/.omp/agent/config.yml` vs `PI_CODING_AGENT_DIR/config.yml`
+- The harness MUST NOT modify the user's real `~/.omp/agent` directory

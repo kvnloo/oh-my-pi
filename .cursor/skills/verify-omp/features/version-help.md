@@ -1,41 +1,36 @@
 # Feature: Version and Help Output
 
-## User Surface
+## Sub-features
 
-Basic CLI information commands:
 - `omp --version` — Display version information
 - `omp --help` — Display help text and available commands
+- Command-specific help (e.g., `omp config --help`)
 
-## What It Does
-
-- `--version`: Prints the installed omp version number
-- `--help`: Shows usage information, available commands, and flags
-- Both are fundamental CLI commands that should always work
-
-## How to Test
+## How to get to it
 
 ```bash
 # Version check
 omp --version
 
-# Help output
+# Top-level help
 omp --help
 
 # Command-specific help
-omp doctor --help
-omp models --help
 omp config --help
+omp models --help
 ```
 
-## Success Criteria
+## Driving it with the harness
 
-- `--version` prints a valid semantic version string
-- `--help` displays comprehensive usage information
-- Command lists show expected commands (doctor, models, config, etc.)
-- Exit code is 0 for both commands
-- Output is properly formatted and readable
+The verification harness (`bin/omp-verify`) tests version and help:
 
-## Evidence Path
+1. Runs `omp --version` and captures output to `evidence/version-help/version.txt`
+2. Runs `omp --help` and captures output to `evidence/version-help/help.txt`
+3. Validates that help contains "usage" or "Usage" string
+4. Fails hard (exit 1) if either command fails
 
-`.cursor/skills/verify-omp/evidence/version-help/version.txt`
-`.cursor/skills/verify-omp/evidence/version-help/help.txt`
+## Gotchas
+
+- In source mode (no installed binary), harness uses `bun dev -- --version`
+- Help output format may vary between versions
+- Some commands may not have `--help` flag; use `omp help <command>` instead

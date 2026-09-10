@@ -1,40 +1,39 @@
 # Feature: Print Mode (Non-Interactive)
 
-## User Surface
+## Sub-features
 
-`omp -p "prompt text"` or `omp --print "prompt text"` — Execute a single prompt in non-interactive mode and print the result to stdout.
+- `omp -p "prompt text"` — Execute a single prompt in non-interactive mode
+- `omp --print "prompt text"` — Long form of print flag
+- `omp --no-session` — Prevent session persistence (ephemeral mode)
+- Combined usage: `omp -p "prompt" --no-session`
 
-Also: `--no-session` flag to prevent session persistence.
-
-## What It Does
-
-- Accepts a prompt from command line arguments
-- Executes the prompt without starting an interactive TUI
-- Prints the agent's response to stdout
-- Exits after completion
-- Useful for scripting and automation
-
-## How to Test
+## How to get to it
 
 ```bash
-# Simple test prompt
-omp -p "Print the word VERIFICATION" --no-session
+# Simple print mode
+omp -p "Echo hello world"
 
-# File operation test
-omp -p "List files in current directory" --no-session
+# With no-session flag
+omp -p "List current directory" --no-session
 
-# With timeout for safety
-timeout 60s omp -p "Echo hello" --no-session
+# Long form
+omp --print "Show bun version"
 ```
 
-## Success Criteria
+## Driving it with the harness
 
-- Command completes without hanging
-- Output contains expected response to prompt
-- Exit code indicates success (0) or failure (non-zero)
-- No interactive UI launched
-- Respects `PI_CODING_AGENT_DIR` for any agent data
+The verification harness tests print mode with timeout protection:
 
-## Evidence Path
+1. Generates a unique test word to verify actual execution
+2. Runs `omp -p "Print exactly this word: <UNIQUE>" --no-session` with 60s timeout
+3. Captures output to `evidence/print-mode/output.txt`
+4. Verifies the output file is non-empty
+5. Fails hard (exit 1) if print mode times out or produces empty output
 
-`.cursor/skills/verify-omp/evidence/print-mode/output.txt`
+## Gotchas
+
+- Print mode still requires valid model configuration and API keys
+- Timeout is set to 60 seconds to prevent hanging in verification
+- `--no-session` prevents session persistence (important for non-interactive testing)
+- Output goes to stdout; errors to stderr
+- May produce substantial output depending on the prompt (TUI rendering, tool execution logs)

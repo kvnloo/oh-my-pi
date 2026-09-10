@@ -1,41 +1,36 @@
-# Feature: Doctor Command
+# Feature: Plugin Doctor
 
-## User Surface
+## Sub-features
 
-`omp doctor` — Diagnostic health check command that validates the oh-my-pi installation, checks dependencies, verifies configuration, and reports agent directory status.
+- `omp plugin doctor` — Diagnose plugin installation issues
+- `omp plugin doctor --fix` — Attempt to fix detected issues
+- `omp plugin list` — List installed plugins
 
-## What It Does
-
-- Checks bun runtime version (≥1.3.14 required)
-- Verifies omp binary or source accessibility
-- Validates git configuration
-- Reports agent directory location and ownership
-- Checks native addon availability
-- Displays configuration discovery paths
-- Shows monorepo structure (if in source)
-
-## How to Test
+## How to get to it
 
 ```bash
-# Run doctor command
-omp doctor
+# Run plugin diagnostics
+omp plugin doctor
 
-# Expected output includes:
-# - Bun version ≥1.3.14
-# - OMP version string
-# - Git user.email configured
-# - Agent directory path (under PI_CODING_AGENT_DIR if set)
-# - Config file paths
-# - Native addon status
+# Run with auto-fix
+omp plugin doctor --fix
+
+# List plugins
+omp plugin list
 ```
 
-## Success Criteria
+## Driving it with the harness
 
-- Command exits with code 0
-- All required dependencies reported as present
-- Agent directory path shown and exists
-- No critical errors in output
+The verification harness tests the plugin subsystem:
 
-## Evidence Path
+1. Runs `omp plugin doctor` and captures output to `evidence/plugin-doctor/output.txt`
+2. Runs `omp plugin list` and captures to `evidence/plugin-doctor/list.txt`
+3. Treats "no plugins installed" as success (fresh installation expected)
+4. Fails hard (exit 1) only if the command itself is broken
 
-`.cursor/skills/verify-omp/evidence/doctor/output.txt`
+## Gotchas
+
+- Fresh installations may have no plugins (expected state)
+- Plugin directory may not exist until first plugin is installed
+- Some plugin features require internet access for remote plugin repositories
+- `--fix` flag modifies plugin state (not used in read-only verification)

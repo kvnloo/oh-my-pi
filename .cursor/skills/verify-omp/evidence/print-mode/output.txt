@@ -1,9 +1,0 @@
-Executing prompt: Print exactly this word: VERIFICATION_PROOF_1234567890
-
-VERIFICATION_PROOF_1234567890
-
-Task completed successfully.
-Agent: claude-3-5-sonnet-20241022
-Mode: print (non-interactive)
-Session: not persisted (--no-session)
-Duration: 1.2s

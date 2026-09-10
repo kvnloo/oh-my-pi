@@ -1,54 +1,68 @@
-# Verification Evidence
+# oh-my-pi Verification Evidence
 
-This directory contains example evidence from running the omp verification script.
+This directory contains proof-of-execution artifacts from running the omp verification harness against a real installation.
+
+## Purpose
+
+Evidence files serve as:
+1. **Regression tracking** — Committed artifacts prove features worked at verification time
+2. **Documentation** — Real command output shows actual behavior, not assumed behavior
+3. **Bug reproduction** — When verification fails, evidence captures the failure state
 
 ## Structure
 
 ```
 evidence/
-├── doctor/
-│   └── output.txt              # Output from 'omp doctor' command
-├── config/
-│   ├── list-output.txt        # Output from 'omp config list'
-│   └── get-output.txt         # Output from 'omp config get <key>'
-├── models/
-│   ├── list-output.txt        # Output from 'omp models'
-│   └── provider-filter.txt    # Output from 'omp models <provider>'
-├── print-mode/
-│   └── output.txt             # Output from 'omp -p "..." --no-session'
-└── version-help/
-    ├── version.txt            # Output from 'omp --version'
-    └── help.txt               # Output from 'omp --help'
+├── version-help/          # Basic CLI info commands
+│   ├── version.txt        # Output of `omp --version`
+│   └── help.txt           # Output of `omp --help`
+├── plugin-doctor/         # Plugin subsystem diagnostics
+│   ├── output.txt         # Output of `omp plugin doctor`
+│   └── list.txt           # Output of `omp plugin list`
+├── models/                # Model discovery
+│   ├── list-output.txt    # Output of `omp models`
+│   └── provider-filter.txt # Output of `omp models anthropic`
+├── config/                # Configuration operations
+│   ├── list-output.txt    # Output of `omp config list`
+│   ├── get-output.txt     # Output of `omp config get theme`
+│   ├── path-output.txt    # Output of `omp config path`
+│   └── real-agent-after.txt # Listing of ~/.omp/agent after tests
+└── print-mode/            # Non-interactive print mode
+    └── output.txt         # Output of `omp -p "test" --no-session`
 ```
 
-## How Evidence is Generated
+## Guidelines
 
-Run the verification script with isolated agent directory:
+### DO Commit
+
+- Real command output from actual omp execution
+- Empty files with explanatory comments (e.g., "skipped: no API keys")
+- Error messages that document expected failures (e.g., missing plugins)
+
+### DO NOT Commit
+
+- Fabricated or templated output
+- Fake config keys that don't exist in omp (e.g., `default_model`, `enable_tui`)
+- Evidence from `$PI_CODING_AGENT_DIR` or temp directories
+- Sensitive data (API keys, auth tokens, personal paths)
+
+### Regeneration
+
+To regenerate evidence on your system:
 
 ```bash
-PI_CODING_AGENT_DIR=/tmp/omp-test-agent .cursor/skills/verify-omp/bin/omp-verify
+# From repo root
+.cursor/skills/verify-omp/bin/omp-verify
+
+# Evidence files updated in place
+git status .cursor/skills/verify-omp/evidence/
 ```
 
-The script:
-1. Tests each mapped feature (see `../features/*.md`)
-2. Captures output to evidence files
-3. Fails hard (exit 1) on any critical failure
-4. Preserves evidence for commit/PR proof
+## Current Status
 
-## Evidence Requirements
+This evidence tree was last generated against:
+- Commit: (to be filled by verification run)
+- Environment: (to be filled by verification run)
+- Date: (to be filled by verification run)
 
-- **Real execution**: Evidence must come from actual omp command runs
-- **No mocks**: Don't fake evidence with `--model=mock` or similar
-- **Isolation**: Use `PI_CODING_AGENT_DIR` to isolate agent data writes
-- **Persistence**: Evidence survives cleanup and can be committed
-
-## Mapped Features
-
-Each feature has a corresponding `.md` file in `../features/`:
-- `version-help.md` → `version-help/*.txt`
-- `doctor.md` → `doctor/output.txt`
-- `models-list.md` → `models/*.txt`
-- `config-operations.md` → `config/*.txt`
-- `print-mode.md` → `print-mode/output.txt`
-
-See feature maps for testing steps and success criteria.
+Status: **PENDING** — Evidence from real execution needed (current files are placeholders).
