@@ -48,21 +48,19 @@ mkdir -p "$EVIDENCE_BASE"/{plugin-doctor,config,print-mode,models,version-help}
 
 section "Prerequisites Check"
 
-# Check bun
-if ! command -v bun &>/dev/null; then
-    inconclusive "bun not found in PATH. Install bun to run verification: curl -fsSL https://bun.sh/install | bash"
-fi
-BUN_VERSION=$(bun --version)
-log "bun version: $BUN_VERSION"
-
-# Check omp (binary or source)
+# Check omp (binary or source). bun is required only for source mode.
 # Skill lives at <repo>/.cursor/skills/verify-omp — repo root is three levels up.
 REPO_ROOT="$(cd "$SKILL_ROOT/../../.." && pwd)"
 OMP_CMD=""
 if command -v omp &>/dev/null; then
     OMP_CMD="omp"
-    log "omp found in PATH: $(which omp)"
+    log "omp found in PATH: $(command -v omp) (binary mode; bun not required)"
 elif [ -f "$REPO_ROOT/packages/coding-agent/src/cli.ts" ]; then
+    if ! command -v bun &>/dev/null; then
+        inconclusive "bun not found in PATH (required for source mode). Install: curl -fsSL https://bun.sh/install | bash — or install an omp binary onto PATH."
+    fi
+    BUN_VERSION=$(bun --version)
+    log "bun version: $BUN_VERSION"
     # We're in the monorepo (accept bun.lock or legacy bun.lockb)
     if [ ! -f "$REPO_ROOT/bun.lock" ] && [ ! -f "$REPO_ROOT/bun.lockb" ]; then
         inconclusive "Found monorepo at $REPO_ROOT but bun.lock/bun.lockb missing. Run 'bun install' first."
@@ -75,7 +73,7 @@ elif [ -f "$REPO_ROOT/packages/coding-agent/src/cli.ts" ]; then
     OMP_CMD="bun $REPO_ROOT/packages/coding-agent/src/cli.ts"
     log "Using source mode: bun packages/coding-agent/src/cli.ts (repo: $REPO_ROOT)"
 else
-    inconclusive "omp not found (neither binary nor source). Install omp or run from the monorepo."
+    inconclusive "omp not found (neither binary nor source). Install omp or run from the monorepo (requires bun)."
 fi
 
 section "Feature: Version and Help"
