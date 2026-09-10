@@ -16,7 +16,7 @@
 omp config list
 
 # Get specific value
-omp config get theme
+omp config get theme.dark
 
 # Set a value in isolated test directory
 PI_CODING_AGENT_DIR=/tmp/omp-test-$$ omp config set theme dark
@@ -31,7 +31,7 @@ The verification harness tests config operations under an isolated `PI_CODING_AG
 
 1. Sets `PI_CODING_AGENT_DIR` to a disposable temp directory
 2. Runs `omp config list` and captures output to `evidence/config/list-output.txt`
-3. Runs `omp config get theme` and captures to `evidence/config/get-output.txt`
+3. Runs `omp config get theme.dark` and captures to `evidence/config/get-output.txt`
 4. Runs `omp config path` to verify the isolated directory is used
 5. Lists `~/.omp/agent` after tests to prove the real config was untouched
 6. Fails hard (exit 1) if any config command fails

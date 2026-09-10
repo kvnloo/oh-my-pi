@@ -1,0 +1,7 @@
+Plugin Health Check
+
+⚠ plugins_directory: Not created yet
+⚠ package_manifest: Not created yet
+⚠ node_modules: Missing (run npm install in plugins dir)
+
+Summary: 0 ok, 3 warnings, 0 errors

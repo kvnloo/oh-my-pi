@@ -36,7 +36,7 @@ Exit codes:
 
 Individual feature verification guides in `features/`:
 - `version-help.md` — Basic CLI info commands (`--version`, `--help`)
-- `plugin-doctor.md` — Plugin diagnostics (`plugin doctor`, `plugin list`)
+- `doctor.md` — Plugin diagnostics (`plugin doctor`, `plugin list`)
 - `models-list.md` — Model discovery and listing (`models`)
 - `config-operations.md` — Config get/set/list/path
 - `print-mode.md` — Non-interactive print mode (`-p`)
@@ -113,7 +113,7 @@ export PI_CODING_AGENT_DIR="$TEST_AGENT_DIR"
 omp config list > .cursor/skills/verify-omp/evidence/config/list-output.txt
 
 # Get a value
-omp config get theme > .cursor/skills/verify-omp/evidence/config/get-output.txt
+omp config get theme.dark > .cursor/skills/verify-omp/evidence/config/get-output.txt
 
 # Show config path
 omp config path > .cursor/skills/verify-omp/evidence/config/path-output.txt

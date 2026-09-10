@@ -23,8 +23,10 @@ Edge cases, limitations, environment dependencies, and known issues.
 ## Available Feature Maps
 
 - `version-help.md` — Basic CLI info commands (`--version`, `--help`)
+- `doctor.md` — Plugin diagnostics (`plugin doctor`, `plugin list`)
 - `config-operations.md` — Configuration management (`config list`, `config get`, `config set`)
 - `models-list.md` — Model discovery and provider listing (`models`)
+- `print-mode.md` — Non-interactive print mode (`-p`)
 
 ## Testing Philosophy
 

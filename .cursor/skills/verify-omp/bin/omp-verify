@@ -56,18 +56,24 @@ BUN_VERSION=$(bun --version)
 log "bun version: $BUN_VERSION"
 
 # Check omp (binary or source)
+# Skill lives at <repo>/.cursor/skills/verify-omp — repo root is three levels up.
+REPO_ROOT="$(cd "$SKILL_ROOT/../../.." && pwd)"
 OMP_CMD=""
 if command -v omp &>/dev/null; then
     OMP_CMD="omp"
     log "omp found in PATH: $(which omp)"
-elif [ -f "$SKILL_ROOT/../../packages/coding-agent/package.json" ]; then
-    # We're in the monorepo
-    if [ -f "$SKILL_ROOT/../../bun.lockb" ]; then
-        OMP_CMD="bun --cwd $SKILL_ROOT/../.. run dev --"
-        log "Using source mode: bun run dev"
-    else
-        inconclusive "Found monorepo but bun.lockb missing. Run 'bun install' first."
+elif [ -f "$REPO_ROOT/packages/coding-agent/src/cli.ts" ]; then
+    # We're in the monorepo (accept bun.lock or legacy bun.lockb)
+    if [ ! -f "$REPO_ROOT/bun.lock" ] && [ ! -f "$REPO_ROOT/bun.lockb" ]; then
+        inconclusive "Found monorepo at $REPO_ROOT but bun.lock/bun.lockb missing. Run 'bun install' first."
     fi
+    if [ ! -d "$REPO_ROOT/node_modules" ] && [ ! -d "$REPO_ROOT/packages/coding-agent/node_modules" ]; then
+        inconclusive "Found monorepo at $REPO_ROOT but node_modules missing. Run 'bun install' first (omp binary also not in PATH)."
+    fi
+    # Direct cli.ts — same as repo ci:test:smoke. Do NOT use `bun run dev --`
+    # (bun may swallow args and print its own Usage help).
+    OMP_CMD="bun $REPO_ROOT/packages/coding-agent/src/cli.ts"
+    log "Using source mode: bun packages/coding-agent/src/cli.ts (repo: $REPO_ROOT)"
 else
     inconclusive "omp not found (neither binary nor source). Install omp or run from the monorepo."
 fi
@@ -77,6 +83,9 @@ section "Feature: Version and Help"
 # Version check
 if ! $OMP_CMD --version > "$EVIDENCE_BASE/version-help/version.txt" 2>&1; then
     fail "omp --version failed"
+fi
+if grep -qiE '^Usage: bun run|Cannot find module' "$EVIDENCE_BASE/version-help/version.txt"; then
+    fail "omp --version did not return omp output (got bun/runtime error). Check OMP_CMD / install."
 fi
 log "Version output captured: $EVIDENCE_BASE/version-help/version.txt"
 
@@ -138,8 +147,8 @@ fi
 log "Config list executed: $EVIDENCE_BASE/config/list-output.txt"
 
 # Config get (try a likely key - theme is a common one)
-if PI_CODING_AGENT_DIR="$TEST_AGENT_DIR" $OMP_CMD config get theme > "$EVIDENCE_BASE/config/get-output.txt" 2>&1; then
-    log "Config get (theme) executed: $EVIDENCE_BASE/config/get-output.txt"
+if PI_CODING_AGENT_DIR="$TEST_AGENT_DIR" $OMP_CMD config get theme.dark > "$EVIDENCE_BASE/config/get-output.txt" 2>&1; then
+    log "Config get (theme.dark) executed: $EVIDENCE_BASE/config/get-output.txt"
 else
     warn "Config get failed (key may not exist in fresh config)"
 fi
@@ -149,11 +158,16 @@ if PI_CODING_AGENT_DIR="$TEST_AGENT_DIR" $OMP_CMD config path > "$EVIDENCE_BASE/
     CONFIG_PATH=$(cat "$EVIDENCE_BASE/config/path-output.txt")
     if [[ "$CONFIG_PATH" == "$TEST_AGENT_DIR"* ]]; then
         log "Config path correctly points to isolated directory: $CONFIG_PATH"
+        {
+            echo "PI_CODING_AGENT_DIR=$TEST_AGENT_DIR"
+            echo "config_path=$CONFIG_PATH"
+            echo "isolation=PASS"
+        } > "$EVIDENCE_BASE/config/isolation.txt"
     else
         fail "Config path does not respect PI_CODING_AGENT_DIR: $CONFIG_PATH"
     fi
 else
-    warn "Config path command failed"
+    fail "Config path command failed"
 fi
 
 # Verify real ~/.omp/agent was NOT touched
