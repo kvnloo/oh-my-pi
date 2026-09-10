@@ -1,0 +1,5 @@
+total 1568
+drwx------ 2 box box    4096 Sep 10 00:25 .
+drwxr-xr-x 5 box box    4096 Sep 10 00:23 ..
+-rw------- 1 box box  163840 Sep 10 00:25 agent.db
+-rw-r--r-- 1 box box 1433600 Sep 10 00:25 models.db
