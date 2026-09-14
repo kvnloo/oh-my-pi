@@ -63,6 +63,33 @@ describe("classifyModel", () => {
 		});
 	});
 
+	test("-thinking suffix collapses through surrounding whitespace", () => {
+		// Regression: leading/trailing whitespace previously skipped collapse,
+		// dropping thinkingVariant/logicalId for the otherwise-identical id.
+		expect(classifyModel("vercel-ai-gateway", "  glm-4.6-thinking  ")).toMatchObject({
+			class: "glm",
+			thinkingVariant: true,
+			logicalId: "glm-4.6",
+		});
+	});
+
+	test("effort suffix collapses through surrounding whitespace", () => {
+		const identity = classifyModel("openai", "  gpt-5.2-codex-xhigh  ");
+		expect(identity).toMatchObject({
+			effort: Effort.XHigh,
+			logicalId: "gpt-5.2-codex",
+		});
+		expect(identity).not.toHaveProperty("thinkingVariant");
+	});
+
+	test("surrounding whitespace does not change no-suffix classification", () => {
+		// No-suffix ids reach collapseVariantId's terminal return, so logicalId
+		// equals trimmed and the trailing guard suppresses identity.logicalId;
+		// padding must not populate it (fix-equivalence for the no-suffix branch).
+		expect(classifyModel("anthropic", "  claude-opus-4-6  ")).toEqual(classifyModel("anthropic", "claude-opus-4-6"));
+		expect(classifyModel("openai", "  o3  ")).toEqual(classifyModel("openai", "o3"));
+	});
+
 	test("effort suffix collapses with except-bare-prefix gate", () => {
 		// qwen3.6-max is a product SKU, not an effort variant: the collapse
 		// vocabulary carries except-bare-prefix="qwen" on the -max suffix.

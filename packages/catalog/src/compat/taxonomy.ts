@@ -352,10 +352,7 @@ export function classifyModel(provider: string, modelId: string, opts?: Classify
 		if (logical !== trimmed) identity.logicalId = logical;
 		return identity;
 	}
-	const collapsed =
-		trimmed.length === modelId.length
-			? collapseVariantId(provider, trimmed)
-			: ({ logicalId: trimmed, thinkingVariant: false } satisfies CollapsedVariant);
+	const collapsed = collapseVariantId(provider, trimmed);
 	const ranks = classifyRanks(collapsed.logicalId, lenient);
 	const identity: ModelIdentity = { class: ranks.class };
 	if (ranks.family !== undefined) identity.family = ranks.family;
