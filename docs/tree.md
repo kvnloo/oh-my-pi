@@ -100,7 +100,7 @@ Same as `default`, plus hides `toolResult` messages.
 
 ### `user-only`
 
-Only `message` entries where role is `user`.
+Plain `user` messages plus custom messages that start a user turn (user-invoked `/skill:` and collab prompts).
 
 ### `labeled-only`
 
@@ -138,7 +138,8 @@ Assistant messages that contain only tool calls (no canonical text) are hidden i
 ### Selecting `custom_message`
 
 - Ordinary custom messages use the same parent-leaf rule and text prefill as user messages
-- `skill-prompt` custom messages are not editable; selecting one lands on that node like other non-user entries
+- User-invoked `/skill:` and collab prompts follow the same parent-leaf rule; a `/skill:` prefill restores the chip-bearing draft you typed, not the expanded skill body
+- Autoloaded `skill-prompt` custom messages are not editable; selecting one lands on that node like other non-user entries
 
 ### Selecting a past `ask` tool result
 
