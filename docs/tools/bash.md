@@ -29,7 +29,7 @@
 | `async` | `boolean` | No | Background execution request. Present only when `async.enabled` is true for the session. Returns immediately with a job id instead of waiting; it does not change the effective deadline, including a disabled deadline from `timeout: 0`. |
 
 ## Outputs
-The tool returns a single `text` content block plus optional `details`.
+The tool returns a single `text` content block plus optional `details`; image content blocks may also be returned when the command emits terminal graphics (Kitty/SIXEL).
 
 - Success, foreground:
   - `content[0].text`: command output, or `(no output)` when the command produced nothing.
@@ -38,7 +38,7 @@ The tool returns a single `text` content block plus optional `details`.
   - `details.wallTimeMs`: elapsed wall-clock milliseconds for completed local/client-terminal runs.
   - `details.terminalId`: present when execution was routed through a client terminal bridge.
   - `details.exitCode`: present when the command completed with a non-zero exit code.
-  - `details.timedOut: true`: present on local/PTY timeout results.
+  - `details.timedOut: true`: present on local/PTY and client-terminal bridge timeout results.
   - `details.meta.truncation`: present when output was truncated in memory; includes `artifactId` when full output spilled to an artifact.
   - non-zero exits and local/PTY timeouts return a tool result marked `isError`; definite non-zero output ends with `Command exited with code <n>`.
 - Success, background start (`async: true` or auto-background):
@@ -49,7 +49,7 @@ The tool returns a single `text` content block plus optional `details`.
   - running updates contain tail text and `details.async.state: "running"` only after the job is considered backgrounded.
   - completion/failure updates carry final text and `details.async.state: "completed" | "failed"`. A non-zero exit or timeout is recorded as a failed background job.
 - Failure:
-  - cancellation, missing exit status, validation failures, intercepted commands, and client-terminal-bridge timeouts throw `ToolError` / `ToolAbortError`.
+  - cancellation, missing exit status, validation failures, and intercepted commands throw `ToolError` / `ToolAbortError`.
 
 Stdout and stderr are merged before the model sees them. Definite non-zero exit codes are appended to the returned error result text as `Command exited with code <n>`.
 
@@ -143,7 +143,7 @@ Choose the setting by the desired outcome:
 13. `runInteractiveBashPty()` creates a `PtySession`, overlays an xterm-backed console UI, forwards user key input into the PTY, captures output through `OutputSink`, and kills the PTY on dismiss/dispose.
 14. Client-terminal bridge mode calls `session.getClientBridge().createTerminal(...)`, emits `terminalId` updates, polls output until exit/timeout/abort, maps signal exits to `137`, and releases the handle in `finally`.
 15. On completion, `#buildCompletedResult()` formats `(no output)` when needed, attaches truncation metadata from the output summary, appends wall-time/timeout/exit notices, and re-checks unfinished status before returning.
-16. Local/PTY timeout outcomes become `isError` results with `details.timedOut`; client-terminal timeout and cancellation/missing exit status paths throw with captured output when available.
+16. Local/PTY and client-terminal bridge timeout outcomes become `isError` results with `details.timedOut`; cancellation/missing exit status paths throw with captured output when available.
 
 ## Modes / Variants
 1. Foreground non-PTY local
@@ -214,7 +214,7 @@ Choose the setting by the desired outcome:
 - Execution:
   - non-zero exit -> returned tool result marked `isError`, with `details.exitCode` and text ending in `Command exited with code <n>`.
   - missing exit code -> thrown `ToolError` with `Command failed: missing exit status`.
-  - timeout -> local/PTY execution returns an `isError` result with `details.timedOut: true` and a timeout notice; the client-terminal bridge throws `ToolError` after killing the terminal and attempting a final output read. Managed background execution records either form as a failed job.
+  - timeout -> local/PTY and client-terminal bridge execution return an `isError` result with `details.timedOut: true` and a timeout notice (the client-terminal bridge kills the terminal and attempts a final output read first). Managed background execution records either form as a failed job.
   - user abort -> `ToolAbortError` when the caller signal is aborted.
 - Artifact allocation / artifact save failures are swallowed in `saveBashOriginalArtifact()` and `OutputSink.#createFileSink()`; execution continues without that artifact.
 
