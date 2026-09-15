@@ -6414,7 +6414,6 @@ dependencies = [
  "anyhow",
  "brush-core",
  "brush-parser 0.3.0",
- "bytes",
  "clap",
  "flume",
  "jiff",
