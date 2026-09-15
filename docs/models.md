@@ -181,13 +181,11 @@ ModelRegistry pipeline (on refresh):
 ### Provider-model cache and static fingerprint
 
 Cached per-provider model lists are persisted in the model-cache SQLite
-database (current schema version 12) with a `static_fingerprint` column that
+database (current schema version) with a `static_fingerprint` column that
 hashes the static catalog slice merged into the row. When `resolveProviderModels`
 skips the network fetch and the fingerprint of the in-memory static
 catalog matches the cached one, the cached rows are returned verbatim —
-the static + dynamic merge is bypassed entirely. The fingerprint is
-memoized per process by tagging the static-models array with a symbol
-property, so repeated cold-start calls do not re-hash.
+the static + dynamic merge is bypassed entirely.
 
 ### Shared catalog refresh
 
