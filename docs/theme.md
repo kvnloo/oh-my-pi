@@ -17,7 +17,7 @@ Primary implementation: `src/modes/theme/theme.ts`.
 
 ## Theme JSON shape
 
-Theme files are JSON objects validated against the runtime schema in `theme.ts` (`themeJsonSchema`) and mirrored by `src/modes/theme/theme-schema.json`.
+Theme files are JSON objects validated against the runtime schema in `schema-validation.ts` (`validateThemeJson`) and mirrored by `src/modes/theme/theme-schema.json`.
 
 Top-level fields:
 
@@ -125,7 +125,7 @@ For custom theme files:
 
 1. read JSON
 2. parse JSON
-3. validate against `themeJsonSchema`
+3. validate with `validateThemeJson`
 4. resolve `vars` references recursively
 5. convert resolved values to ANSI by terminal capability mode
 
@@ -353,6 +353,6 @@ Use this workflow:
 
 - All `colors` tokens are required for custom themes except optional `thinkingMax`, which falls back to `thinkingXhigh`.
 - `export` and `symbols` are optional.
-- `$schema` in theme JSON is informational; runtime validation is enforced by the ArkType-compatible schema in code (`themeJsonSchema` in `src/modes/theme/schema.ts`).
+- `$schema` in theme JSON is informational; runtime validation is enforced by the ArkType-compatible schema in code (`validateThemeJson` in `src/modes/theme/schema-validation.ts`).
 - `setTheme` failure falls back to `dark`; `previewTheme` failure does not replace current theme.
 - File watcher reload errors or temporary missing files keep the current loaded theme until a successful reload or explicit theme switch.
