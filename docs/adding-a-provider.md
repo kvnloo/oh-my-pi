@@ -2,11 +2,13 @@
 
 A provider is described in two halves:
 
-- **Catalog half** (`packages/catalog`): one entry in the `CATALOG_PROVIDERS`
-  table (`packages/catalog/src/provider-models/descriptors.ts`) carrying the
-  `id`, `defaultModel`, runtime model-discovery factory, and catalog-generation
-  wiring. `KnownProvider`, `PROVIDER_DESCRIPTORS`, and
-  `DEFAULT_MODEL_PER_PROVIDER` are derived from this table.
+- **Catalog half** (`packages/catalog`): one `provider "<id>"` node in
+  `packages/catalog/src/compat/rules/providers/<id>.kdl` carrying `default-model`,
+  `env` keys, optional `discovery` wiring, and optional authored `seed` rows.
+  The runtime model-discovery factory lives separately in
+  `packages/catalog/src/provider-models/descriptors.ts` (`MODEL_MANAGER_FACTORIES`).
+  `KnownProvider`, `PROVIDER_DESCRIPTORS`, and `DEFAULT_MODEL_PER_PROVIDER` are
+  derived from the compiled KDL entries.
 - **Auth half** (`packages/ai`): one declarative `ProviderDefinition` in the
   registry carrying env-key fallbacks and login/refresh flows. The
   `OAuthProvider` union, the env-key map, the `/login` provider list, the
@@ -24,11 +26,14 @@ common case for gateways and API-key providers, since stream dispatch keys on
 
 For the common case, a provider is **one catalog entry + one def file + one registry line**:
 
-1. **Add an entry to `CATALOG_PROVIDERS`** in
-   `packages/catalog/src/provider-models/descriptors.ts` with the `id`,
-   `defaultModel`, the plain API-key env var(s) as `envVars`, and (usually) a
-   `createModelManagerOptions` factory. For a
-   simple OpenAI-compatible gateway, build the factory in
+1. **Add a `provider "<id>"` node** in
+   `packages/catalog/src/compat/rules/providers/<id>.kdl` declaring `default-model`,
+   the plain API-key env var(s) under `env`, and (usually) a `discovery` node.
+   See the "Provider catalog grammar" section of
+   `packages/catalog/src/compat/rules/README.md` for the KDL schema. For runtime
+   model discovery, pair it with a `MODEL_MANAGER_FACTORIES` entry in
+   `packages/catalog/src/provider-models/descriptors.ts`. For a simple
+   OpenAI-compatible gateway, build the factory in
    `packages/catalog/src/provider-models/openai-compat.ts` or inline with the
    exported `createSimpleOpenAICompletionsOptions(providerId, baseUrl, config)`.
 2. **Create `packages/ai/src/registry/<id>.ts`** exporting one
@@ -53,23 +58,27 @@ file. The shared OAuth flow infrastructure it builds on lives in the same
 
 Descriptors, the default-model map, env-key map, login list, and refresh
 dispatch all update automatically; the `KnownProvider` union gains the new id
-from the catalog table and `OAuthProvider` from the registry.
+from the compiled KDL entries and `OAuthProvider` from the registry.
 
 ## Field reference
 
-**Catalog table entry** (`ProviderCatalogEntry`, see
-`packages/catalog/src/provider-models/descriptor-types.ts` for JSDoc):
+**Catalog entry** — the `provider "<id>"` node in
+`packages/catalog/src/compat/rules/providers/<id>.kdl`; see the "Provider
+catalog grammar" section of `packages/catalog/src/compat/rules/README.md` for
+the KDL schema, per-field semantics, and seed-row grammar. The block's
+`"<id>"` is the `KnownProvider` member. The runtime model-manager factory
+(`MODEL_MANAGER_FACTORIES` in `packages/catalog/src/provider-models/descriptors.ts`)
+gates inclusion in `PROVIDER_DESCRIPTORS`; bespoke managers
+(`google-antigravity` / `google-gemini-cli` / `openai-codex`) have no entry
+there.
 
-| Field                        | Effect                                                                                                                                                                                                                        |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                         | Required. Member of `KnownProvider`.                                                                                                                                                                                          |
-| `defaultModel`               | Required. Preferred model when no explicit selection is made.                                                                                                                                                                 |
-| `envVars`                    | Env var name(s), in order, for the runtime API-key fallback (`getEnvApiKey`).                                                                                                                                                 |
-| `createModelManagerOptions`  | Runtime model-discovery factory. Present (and not `specialModelManager`) ⇒ appears in `PROVIDER_DESCRIPTORS`.                                                                                                                 |
-| `allowUnauthenticated`       | Runtime creates a model manager even without a key.                                                                                                                                                                           |
-| `dynamicModelsAuthoritative` | Successful discovery replaces bundled models.                                                                                                                                                                                 |
-| `catalogDiscovery`           | `{ label, envVars?, oauthProvider?, allowUnauthenticated? }` for offline catalog generation (`generate-models.ts`). `envVars` here overrides the entry-level list when generation uses different credentials (e.g. `cursor`). |
-| `specialModelManager`        | Bespoke runtime factory (`google-antigravity` / `google-gemini-cli` / `openai-codex`); excluded from `PROVIDER_DESCRIPTORS`.                                                                                                  |
+| KDL field                       | Effect                                                                                                                                                                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `default-model`                 | Required. Preferred model when no explicit selection is made.                                                                                                                                                                 |
+| `env`                           | Env var name(s), in order, for the runtime API-key fallback (`getEnvApiKey`).                                                                                                                                                 |
+| `allow-unauthenticated`          | Runtime creates a model manager even without a key.                                                                                                                                                                          |
+| `dynamic-models-authoritative`  | Successful discovery replaces bundled models.                                                                                                                                                                                |
+| `discovery`                      | `{ label, envVars?, oauthProvider?, allowUnauthenticated? }` for offline catalog generation (`generate-models.ts`). `envVars` here overrides the entry-level `env` when generation uses different credentials (e.g. `cursor`). |
 
 **Registry definition** (`ProviderDefinition`, see
 `packages/ai/src/registry/types.ts`):
