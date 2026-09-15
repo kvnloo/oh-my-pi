@@ -150,12 +150,11 @@ so callers MUST emit `strict: true` only when enforcement actually succeeded.
 `resolveProviderModels` in `packages/catalog/src/model-manager.ts` and
 `readModelCache`/`writeModelCache` in `packages/catalog/src/model-cache.ts`
 cooperate via a `static_fingerprint` column on the `model_cache` SQLite
-table (current cache schema version 12).
+table (current cache schema version).
 
 - `fingerprintStatic(staticModels, dynamicModelsAuthoritative)` hashes the
-  static catalog slice (`Bun.hash(JSON.stringify(models))` in base36), prefixes
-  the fingerprint format/version and authoritative mode, and memoizes the
-  non-authoritative result by tagging the array with a symbol property.
+  static catalog slice (`Bun.hash(JSON.stringify(models))` in base36) and
+  prefixes the fingerprint format/version and authoritative mode.
   Endpoint-migration drop IDs are also folded into cache identity.
 - When network fetching is skipped, the cache is fresh and authoritative,
   restored headers are complete, and the static fingerprint matches,
