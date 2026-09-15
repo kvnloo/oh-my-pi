@@ -18,5 +18,5 @@ pub use pi_builtins::{
 };
 pub use shell::{
 	MinimizerResult, Shell, ShellExecuteOptions, ShellExecuteResult, ShellOptions, ShellRunOptions,
-	ShellRunResult, StreamSinks, execute_shell, execute_shell_streams,
+	ShellRunResult, execute_shell,
 };
