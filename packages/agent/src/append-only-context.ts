@@ -97,8 +97,8 @@ export class StablePrefix {
 /**
  * Append-only message log at the `Message[]` (provider-level) layer.
  *
- * The only mutation path is `replaceTail()`, reserved for compaction.
- * Every other operation is append-only.
+ * The only mutation paths are `truncate()`/`clear()`, reserved for
+ * compaction and reset; every other operation is append-only.
  */
 export class AppendOnlyLog {
 	#entries: Message[] = [];
@@ -113,12 +113,6 @@ export class AppendOnlyLog {
 
 	extend(messages: any[]): void {
 		for (const m of messages) this.#entries.push(m);
-	}
-
-	/** Replace the last entry — only legal for compaction. */
-	replaceTail(replacement: any): void {
-		const idx = this.#entries.length - 1;
-		if (idx >= 0) this.#entries[idx] = replacement;
 	}
 
 	/** Returns a shallow copy of all entries. */
@@ -268,26 +262,6 @@ export class AppendOnlyContextManager {
 		this.log.clear();
 		this.#lastSyncCount = 0;
 		this.#messageDigests = [];
-	}
-
-	appendMessage(message: any): void {
-		this.log.append(message);
-	}
-
-	replaceTailMessage(message: any): void {
-		this.log.replaceTail(message);
-	}
-
-	invalidate(): void {
-		this.prefix.invalidate();
-	}
-
-	reset(context: AgentContext, options: BuildOptions): void {
-		this.prefix.invalidate();
-		this.log.clear();
-		this.#lastSyncCount = 0;
-		this.#messageDigests = [];
-		this.prefix.build(context, options);
 	}
 
 	/** Index of the first message whose serialized bytes differ from the
