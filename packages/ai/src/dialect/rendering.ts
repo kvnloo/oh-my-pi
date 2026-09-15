@@ -6,11 +6,6 @@ export function renderToolResponseResults(results: readonly DialectToolResult[])
 	return results.map(result => `<tool_response>\n${result.text}\n</tool_response>`).join("\n");
 }
 
-export function kimiCallId(name: string, id: string, index: number): string {
-	const trimmed = id.trim();
-	return trimmed.startsWith("functions.") ? trimmed : `functions.${name}:${index}`;
-}
-
 export function harmonyRecipient(name: string): string {
 	return name.startsWith("functions.") ? name : `functions.${name}`;
 }
@@ -274,18 +269,6 @@ export function renderDelimitedThinking(open: string, close: string, text: strin
 
 export function chatMlTurn(role: "assistant" | "system" | "tool" | "user", body: string): string {
 	return `<|im_start|>${role}\n${body}<|im_end|>\n`;
-}
-
-export function kimiTurn(role: "assistant" | "system" | "user", name: string, body: string): string {
-	return `<|im_${role}|>${name}<|im_middle|>${body}<|im_end|>`;
-}
-
-export function gemmaTurn(role: "model" | "system" | "user", body: string): string {
-	return `<|turn>${role}\n${body}<turn|>`;
-}
-
-export function geminiTurn(role: "model" | "user", body: string): string {
-	return `<start_of_turn>${role}\n${body}<end_of_turn>\n`;
 }
 
 export function joinUserBodies(left: string, right: string): string {
