@@ -1792,13 +1792,6 @@ pub fn sort_collected_depth_first(entries: &mut [CollectedEntry]) {
 	entries.sort_unstable_by(|left, right| compare_depth_first_paths(&left.path, &right.path));
 }
 
-/// Return whether `relative` is below any pruned normalized directory path.
-pub fn is_under_pruned_relative_dir(relative: &str, pruned_dirs: &[String]) -> bool {
-	pruned_dirs
-		.iter()
-		.any(|dir| is_relative_ancestor(dir, relative))
-}
-
 /// Return the root device id used by same-filesystem traversal filters.
 ///
 /// Non-Unix platforms return `None`, making same-filesystem filtering a no-op.
@@ -1817,42 +1810,6 @@ pub fn root_device_id(path: &Path, follow_links: FollowLinks) -> Option<u64> {
 #[cfg(not(unix))]
 pub const fn root_device_id(_path: &Path, _follow_links: FollowLinks) -> Option<u64> {
 	None
-}
-
-/// Return whether `path` is on the root filesystem represented by
-/// `root_device`.
-///
-/// When `root_device` is `None`, this returns true. On non-Unix platforms this
-/// is always true, matching the existing no-op same-filesystem behavior there.
-#[cfg(unix)]
-pub fn is_path_on_root_file_system(
-	path: &Path,
-	depth: usize,
-	follow_links: FollowLinks,
-	root_device: Option<u64>,
-) -> bool {
-	use std::os::unix::fs::MetadataExt;
-
-	let Some(root_device) = root_device else {
-		return true;
-	};
-	metadata_for_follow_policy(path, follow_links.follow_at_depth(depth))
-		.is_ok_and(|metadata| metadata.dev() == root_device)
-}
-
-/// Return whether `path` is on the root filesystem represented by
-/// `root_device`.
-///
-/// When `root_device` is `None`, this returns true. On non-Unix platforms this
-/// is always true, matching the existing no-op same-filesystem behavior there.
-#[cfg(not(unix))]
-pub const fn is_path_on_root_file_system(
-	_path: &Path,
-	_depth: usize,
-	_follow_links: FollowLinks,
-	_root_device: Option<u64>,
-) -> bool {
-	true
 }
 
 #[cfg(unix)]
