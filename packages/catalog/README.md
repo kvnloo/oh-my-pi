@@ -7,7 +7,7 @@ Model catalog for [oh-my-pi](https://github.com/can1357/oh-my-pi): bundled model
 | Module                          | Purpose                                                                                                     |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `models.json` + `models`        | Bundled model database (pricing, context windows, modalities, thinking support)                             |
-| `provider-models`               | Provider catalog descriptors (`CATALOG_PROVIDERS`), per-provider model resolution rules                     |
+| `provider-models`               | Runtime model-manager factories (`MODEL_MANAGER_FACTORIES`), per-provider model resolution rules                                       |
 | `discovery`                     | Runtime model discovery for OpenAI-compatible endpoints, Gemini, Codex, Cursor, Antigravity, Ollama         |
 | `compat/rules`                  | Checked-in KDL policy tree: taxonomy (classes/families/revisions), class/provider cascade rules, runtime behavior vocabulary; compiled by `bun run gen:compat` into the committed `rules.json` |
 | `compat`                        | The rule engine: `classifyModel` (taxonomy), `resolveModelPolicy` (cascade), behavior accessors (`api-routes`, `model-limits`, `exclude-models`, `pricing-peer`), collapse, and OpenAI/Anthropic wire builders that consume resolved records |
@@ -28,7 +28,7 @@ bun run gen:compat   # src/compat/rules/**/*.kdl -> src/compat/rules.json
 bun run gen:models   # upstream sources + rules -> src/models.json
 ```
 
-Model- or provider-conditional policy (identity, effort ladders, wire quirks, modality/limit/pricing corrections, API routing, roster exclusions) lives in the KDL tree — see `src/compat/rules/README.md` for the grammar and axis vocabulary. TypeScript changes are only for transport mechanics: provider entries in `provider-models/descriptors.ts`, discovery/request plumbing in `provider-models/openai-compat.ts`, and generator wiring in `scripts/generate-models.ts`. Commit `rules.json` (and a rebaked `models.json` when values change) alongside the `.kdl` edit.
+Model- or provider-conditional policy (identity, effort ladders, wire quirks, modality/limit/pricing corrections, API routing, roster exclusions) lives in the KDL tree — see `src/compat/rules/README.md` for the grammar and axis vocabulary. TypeScript changes are only for transport mechanics: runtime model-manager factories in `provider-models/descriptors.ts` (catalog entry fields live in the KDL `provider "<id>"` node), discovery/request plumbing in `provider-models/openai-compat.ts`, and generator wiring in `scripts/generate-models.ts`. Commit `rules.json` (and a rebaked `models.json` when values change) alongside the `.kdl` edit.
 
 ## Install
 
