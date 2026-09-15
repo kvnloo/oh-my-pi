@@ -106,7 +106,7 @@ Python `tab.run` accepts a JavaScript string only; it does not accept a Python c
 - **Relay (`app.relay: true`):** adopts the user's real Chrome tab. `app.target` selects by URL/title substring; without it the visible usable tab is adopted.
 - **Cmux:** drives an available cmux WKWebView surface.
 
-Reusing one tab name across browser kinds is rejected until the existing tab is closed. Closing omp-owned headless pages and owned cmux surfaces closes them. Connected and relay pages remain open. Spawned browser processes remain open unless `kill: true` releases their last managed tab and terminates the process.
+Reusing one tab name across browser kinds is rejected until the existing tab is closed. Closing omp-owned headless pages and owned cmux surfaces closes them. Connected and relay pages remain open. Spawned browser processes remain open unless `kill: true` releases their last managed tab and terminates a process this omp session launched (a reused CDP-discovered browser is borrowed and never killed).
 
 ## Screenshots and output
 
