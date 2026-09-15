@@ -1872,13 +1872,6 @@ pub fn sort_collected_depth_first(entries: &mut [CollectedEntry]) {
 	entries.sort_unstable_by(|left, right| compare_depth_first_paths(&left.path, &right.path));
 }
 
-/// Return whether `relative` is below any pruned normalized directory path.
-pub fn is_under_pruned_relative_dir(relative: &str, pruned_dirs: &[String]) -> bool {
-	pruned_dirs
-		.iter()
-		.any(|dir| is_relative_ancestor(dir, relative))
-}
-
 /// Return the native root device id used by same-filesystem traversal filters.
 ///
 /// Returns `None` when the host filesystem does not report device ids (for
@@ -1912,28 +1905,6 @@ fn root_device_id_in(fs: &BlockingFs, path: &Path, follow_links: FollowLinks) ->
 	metadata_for_follow_policy(fs, path, follow_links.follow_at_depth(0))
 		.ok()
 		.and_then(|metadata| DeviceId::of(&metadata))
-}
-
-/// Return whether native `path` is on the root filesystem represented by
-/// `root_device`.
-///
-/// When `root_device` is `None`, this returns true, matching the no-op
-/// same-filesystem behavior where device ids are unavailable. Entries whose
-/// device id is unknown are treated as off the root filesystem.
-pub fn is_path_on_root_file_system(
-	path: &Path,
-	depth: usize,
-	follow_links: FollowLinks,
-	root_device: Option<u64>,
-) -> bool {
-	is_effective_path_on_root_file_system(
-		&BlockingFs::native(),
-		path,
-		depth,
-		follow_links,
-		root_device.map(|dev| DeviceId { native: true, dev }),
-		None,
-	)
 }
 
 fn is_effective_path_on_root_file_system(
