@@ -185,27 +185,6 @@ pub fn normalize_relative_path<'a>(root: &Path, path: &'a Path) -> Cow<'a, str> 
 	}
 }
 
-/// Return whether a path contains the exact component name.
-pub fn contains_component(path: &Path, target: &str) -> bool {
-	path.components().any(|component| {
-		component
-			.as_os_str()
-			.to_str()
-			.is_some_and(|value| value == target)
-	})
-}
-
-/// Return whether user-facing discovery should skip a relative path.
-pub fn should_skip_path(path: &Path, mentions_node_modules: bool) -> bool {
-	if contains_component(path, ".git") {
-		return true;
-	}
-	if !mentions_node_modules && contains_component(path, "node_modules") {
-		return true;
-	}
-	false
-}
-
 fn file_type_from_std(file_type: std::fs::FileType) -> Option<FileType> {
 	if file_type.is_symlink() {
 		Some(FileType::Symlink)
