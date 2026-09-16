@@ -180,8 +180,7 @@ Advisor failures do not permanently stall the primary. The host first attempts i
 
 Unsafe Advisor output follows a separate quarantine path rather than that
 three-attempt request-retry policy. Before tool dispatch, the runtime
-quarantines a turn that requests non-bridge tools unavailable to the Advisor.
-It also quarantines generated text/advice when an output-only destructive-shell
+quarantines generated text/advice when an output-only destructive-shell
 directive is detected, or when at least three output-only hazard classes match
 among destructive shell, instruction override, denial instruction, and
 account-deletion claim. A new instruction override paired with a destructive
