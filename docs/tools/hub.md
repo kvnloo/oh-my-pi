@@ -109,7 +109,7 @@ Unchanged from the former `launch` tool: the first process op starts a detached 
 - Mailboxes: 100 messages per agent (`MAILBOX_CAP`); oldest dropped beyond the cap.
 - Awaited sends: `irc.timeoutMs` default `120_000`; `0` disables; negative/non-finite fall back to the default.
 - Message/job `wait` window: adaptive ladder `[5s, 10s, 30s, 1m, 5m]` climbing one rung per back-to-back wait (per owner), resetting to the floor after 60 s without waiting; no per-call or settings override.
-- Job retention 5 min; manager max-running fallback 15; `async.maxJobs` clamped 1..100.
+- Job retention 5 min (consumed results evict ~30s); manager max-running fallback 15; `async.maxJobs` clamped 1..100.
 - Launch names 1-48 chars; `ready.port` 1..65535; `logs`/`wait`/`stop` timeouts capped at one hour.
 
 ## Errors
