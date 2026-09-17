@@ -88,6 +88,17 @@ function shouldSkipPrompt(prompt: string): boolean {
 	return trimmed.length === 0 || trimmed.startsWith("/");
 }
 
+function choiceAnswer(answer: unknown): { choice: string; probabilities?: Record<string, number> } | null {
+	if (!answer || typeof answer !== "object" || !("type" in answer) || answer.type !== "choice") return null;
+	const choice = "choice" in answer ? String(answer.choice ?? "") : "";
+	if (!choice) return null;
+	const probabilities =
+		"probabilities" in answer && answer.probabilities && typeof answer.probabilities === "object"
+			? (answer.probabilities as Record<string, number>)
+			: undefined;
+	return { choice, probabilities };
+}
+
 export async function suggestSkill(input: {
 	prompt: string;
 	skills: readonly SuggestableSkill[];
@@ -118,10 +129,10 @@ export async function suggestSkill(input: {
 		},
 		{ signal: input.signal },
 	);
-	const choice = String(result.answers.which?.choice ?? "");
-	if (!choice || !criteria[choice]) return null;
+	const whichAnswer = choiceAnswer(result.answers.which);
+	if (!whichAnswer || !criteria[whichAnswer.choice]) return null;
 	const gate = gateMean(result.answers as Record<string, { noul?: number } | undefined>);
 	if (gate < GATE_THRESHOLD) return null;
-	const probability = Number(result.answers.which?.probabilities?.[choice] ?? 0);
-	return { name: choice, gate, probability, model: result.model };
+	const probability = Number(whichAnswer.probabilities?.[whichAnswer.choice] ?? 0);
+	return { name: whichAnswer.choice, gate, probability, model: result.model };
 }
