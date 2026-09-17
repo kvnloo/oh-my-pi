@@ -182,6 +182,22 @@ interface ComputerDesktop extends ComputerInputTarget {
 interface ComputerRunScope {
 	/** Persistent host-desktop facade; `capabilities()` is also available here. */
 	readonly desktop: ComputerDesktop & { capabilities(): ComputerCapabilities };
+	/** Hyprland Felix-style stage carousel (create/switch/next/prev/restore). */
+	readonly stageManager: {
+		inspect(): Promise<unknown>;
+		list(): unknown;
+		create(options: {
+			name: string;
+			activeAddress: string;
+			memberAddresses: string[];
+			layout?: "carousel" | "isolate";
+		}): Promise<unknown>;
+		switch(options: { name: string; activeAddress: string }): Promise<unknown>;
+		next(name?: string): Promise<unknown>;
+		prev(name?: string): Promise<unknown>;
+		restore(name: string): Promise<unknown>;
+	};
+
 	/** Sleep for milliseconds or poll a predicate until truthy. */
 	readonly wait: (
 		msOrPredicate: number | (() => unknown),

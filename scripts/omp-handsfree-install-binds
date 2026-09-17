@@ -1,0 +1,68 @@
+#!/bin/sh
+# Install OMP Handsfree keybinds WITHOUT editing dotfiles (.files).
+# - shims ctl into ~/.local/bin
+# - writes a NEW local hypr module (does not touch binds.lua / .files)
+# - registers binds live via hyprctl eval (Lua parser)
+#
+# Careful: does NOT dispatch lock / does not spam carousel.
+# Unbinds SUPER+L first (noctalia lock in binds.lua) so L can switch windows.
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+ctl_src=$root/scripts/omp-handsfree-ctl
+binds_src=$root/config/hypr/omp-handsfree-binds.lua
+local_bin=${HOME}/.local/bin
+hypr_cfg=${HOME}/.config/hypr/config
+local_binds=$hypr_cfg/omp-handsfree-binds.lua
+
+mkdir -p "$local_bin" "$hypr_cfg"
+
+chmod +x "$ctl_src" "$root/scripts/omp-handsfree" "$root/scripts/omp-handsfree-omp" 2>/dev/null || true
+ln -sfn "$ctl_src" "$local_bin/omp-handsfree-ctl"
+ln -sfn "$root/scripts/omp-handsfree" "$local_bin/omp-handsfree"
+
+# New local module only — never writes into workspace/.files
+ln -sfn "$binds_src" "$local_binds"
+
+ctl="$local_bin/omp-handsfree-ctl"
+
+# Drop noctalia lock on SUPER+L so carousel can own it.
+# Exact string must match binds.lua: mainMod .. " + L" → "SUPER + L"
+hyprctl eval 'hl.unbind("SUPER + L")' >/dev/null
+
+# Live register (survives until Hyprland reload). Safe to re-run.
+# Note: hyprctl keyword is unavailable on Lua configs; use eval.
+hyprctl eval "hl.bind(\"SUPER + SHIFT + grave\", hl.dsp.exec_cmd(\"$ctl toggle\"))" >/dev/null
+hyprctl eval "hl.bind(\"SUPER + H\", hl.dsp.exec_cmd(\"$ctl prev\"))" >/dev/null
+hyprctl eval "hl.bind(\"SUPER + L\", hl.dsp.exec_cmd(\"$ctl next\"))" >/dev/null
+hyprctl eval "hl.bind(\"SUPER + SHIFT + H\", hl.dsp.exec_cmd(\"$ctl prev\"))" >/dev/null
+hyprctl eval "hl.bind(\"SUPER + SHIFT + L\", hl.dsp.exec_cmd(\"$ctl next\"))" >/dev/null
+hyprctl eval "hl.bind(\"SUPER + SHIFT + bracketleft\", hl.dsp.exec_cmd(\"$ctl prev\"))" >/dev/null
+hyprctl eval "hl.bind(\"SUPER + SHIFT + bracketright\", hl.dsp.exec_cmd(\"$ctl next\"))" >/dev/null
+hyprctl eval "hl.bind(\"SUPER + SHIFT + BACKSPACE\", hl.dsp.exec_cmd(\"$ctl off\"))" >/dev/null
+# Replacement lock chord (do not test from scripts — only registers).
+hyprctl eval 'hl.bind("SUPER + SHIFT + X", hl.dsp.exec_cmd("noctalia msg session lock"))' >/dev/null
+
+cat <<EOF
+OMP Handsfree binds installed (no dotfiles edited).
+
+Live now:
+  SUPER + H / L                Stage carousel prev / next
+  SUPER + SHIFT + H / L        same
+  SUPER + SHIFT + [ / ]        same
+  SUPER + SHIFT + \`           toggle Handsfree + Stage
+  SUPER + SHIFT + Backspace    quit Handsfree
+  SUPER + SHIFT + X            session lock (was SUPER + L)
+
+Note: SUPER + L lock from binds.lua was unbound for this session.
+Hyprland reload restores lock until you require omp-handsfree-binds
+or change binds.lua (needs your OK — .files).
+
+Files:
+  $local_bin/omp-handsfree-ctl  -> $ctl_src
+  $local_binds                  -> $binds_src
+
+Optional permanent (LOCAL ~/.config/hypr/hyprland.lua only):
+  require("config.omp-handsfree-binds")
+EOF

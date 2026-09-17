@@ -57,7 +57,7 @@ const getComputerParamsSchema: () => ComputerParamsSchema = once(() =>
 	type({
 		action: "'run'",
 		"code?": type("string").describe(
-			"JavaScript executed in the persistent computer session; top-level await allowed; `desktop`, `wait`, `assert` in scope",
+			"JavaScript executed in the persistent computer session; top-level await allowed; `desktop`, `stageManager`, `wait`, `assert` in scope",
 		),
 		"fn?": type("string").describe("serialized function receiving the computer run scope and positional args"),
 		"args?": type("unknown[]").describe("positional function arguments"),

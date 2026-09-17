@@ -65,6 +65,11 @@ from .protocol import (
     TurnEndEvent,
     TurnStartEvent,
     UnknownNotification,
+    VoiceLevelEvent,
+    VoiceState,
+    VoiceStateEvent,
+    VoiceTerminalEvent,
+    VoiceTranscriptEvent,
     assistant_text,
     parse_agent_messages,
     parse_bash_result,
@@ -79,6 +84,7 @@ from .protocol import (
     parse_session_state,
     parse_session_stats,
     parse_thinking_level_cycle_result,
+    parse_voice_state,
     parse_todo_phases,
 )
 
@@ -87,6 +93,7 @@ NotificationListener = Callable[[RpcNotification], None]
 UiRequestListener = Callable[[ExtensionUiRequest], None]
 ExtensionErrorListener = Callable[[ExtensionError], None]
 ReadyListener = Callable[[ReadyEvent], None]
+CloseListener = Callable[[BaseException], None]
 UnknownNotificationListener = Callable[[UnknownNotification], None]
 AgentStartListener = Callable[[AgentStartEvent], None]
 AgentEndListener = Callable[[AgentEndEvent], None]
@@ -107,6 +114,10 @@ RetryFallbackSucceededListener = Callable[[RetryFallbackSucceededEvent], None]
 TtsrTriggeredListener = Callable[[TtsrTriggeredEvent], None]
 TodoReminderListener = Callable[[TodoReminderEvent], None]
 TodoAutoClearListener = Callable[[TodoAutoClearEvent], None]
+VoiceStateListener = Callable[[VoiceStateEvent], None]
+VoiceTranscriptListener = Callable[[VoiceTranscriptEvent], None]
+VoiceLevelListener = Callable[[VoiceLevelEvent], None]
+VoiceTerminalListener = Callable[[VoiceTerminalEvent], None]
 ProtocolErrorListener = Callable[["RpcProtocolError"], None]
 ListenerErrorListener = Callable[["ListenerErrorEvent"], None]
 TListener = TypeVar("TListener")
@@ -545,6 +556,7 @@ class RpcClient:
         self._ui_request_listeners: list[UiRequestListener] = []
         self._extension_error_listeners: list[ExtensionErrorListener] = []
         self._protocol_error_listeners: list[ProtocolErrorListener] = []
+        self._close_listeners: list[CloseListener] = []
         self._listener_error_listeners: list[ListenerErrorListener] = []
 
     def __enter__(self) -> RpcClient:
@@ -738,6 +750,10 @@ class RpcClient:
     def on_agent_end(self, listener: AgentEndListener) -> Callable[[], None]:
         return self._add_typed_event_listener("agent_end", listener)
 
+    def on_close(self, listener: CloseListener) -> Callable[[], None]:
+        self._close_listeners.append(listener)
+        return lambda: self._remove_listener(self._close_listeners, listener)
+
     def on_turn_start(self, listener: TurnStartListener) -> Callable[[], None]:
         return self._add_typed_event_listener("turn_start", listener)
 
@@ -804,6 +820,22 @@ class RpcClient:
 
     def on_todo_auto_clear(self, listener: TodoAutoClearListener) -> Callable[[], None]:
         return self._add_typed_event_listener("todo_auto_clear", listener)
+
+    def on_voice_state(self, listener: VoiceStateListener) -> Callable[[], None]:
+        return self._add_typed_event_listener("voice_state", listener)
+
+    def on_voice_transcript(
+        self, listener: VoiceTranscriptListener
+    ) -> Callable[[], None]:
+        return self._add_typed_event_listener("voice_transcript", listener)
+
+    def on_voice_level(self, listener: VoiceLevelListener) -> Callable[[], None]:
+        return self._add_typed_event_listener("voice_level", listener)
+
+    def on_voice_terminal(
+        self, listener: VoiceTerminalListener
+    ) -> Callable[[], None]:
+        return self._add_typed_event_listener("voice_terminal", listener)
 
     def on_ui_request(self, listener: UiRequestListener) -> Callable[[], None]:
         self._ui_request_listeners.append(listener)
@@ -917,6 +949,24 @@ class RpcClient:
     def get_state(self) -> SessionState:
         payload = self._request("get_state")
         return parse_session_state(payload)
+
+    def start_dictation(self) -> VoiceState:
+        return parse_voice_state(self._request("dictation_start"))
+
+    def stop_dictation(self) -> VoiceState:
+        return parse_voice_state(self._request("dictation_stop"))
+
+    def cancel_dictation(self) -> VoiceState:
+        return parse_voice_state(self._request("dictation_cancel"))
+
+    def start_live(self) -> VoiceState:
+        return parse_voice_state(self._request("live_start"))
+
+    def toggle_live_mute(self) -> VoiceState:
+        return parse_voice_state(self._request("live_toggle_mute"))
+
+    def stop_live(self) -> VoiceState:
+        return parse_voice_state(self._request("live_stop"))
 
     def set_fast_mode(self, enabled: bool) -> FastModeResult:
         return parse_fast_mode_result(self._request("set_fast_mode", enabled=enabled))
@@ -1140,14 +1190,17 @@ class RpcClient:
         *,
         images: Sequence[ImageContent] | None = None,
         streaming_behavior: StreamingBehavior | None = None,
-    ) -> None:
-        self._request(
+    ) -> bool:
+        response = self._request(
             "prompt",
             message=message,
             images=list(images) if images is not None else None,
             streamingBehavior=streaming_behavior,
         )
-        self._mark_agent_run_scheduled()
+        agent_invoked = response.get("agentInvoked") is not False
+        if agent_invoked:
+            self._mark_agent_run_scheduled()
+        return agent_invoked
 
     def steer(
         self, message: str, *, images: Sequence[ImageContent] | None = None
@@ -1795,7 +1848,7 @@ class RpcClient:
         if self._command is not None:
             return self._command
 
-        command: list[str] = [self._executable, "--mode", "rpc"]
+        command: list[str] = [self._executable, "--mode", "rpc-ui"]
         if self._provider:
             command.extend(["--provider", self._provider])
         if self._model:
@@ -2021,6 +2074,7 @@ class RpcClient:
         self._fail_pending(error)
         with self._event_condition:
             self._event_condition.notify_all()
+        self._dispatch_listeners("close", None, self._close_listeners, error)
 
     def _fail_pending(self, error: BaseException) -> None:
         with self._state_lock:

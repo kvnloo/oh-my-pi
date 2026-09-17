@@ -1,0 +1,184 @@
+#!/bin/sh
+# OMP Handsfree / Stage Manager control for Hyprland keybinds.
+# Does NOT change main Hyprland layout settings — only talks to the HUD
+# (or launches/stops it). Stage geometry stays runtime hyprctl in the HUD.
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+sock_dir=$runtime_dir/omp-handsfree
+sock=$sock_dir/ctl.sock
+pidfile=$sock_dir/hud.pid
+log=${OMP_HUD_LOG:-/tmp/omp-handsfree.log}
+launch=${OMP_HANDSFREE_LAUNCH:-$root/scripts/omp-handsfree}
+
+usage() {
+	cat <<'EOF'
+Usage: omp-handsfree-ctl <command>
+
+Commands:
+  toggle   Start Handsfree+Stage if stopped; quit if running
+  on       Start Handsfree+Stage (no-op if already running)
+  off      Quit Handsfree and restore tiled windows
+  next     Rotate carousel forward (active → right)
+  prev     Rotate carousel backward
+  voice    Toggle OMP live voice (mic button)
+  status   Print whether the HUD control socket is up
+  binds    Print suggested Hyprland bind snippet path
+
+Stage Manager layout is owned by the HUD process (hyprctl float/move).
+It does not rewrite gaps, windowrules, or your main hyprland config.
+EOF
+}
+
+is_running() {
+	if [ -S "$sock" ]; then
+		# Probe with a non-destructive ping.
+		if printf 'ping\n' | socat -t 0.4 - UNIX-CONNECT:"$sock" 2>/dev/null | grep -q '^ok'; then
+			return 0
+		fi
+	fi
+	if [ -f "$pidfile" ]; then
+		pid=$(cat "$pidfile" 2>/dev/null || true)
+		if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
+			return 0
+		fi
+	fi
+	# Fallback: module process.
+	pgrep -f 'python3 -u -m omp_hud' >/dev/null 2>&1
+}
+
+send_cmd() {
+	cmd=$1
+	if [ ! -S "$sock" ]; then
+		echo "omp-handsfree-ctl: HUD not running (no $sock)" >&2
+		return 1
+	fi
+	# Prefer socat; fall back to python.
+	if command -v socat >/dev/null 2>&1; then
+		printf '%s\n' "$cmd" | socat -t 1.5 - UNIX-CONNECT:"$sock"
+		return
+	fi
+	python3 - "$sock" "$cmd" <<'PY'
+import socket, sys
+path, cmd = sys.argv[1], sys.argv[2]
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(1.5)
+s.connect(path)
+s.sendall((cmd + "\n").encode())
+data = b""
+while True:
+    chunk = s.recv(4096)
+    if not chunk:
+        break
+    data += chunk
+    if b"\n" in data:
+        break
+sys.stdout.write(data.decode(errors="replace"))
+s.close()
+PY
+}
+
+start_hud() {
+	mkdir -p "$sock_dir"
+	if is_running; then
+		echo "already-running"
+		return 0
+	fi
+	# Clear stale socket/pid.
+	rm -f "$sock" "$pidfile"
+	# Launch detached from the keybind shell.
+	if command -v uwsm >/dev/null 2>&1; then
+		# Keep env clean of PATH omp 18.x; launcher picks worktree omp.
+		nohup env -u OMP_HANDSFREE_OMP OMP_HUD_LOG="$log" "$launch" \
+			>>"$runtime_dir/omp-handsfree/launch.log" 2>&1 &
+	else
+		nohup env -u OMP_HANDSFREE_OMP OMP_HUD_LOG="$log" "$launch" \
+			>>"$runtime_dir/omp-handsfree/launch.log" 2>&1 &
+	fi
+	# Wait briefly for socket.
+	i=0
+	while [ "$i" -lt 40 ]; do
+		if [ -S "$sock" ]; then
+			echo "started"
+			return 0
+		fi
+		i=$((i + 1))
+		sleep 0.25
+	done
+	echo "omp-handsfree-ctl: started process but control socket not ready yet" >&2
+	echo "started-pending"
+	return 0
+}
+
+stop_hud() {
+	if [ -S "$sock" ]; then
+		send_cmd quit || true
+		# Give destroy+restore a moment.
+		sleep 0.3
+	fi
+	if [ -f "$pidfile" ]; then
+		pid=$(cat "$pidfile" 2>/dev/null || true)
+		if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
+			kill "$pid" 2>/dev/null || true
+			sleep 0.2
+			kill -9 "$pid" 2>/dev/null || true
+		fi
+	fi
+	pkill -f 'python3 -u -m omp_hud' 2>/dev/null || true
+	rm -f "$sock" "$pidfile"
+	echo "stopped"
+}
+
+cmd=${1:-}
+case "$cmd" in
+	""|-h|--help|help)
+		usage
+		;;
+	status)
+		if is_running; then
+			echo "running"
+			send_cmd status 2>/dev/null || true
+			exit 0
+		fi
+		echo "stopped"
+		exit 1
+		;;
+	on|start)
+		start_hud
+		;;
+	off|stop|quit)
+		stop_hud
+		;;
+	toggle)
+		if is_running; then
+			stop_hud
+		else
+			start_hud
+		fi
+		;;
+	next|prev|voice)
+		if ! is_running; then
+			start_hud
+			# Wait for carousel bootstrap / ready.
+			i=0
+			while [ "$i" -lt 80 ]; do
+				if send_cmd status 2>/dev/null | grep -q 'hud=ready'; then
+					break
+				fi
+				i=$((i + 1))
+				sleep 0.25
+			done
+		fi
+		send_cmd "$cmd"
+		;;
+	binds)
+		echo "$root/config/hypr/omp-handsfree-binds.lua"
+		;;
+	*)
+		echo "omp-handsfree-ctl: unknown command: $cmd" >&2
+		usage >&2
+		exit 2
+		;;
+esac
