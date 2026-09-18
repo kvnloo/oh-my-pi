@@ -365,7 +365,6 @@ When requesting a key for a provider, effective order is:
 4. Login-sourced stored API key
 5. Environment variable mapping (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.)
 6. Other stored API key, such as a broker-migrated copy
-7. ModelRegistry fallback resolver (`models.yml` custom providers, using env-name-or-literal semantics)
 
 `models.yml` `apiKey` behavior:
 
