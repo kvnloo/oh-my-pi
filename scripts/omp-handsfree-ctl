@@ -4,8 +4,17 @@
 # (or launches/stops it). Stage geometry stays runtime hyprctl in the HUD.
 set -eu
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+# Resolve through ~/.local/bin symlinks so root is the worktree, not ~/.local.
+self=$0
+while [ -L "$self" ]; do
+	link=$(readlink "$self")
+	case $link in
+	/*) self=$link ;;
+	*) self=$(dirname -- "$self")/$link ;;
+	esac
+done
+script_dir=$(CDPATH= cd -- "$(dirname -- "$self")" && pwd -P)
+root=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
 runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
 sock_dir=$runtime_dir/omp-handsfree
 sock=$sock_dir/ctl.sock
@@ -88,15 +97,38 @@ start_hud() {
 	fi
 	# Clear stale socket/pid.
 	rm -f "$sock" "$pidfile"
-	# Launch detached from the keybind shell.
-	if command -v uwsm >/dev/null 2>&1; then
-		# Keep env clean of PATH omp 18.x; launcher picks worktree omp.
-		nohup env -u OMP_HANDSFREE_OMP OMP_HUD_LOG="$log" "$launch" \
-			>>"$runtime_dir/omp-handsfree/launch.log" 2>&1 &
-	else
-		nohup env -u OMP_HANDSFREE_OMP OMP_HUD_LOG="$log" "$launch" \
-			>>"$runtime_dir/omp-handsfree/launch.log" 2>&1 &
+	# Keybind path: ambient demo is on by default (final-transcript abort +
+	# Jev/local only; blabber → none). Opt out: OMP_HANDSFREE_DEMO_AMBIENT=0.
+	ambient=${OMP_HANDSFREE_DEMO_AMBIENT:-1}
+	# Hyprland/systemd exec PATH often omits ~/.bun/bin.
+	bun_bin=${OMP_BUN_BIN:-$HOME/.bun/bin/bun}
+	path_prefix=$HOME/.bun/bin
+	case ":${PATH:-}:" in
+		*":$path_prefix:"*) launch_path=$PATH ;;
+		*) launch_path=$path_prefix:${PATH:-/usr/bin:/bin} ;;
+	esac
+	# Demo visibility: pin HUD across workspaces unless explicitly off.
+	pin=${OMP_HUD_PIN:-1}
+	# Blue Snowball is often profile=off after boot; live needs a real source.
+	if command -v pactl >/dev/null 2>&1; then
+		snow_card=$(pactl list short cards 2>/dev/null | awk '/BLUE_MICROPHONE|Snowball/{print $2; exit}')
+		if [ -n "$snow_card" ]; then
+			pactl set-card-profile "$snow_card" input:mono-fallback >/dev/null 2>&1 || true
+			snow_src=$(pactl list short sources 2>/dev/null | awk '/BLUE_MICROPHONE|Snowball/{print $2; exit}')
+			[ -n "$snow_src" ] && pactl set-default-source "$snow_src" >/dev/null 2>&1 || true
+		fi
 	fi
+	# Launch detached from the keybind shell.
+	# Keep env clean of PATH omp 18.x; launcher picks worktree omp.
+	nohup env -u OMP_HANDSFREE_OMP \
+		PATH="$launch_path" \
+		OMP_BUN_BIN="$bun_bin" \
+		OMP_HUD_LOG="$log" \
+		OMP_HANDSFREE_DEMO_AMBIENT="$ambient" \
+		OMP_HANDSFREE_AUTO_STAGE="${OMP_HANDSFREE_AUTO_STAGE:-1}" \
+		OMP_HUD_PIN="$pin" \
+		"$launch" \
+		>>"$runtime_dir/omp-handsfree/launch.log" 2>&1 &
 	# Wait briefly for socket.
 	i=0
 	while [ "$i" -lt 40 ]; do
@@ -128,6 +160,10 @@ stop_hud() {
 	fi
 	pkill -f 'python3 -u -m omp_hud' 2>/dev/null || true
 	rm -f "$sock" "$pidfile"
+	# Dotfiles dwindle restore (unfloat, workspace rules, kill test junk).
+	if [ -x "$root/scripts/restore-native-layout.py" ]; then
+		python3 "$root/scripts/restore-native-layout.py" 2>/dev/null || true
+	fi
 	echo "stopped"
 }
 
