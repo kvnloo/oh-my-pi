@@ -1,14 +1,18 @@
+import { prompt } from "@oh-my-pi/pi-utils";
 import type { RlmCompleter } from "./query";
 import type { RlmLedger, RlmLease } from "./ledger";
 import type { RlmRuntime } from "./runtime";
 import type { RlmView } from "./view";
 import { formatViewExcerpts, viewCitations } from "./view";
+import workerSystemTemplate from "./prompts/worker-system.md" with { type: "text" };
+import queryUserTemplate from "./prompts/query-user.md" with { type: "text" };
+import subcallUserTemplate from "./prompts/subcall-user.md" with { type: "text" };
 
 /** Stable worker system instructions — never the root agent system prompt. */
-export const RLM_WORKER_SYSTEM =
-	"You are an isolated RLM worker. Answer ONLY from the granted excerpts below. " +
-	"Cite handle ranges you use. You have no tools and cannot access the parent conversation, " +
-	"unrelated handles, or host secrets.";
+export const RLM_WORKER_SYSTEM = workerSystemTemplate.trim();
+
+const renderQueryUser = prompt.compile(queryUserTemplate);
+const renderSubcallUser = prompt.compile(subcallUserTemplate);
 
 export type RlmWorkerRole = "system" | "user";
 
@@ -66,10 +70,11 @@ export interface RlmTrajectoryRecord {
 export function buildQueryWorkerContext(view: RlmView, question: string): RlmWorkerContext {
 	const excerpts = formatViewExcerpts(view);
 	const citations = viewCitations(view);
-	const user =
-		`Granted excerpts:\n${excerpts}\n\n` +
-		`Question:\n${question}\n\n` +
-		`Answer from the excerpts only. Cite ${citations || "the grant"} if you use it.`;
+	const user = renderQueryUser({
+		excerpts,
+		question,
+		citations: citations || "the grant",
+	}).trim();
 	const messages: RlmWorkerMessage[] = [
 		{ role: "system", content: RLM_WORKER_SYSTEM },
 		{ role: "user", content: user },
@@ -89,10 +94,11 @@ export function buildQueryWorkerContext(view: RlmView, question: string): RlmWor
 export function buildSubcallWorkerContext(view: RlmView, task: string, depth: number): RlmWorkerContext {
 	const excerpts = formatViewExcerpts(view);
 	const citations = viewCitations(view);
-	const user =
-		`You are a depth-${depth} RLM worker. Answer ONLY from the granted excerpts. ` +
-		`Cite the handle ranges you use. You cannot call tools or spawn further subcalls.\n\n` +
-		`Granted excerpts:\n${excerpts}\n\nTask:\n${task}`;
+	const user = renderSubcallUser({
+		depth,
+		excerpts,
+		task,
+	}).trim();
 	const messages: RlmWorkerMessage[] = [
 		{ role: "system", content: RLM_WORKER_SYSTEM },
 		{ role: "user", content: user },

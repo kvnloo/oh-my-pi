@@ -89,48 +89,34 @@ export class RlmLedger {
 		}
 		this.#store.beginCall(estimated);
 
+		// Own controller so abortAll/close can cancel in-flight work.
+		// Compose with store cancel/wall-clock + optional parent via AbortSignal.any.
 		const ctrl = new AbortController();
-		const storeSignal = this.#store.createCallSignal();
-		const onStoreAbort = () => {
-			if (!ctrl.signal.aborted) {
-				ctrl.abort(storeSignal.reason ?? new DOMException("rlm cancelled", "AbortError"));
-			}
-		};
-		if (storeSignal.aborted) onStoreAbort();
-		else storeSignal.addEventListener("abort", onStoreAbort, { once: true });
-
-		if (opts.signal) {
-			const onExt = () => {
-				if (!ctrl.signal.aborted) {
-					ctrl.abort(opts.signal!.reason ?? new DOMException("rlm parent abort", "AbortError"));
-				}
-			};
-			if (opts.signal.aborted) onExt();
-			else opts.signal.addEventListener("abort", onExt, { once: true });
-		}
+		const parts: AbortSignal[] = [ctrl.signal, this.#store.createCallSignal()];
+		if (opts.signal) parts.push(opts.signal);
 
 		let deadlineAt = opts.deadlineAt;
+		// Store.createCallSignal already enforces budget.wallClockMs. Only add a
+		// separate timer when the caller supplies an explicit lease deadline.
 		if (deadlineAt === undefined && this.#store.budget.wallClockMs > 0) {
 			deadlineAt = this.#store.budget.startedAt + this.#store.budget.wallClockMs;
-		}
-		if (deadlineAt !== undefined) {
+		} else if (deadlineAt !== undefined) {
 			const remaining = deadlineAt - Date.now();
 			if (remaining <= 0) {
 				ctrl.abort(new DOMException("rlm lease deadline exhausted", "AbortError"));
 			} else {
-				const t = setTimeout(() => {
-					ctrl.abort(new DOMException("rlm lease deadline exhausted", "AbortError"));
-				}, remaining);
-				ctrl.signal.addEventListener("abort", () => clearTimeout(t), { once: true });
+				parts.push(AbortSignal.timeout(remaining));
 			}
 		}
+
+		const signal = parts.length === 1 ? parts[0]! : AbortSignal.any(parts);
 
 		const lease: RlmLease = {
 			id: `lease:${randomUUID()}`,
 			reservedTokens: estimated,
 			reservedCost: estimatedCost,
 			deadlineAt,
-			signal: ctrl.signal,
+			signal,
 			startedAt: Date.now(),
 			status: "reserved",
 		};

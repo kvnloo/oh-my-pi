@@ -2,12 +2,9 @@
  * RLM runtime guide — appended *after* the stable system prompt so prompt-cache
  * bytes of the base prompt stay unchanged (RFC #12400). Never rewrite the base.
  */
-export const RLM_RUNTIME_GUIDE =
-	"RLM context engine is on for this session. Oversized tool results may appear as " +
-	"`rlm://h/<id>` stubs (preview only). Full original bytes are NOT in the root prompt — " +
-	"use the `rlm` tool (peek / search / query / subcall / status) on the handle. " +
-	"`subcall` is depth-1 only when rlm.maxDepth≥1: grant one or more handles + task; worker cannot recurse. " +
-	"Cite handles and byte offsets when answering from spilled corpus. On budget or cancel, RLM fail-opens; do not hang.";
+import runtimeGuide from "./prompts/runtime-guide.md" with { type: "text" };
+
+export const RLM_RUNTIME_GUIDE = runtimeGuide.trim();
 
 const GUIDE_MARKER = "RLM context engine is on for this session";
 

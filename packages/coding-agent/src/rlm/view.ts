@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { formatHandle, type RlmStore } from "./store";
 
 /** One granted slice into a spilled handle (raw tool args). */
@@ -7,12 +7,14 @@ export interface RlmGrant {
 	start?: number;
 	end?: number;
 }
+
 /** One resolved, immutable grant slice (capability). */
 export interface RlmResolvedGrant {
 	handle: string;
 	recordId: string;
 	start: number;
 	end: number;
+	/** Underlying record content hash (not re-hashed per grant resolve). */
 	sha256: string;
 	/** Capped excerpt text the worker may see. */
 	text: string;
@@ -58,7 +60,8 @@ export function resolveRlmView(
 			recordId: record.id,
 			start: peek.start,
 			end: peek.start + text.length,
-			sha256: createHash("sha256").update(text).digest("hex"),
+			// Reuse store record hash — avoid per-resolve SHA-256 of the excerpt.
+			sha256: record.sha256,
 			text,
 			citation: `${formatHandle(record.id)}[${peek.start}:${peek.start + text.length}]`,
 			bytes: Buffer.byteLength(text, "utf8"),
