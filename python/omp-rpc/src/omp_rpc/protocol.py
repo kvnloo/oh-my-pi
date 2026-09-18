@@ -21,6 +21,8 @@ InterruptMode: TypeAlias = Literal["immediate", "wait"]
 StopReason: TypeAlias = Literal["stop", "length", "toolUse", "error", "aborted"]
 NotifyType: TypeAlias = Literal["info", "warning", "error"]
 WidgetPlacement: TypeAlias = Literal["aboveEditor", "belowEditor"]
+VoiceMode: TypeAlias = Literal["dictation", "live"]
+VoiceTerminalOutcome: TypeAlias = Literal["stopped", "cancelled", "error"]
 TodoStatus: TypeAlias = Literal[
     "pending", "in_progress", "completed", "abandoned", "blocked"
 ]
@@ -1136,6 +1138,54 @@ class TodoAutoClearEvent:
 
 
 @dataclass(slots=True, frozen=True)
+class VoiceState:
+    mode: VoiceMode
+    phase: str
+    muted: bool | None = None
+
+
+@dataclass(slots=True, frozen=True)
+class VoiceStateEvent:
+    voice_session_id: str
+    mode: VoiceMode
+    phase: str
+    elapsed_ms: int
+    muted: bool | None = None
+    type: Literal["voice_state"] = "voice_state"
+
+
+@dataclass(slots=True, frozen=True)
+class VoiceTranscriptEvent:
+    voice_session_id: str
+    mode: VoiceMode
+    role: Literal["user", "assistant"]
+    text: str
+    final: bool
+    turn: int
+    type: Literal["voice_transcript"] = "voice_transcript"
+
+
+@dataclass(slots=True, frozen=True)
+class VoiceLevelEvent:
+    voice_session_id: str
+    mode: VoiceMode
+    input: float
+    output: float
+    elapsed_ms: int
+    type: Literal["voice_level"] = "voice_level"
+
+
+@dataclass(slots=True, frozen=True)
+class VoiceTerminalEvent:
+    voice_session_id: str
+    mode: VoiceMode
+    outcome: VoiceTerminalOutcome
+    elapsed_ms: int
+    error: str | None = None
+    type: Literal["voice_terminal"] = "voice_terminal"
+
+
+@dataclass(slots=True, frozen=True)
 class UnknownNotification:
     payload: JsonObject
     type: Literal["unknown"] = "unknown"
@@ -1169,6 +1219,10 @@ RpcNotification: TypeAlias = (
     | ExtensionUiRequest
     | ExtensionError
     | RpcAgentEvent
+    | VoiceStateEvent
+    | VoiceTranscriptEvent
+    | VoiceLevelEvent
+    | VoiceTerminalEvent
     | UnknownNotification
 )
 
@@ -1620,6 +1674,22 @@ def parse_extension_error(payload: JsonObject) -> ExtensionError:
     )
 
 
+def parse_voice_state(payload: JsonObject) -> VoiceState:
+    mode = _require_literal(payload.get("mode"), frozenset({"dictation", "live"}), field="voice.mode")
+    return VoiceState(
+        mode=cast(VoiceMode, mode),
+        phase=_require_str(payload, "phase"),
+        muted=_optional_bool(payload, "muted"),
+    )
+
+
+def _voice_fields(payload: JsonObject) -> tuple[str, VoiceMode]:
+    return (
+        _require_str(payload, "voiceSessionId"),
+        cast(VoiceMode, _require_literal(payload.get("mode"), frozenset({"dictation", "live"}), field="voice.mode")),
+    )
+
+
 def parse_notification(payload: JsonObject) -> RpcNotification:
     event_type = payload.get("type")
     if event_type == "ready":
@@ -1644,6 +1714,17 @@ def parse_notification(payload: JsonObject) -> RpcNotification:
         return parse_extension_ui_request(payload)
     if event_type == "extension_error":
         return parse_extension_error(payload)
+    if event_type in {"voice_state", "voice_transcript", "voice_level", "voice_terminal"}:
+        voice_session_id, mode = _voice_fields(payload)
+        if event_type == "voice_state":
+            return VoiceStateEvent(voice_session_id, mode, _require_str(payload, "phase"), _optional_int(payload, "elapsedMs") or 0, _optional_bool(payload, "muted"))
+        if event_type == "voice_transcript":
+            role = _require_literal(payload.get("role"), frozenset({"user", "assistant"}), field="voice.role")
+            return VoiceTranscriptEvent(voice_session_id, mode, cast(Literal["user", "assistant"], role), _require_str(payload, "text"), _require_bool(payload, "final"), _optional_int(payload, "turn") or 0)
+        if event_type == "voice_level":
+            return VoiceLevelEvent(voice_session_id, mode, _optional_float(payload, "input") or 0.0, _optional_float(payload, "output") or 0.0, _optional_int(payload, "elapsedMs") or 0)
+        outcome = _require_literal(payload.get("outcome"), frozenset({"stopped", "cancelled", "error"}), field="voice.outcome")
+        return VoiceTerminalEvent(voice_session_id, mode, cast(VoiceTerminalOutcome, outcome), _optional_int(payload, "elapsedMs") or 0, _optional_str(payload, "error"))
     if event_type == "agent_start":
         return AgentStartEvent()
     if event_type == "agent_end":

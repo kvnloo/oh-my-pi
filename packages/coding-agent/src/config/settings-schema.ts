@@ -9,7 +9,7 @@ import {
 	BUILTIN_BLOB_DESTINATIONS,
 } from "../blob-broker/destinations";
 import { DEFAULT_RELAY_URL } from "../collab/protocol";
-import { DEFAULT_LIVE_VOICE, LIVE_VOICE_OPTIONS, LIVE_VOICE_VALUES } from "../live/voices";
+import { DEFAULT_GROK_LIVE_VOICE, DEFAULT_LIVE_VOICE, GROK_LIVE_VOICE_OPTIONS, GROK_LIVE_VOICE_VALUES, LIVE_VOICE_OPTIONS, LIVE_VOICE_VALUES } from "../live/voices";
 import type { AnyUiMetadata, SettingTab, SubmenuOption, UiBase } from "@oh-my-pi/pi-tui/overlays/settings-defs";
 import {
 	COMPACTION_METHOD_CHOICES,
@@ -2568,6 +2568,113 @@ export const SETTINGS_SCHEMA = {
 		},
 	},
 
+	"context.engine": {
+		type: "string",
+		default: "native",
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "Context engine",
+			description:
+				"native = default compaction ladder. rlm = opt-in prompt-as-variable spill engine (same as rlm.enabled). Never compose both engines on one provider request for the same corpus.",
+		},
+	},
+	"rlm.enabled": {
+		type: "boolean",
+		default: false,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM context engine",
+			description:
+				"Spill oversized tool results out of the neural window and inspect them with peek/search/query. Default off (native compaction). Also enabled when context.engine is rlm.",
+		},
+	},
+	"rlm.maxDepth": {
+		type: "number",
+		default: 0,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max depth",
+			description:
+				"0 = peek/search/query only (v1). 1 = allow one nested rlm subcall over granted handle slices (v2). Depth ≥ 2 is not implemented.",
+		},
+	},
+	"rlm.maxCalls": {
+		type: "number",
+		default: 32,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max calls",
+			description: "Hard cap on rlm query subcalls per session store",
+		},
+	},
+	"rlm.maxTotalTokens": {
+		type: "number",
+		default: 1_000_000,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max tokens",
+			description: "Hard cap on estimated tokens charged to rlm query",
+		},
+	},
+	"rlm.maxCost": {
+		type: "number",
+		default: 0,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max cost",
+			description: "Hard USD-style cost cap for rlm query subcalls. 0 = unlimited.",
+		},
+	},
+	"rlm.wallClockMs": {
+		type: "number",
+		default: 0,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM wall clock (ms)",
+			description: "Wall-clock budget for the session RLM store from first use. 0 = unlimited.",
+		},
+	},
+	"rlm.spillBytes": {
+		type: "number",
+		default: 20_480,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM spill bytes",
+			description: "Tool-result texts larger than this are stored as handles instead of entering the root prompt",
+		},
+	},
+	"rlm.subModel": {
+		type: "string",
+		default: "",
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM sub-model",
+			description: "Optional model id for query/subcall. Empty = active session model (via rlmComplete).",
+		},
+	},
+	"rlm.kernelBind": {
+		type: "boolean",
+		default: false,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM kernel bind",
+			description:
+				"When true, expose read-only RLM handle helpers to the session EvalRunner kernel (no full-body repr). Default off.",
+		},
+	},
+
+
+
 	"compaction.midTurnEnabled": {
 		type: "boolean",
 		default: true,
@@ -4392,6 +4499,36 @@ export const SETTINGS_SCHEMA = {
 		},
 	},
 
+	"computer.jev": {
+		type: "enum",
+		values: ["auto", "on", "off"] as const,
+		default: "auto",
+		ui: {
+			tab: "tools",
+			group: "Computer",
+			label: "Computer Use Jev",
+			description:
+				"Optional TypeSafe Jev backend for bounded computer-use decisions (factorized ACTION/TARGET questions). Auto runs when TypeSafe is authenticated; off keeps rules/rerank only. Fail-open to the planner when uncertain.",
+			options: [
+				{
+					value: "auto",
+					label: "Auto",
+					description: "Jev when TypeSafe is authenticated (default)",
+				},
+				{
+					value: "on",
+					label: "On",
+					description: "Require Jev when a key exists",
+				},
+				{
+					value: "off",
+					label: "Off",
+					description: "Never call Jev for computer-use decisions",
+				},
+			],
+		},
+	},
+
 	"images.questionTimeoutMs": {
 		type: "number",
 		default: 300_000,
@@ -5331,6 +5468,66 @@ export const SETTINGS_SCHEMA = {
 
 	"skills.includeSkills": { type: "array", default: [] as string[] },
 
+	"skills.suggestion": {
+		type: "enum",
+		values: ["auto", "typesafe", "off"] as const,
+		default: "auto",
+		ui: {
+			tab: "tasks",
+			group: "Commands & Skills",
+			label: "Skill Suggestion",
+			description:
+				"Before each user turn, ask TypeSafe Jev (System One) which installed skill to read and append a <skill_relevance> line. Auto runs only when TypeSafe is authenticated; off disables it. Never falls back to a chat model (Jev is not /model). Toggle with /jev.",
+			options: [
+				{
+					value: "auto",
+					label: "Auto",
+					description: "TypeSafe when authenticated; otherwise skip (default)",
+				},
+				{
+					value: "typesafe",
+					label: "TypeSafe",
+					description: "Always use TypeSafe when a key exists, even if judgmentProvider is llm",
+				},
+				{
+					value: "off",
+					label: "Off",
+					description: "Never suggest skills via System One",
+				},
+			],
+		},
+	},
+
+	"skills.suggestion.rerank": {
+		type: "enum",
+		values: ["auto", "always", "off"] as const,
+		default: "auto",
+		ui: {
+			tab: "tasks",
+			group: "Commands & Skills",
+			label: "Skill Suggestion Rerank",
+			description:
+				"Cookbook call 2: rerank the top three skills with SKILL.md excerpts and per-candidate fits nouls. Auto runs on large rosters or lookalike collisions; off keeps call 1 only.",
+			options: [
+				{
+					value: "auto",
+					label: "Auto",
+					description: "Rerank when the roster is large or the top two choices are close (default)",
+				},
+				{
+					value: "always",
+					label: "Always",
+					description: "Always run call 2 after call 1 passes the gate",
+				},
+				{
+					value: "off",
+					label: "Off",
+					description: "Call 1 only",
+				},
+			],
+		},
+	},
+
 	// Commands
 	"commands.enableClaudeUser": {
 		type: "boolean",
@@ -5515,6 +5712,25 @@ export const SETTINGS_SCHEMA = {
 				},
 			],
 		},
+	},
+	"live.provider": {
+		type: "select",
+		category: "Voice",
+		description:
+			"Realtime `/live` backend. Auto skips a native duplex provider whose latest non-Spark usage window is exhausted (e.g. Codex weekly) and uses the next signed-in backend (xAI Grok OAuth or API key).",
+		default: "auto",
+		options: [
+			{ value: "auto", label: "Auto", description: "Prefer Codex; fall through to Grok when Codex usage is exhausted" },
+			{ value: "codex", label: "Codex", description: "OpenAI Codex realtime only" },
+			{ value: "grok", label: "Grok", description: "xAI Grok realtime only" },
+		],
+	},
+	"live.grokVoice": {
+		type: "select",
+		category: "Voice",
+		description: "Voice for Grok live sessions",
+		default: DEFAULT_GROK_LIVE_VOICE,
+		options: GROK_LIVE_VOICE_OPTIONS,
 	},
 	"live.voice": {
 		type: "enum",
@@ -6360,6 +6576,8 @@ export interface SkillsSettings {
 	ignoredSkills?: string[];
 	includeSkills?: string[];
 	disabledExtensions?: string[];
+	suggestion?: "auto" | "typesafe" | "off";
+	suggestionRerank?: "auto" | "always" | "off";
 }
 
 /** Conventional commit generation and changelog limits. */

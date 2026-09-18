@@ -10,6 +10,7 @@
 			"python/robomp/web"
 		],
 		"catalog": {
+			"@agent-tokenomics/core": "file:.deps/tokenomics/packages/typescript",
 			"@babel/generator": "^7.29.7",
 			"@babel/parser": "^7.29.7",
 			"@babel/traverse": "^7.29.7",
@@ -166,7 +167,8 @@
 		"gen:bundle": "bun --cwd=packages/coding-agent run gen:bundle",
 		"gen:native": "bun --cwd=packages/natives run gen:native",
 		"gen:native:reset": "bun --cwd=packages/natives run gen:native:reset",
-		"check-spoofed-versions": "bun scripts/check-spoofed-versions.ts"
+		"check-spoofed-versions": "bun scripts/check-spoofed-versions.ts",
+		"setup:tokenomics": "bash scripts/setup-tokenomics-dep.sh"
 	},
 	"dependencies": {
 		"sherpa-onnx": "1.13.2",

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `jev` as the canonical TypeSafe Jev auth provider (`/login jev`); `typesafe` remains a hidden login alias that stores credentials under `jev`.
 ## [18.2.5] - 2026-09-17
 
 ### Added

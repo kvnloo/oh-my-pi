@@ -34,6 +34,7 @@ import type {
 	RunErrorPayload,
 	ToolReply,
 } from "./protocol";
+import { HyprlandStageManager } from "./stage-manager";
 
 /** Native desktop operations consumed by the script runtime. */
 export interface NativeDesktopSession {
@@ -420,6 +421,8 @@ export class ComputerWorkerCore {
 	readonly #transport: ComputerWorkerTransport;
 	readonly #createSession?: NativeDesktopSessionFactory;
 	readonly #unsubscribe: () => void;
+	readonly #stageManager = new HyprlandStageManager();
+
 	#session?: NativeDesktopSession;
 	/** In-flight lazy session creation, shared so concurrent run/capabilities requests never double-create. */
 	#sessionInit?: Promise<NativeDesktopSession>;
@@ -540,6 +543,7 @@ export class ComputerWorkerCore {
 			const desktop = this.#createDesktopScope(session);
 			runtime.setRunScope({
 				desktop: bindRunFacade(desktop, signal),
+				stageManager: bindRunFacade(this.#createStageManagerScope(), signal),
 				assert: (condition: unknown, text?: string): void => {
 					if (!condition) throw new ToolError(text ?? "Assertion failed");
 				},
@@ -685,6 +689,50 @@ export class ComputerWorkerCore {
 		if (!context) throw new ToolError("no active computer run");
 		return context;
 	};
+
+	#createStageManagerScope(): object {
+		return {
+			inspect: async () => {
+				const { signal } = this.#currentRunContext();
+				return await this.#stageManager.inspect(signal);
+			},
+			list: () => {
+				const { signal } = this.#currentRunContext();
+				throwIfAborted(signal);
+				return this.#stageManager.list();
+			},
+			create: async (options: Parameters<HyprlandStageManager["create"]>[0]) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.create");
+				return await this.#stageManager.create(options, context.signal);
+			},
+			switch: async (options: Parameters<HyprlandStageManager["switch"]>[0]) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.switch");
+				return await this.#stageManager.switch(options, context.signal);
+			},
+			next: async (name?: string) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.next");
+				return await this.#stageManager.next(name, context.signal);
+			},
+			prev: async (name?: string) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.prev");
+				return await this.#stageManager.prev(name, context.signal);
+			},
+			restore: async (name: string) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.restore");
+				return await this.#stageManager.restore(name, context.signal);
+			},
+			execGated: async (shellCommand: string) => {
+				const context = this.#currentRunContext();
+				guardRun(context, "stageManager.execGated");
+				return await this.#stageManager.execGated(shellCommand, context.signal);
+			},
+		};
+	}
 
 	#createDesktopScope(session: NativeDesktopSession): object {
 		const getContext = this.#currentRunContext;

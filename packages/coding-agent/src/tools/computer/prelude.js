@@ -153,5 +153,34 @@
 	computer.close = async () => {
 		await invoke("close", {});
 	};
+	computer.candidatesFromElements = elements => {
+		if (!Array.isArray(elements)) {
+			throw new TypeError("computer.candidatesFromElements() expects an array");
+		}
+		return elements.map(element => {
+			const label = [element?.title, element?.description, element?.role, element?.ref]
+				.map(part => (typeof part === "string" ? part.trim() : ""))
+				.find(Boolean);
+			return {
+				id: element.ref,
+				label: label ?? element.ref,
+				role: element.role,
+				source: "ax",
+			};
+		});
+	};
+	computer.decide = async (state, options) => {
+		if (state === null || typeof state !== "object" || Array.isArray(state)) {
+			throw new TypeError("computer.decide() expects a state object");
+		}
+		const opts = validateOptions("computer.decide", options);
+		const result = await globalThis.__omp_call_tool__("__computer_decide__", { state, ...opts });
+		if (result && typeof result.data === "object" && result.data !== null) return result.data;
+		if (result && typeof result.text === "string" && result.text.length > 0) {
+			const parsed = JSON.parse(result.text);
+			return parsed === null ? null : parsed;
+		}
+		return null;
+	};
 	globalThis.computer = Object.freeze(computer);
 }

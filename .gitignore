@@ -93,3 +93,13 @@ packages/coding-agent/bench/boot-baseline.json
 /.bazelrc.user
 
 .parity/
+
+# Eval benchmark artifacts (harness code is committed)
+packages/coding-agent/evals/**/results/
+packages/coding-agent/evals/**/results*.jsonl
+
+# Dev monitor runtime output (scripts are committed)
+/tmp/hf-live-watch/
+
+# Tokenomics sibling clone (see scripts/setup-tokenomics-dep.sh)
+.deps/

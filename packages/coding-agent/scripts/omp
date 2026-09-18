@@ -38,11 +38,22 @@ export OMP_LAUNCH_CWD
 cd "$launch_dir"
 # Herdr 0.7.5 validates the foreground process name. The macOS shell can
 # preserve OMP's identity while still running the development CLI through Bun.
+# Hyprland/systemd exec PATH often omits ~/.bun/bin — resolve absolute bun.
+BUN_BIN=${OMP_BUN_BIN:-}
+if [ -z "$BUN_BIN" ]; then
+	if [ -x "$HOME/.bun/bin/bun" ]; then
+		BUN_BIN=$HOME/.bun/bin/bun
+	elif command -v bun >/dev/null 2>&1; then
+		BUN_BIN=$(command -v bun)
+	else
+		BUN_BIN=bun
+	fi
+fi
 run_bun() {
 	if [ "${HERDR_ENV:-}" = 1 ] && [ "$(uname -s)" = Darwin ]; then
-		exec -a omp bun "$@"
+		exec -a omp "$BUN_BIN" "$@"
 	fi
-	exec bun "$@"
+	exec "$BUN_BIN" "$@"
 }
 
 if [ -n "${PI_TIMING:-}" ]; then

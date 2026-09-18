@@ -1,0 +1,64 @@
+#!/bin/sh
+# Install OMP Handsfree keybinds WITHOUT editing dotfiles (.files).
+# - shims ctl into ~/.local/bin
+# - writes a NEW local hypr module (does not touch binds.lua / .files)
+# - registers binds live: hyprlang `keyword bind`, Lua `eval` as fallback
+#
+# Does NOT unbind SUPER+L (session lock).
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+ctl_src=$root/scripts/omp-handsfree-ctl
+binds_src=$root/config/hypr/omp-handsfree-binds.lua
+local_bin=${HOME}/.local/bin
+hypr_cfg=${HOME}/.config/hypr/config
+local_binds=$hypr_cfg/omp-handsfree-binds.lua
+
+mkdir -p "$local_bin" "$hypr_cfg"
+
+chmod +x "$ctl_src" "$root/scripts/omp-handsfree" "$root/scripts/omp-handsfree-omp" 2>/dev/null || true
+ln -sfn "$ctl_src" "$local_bin/omp-handsfree-ctl"
+ln -sfn "$root/scripts/omp-handsfree" "$local_bin/omp-handsfree"
+ln -sfn "$binds_src" "$local_binds"
+
+ctl="$local_bin/omp-handsfree-ctl"
+
+bind_hyprlang() {
+	hyprctl keyword bind "$1"
+}
+
+if bind_hyprlang "SUPER,Escape,exec,$ctl toggle" >/tmp/omp-handsfree-bind.err 2>&1; then
+	bind_hyprlang "SUPER SHIFT,H,exec,$ctl prev"
+	bind_hyprlang "SUPER SHIFT,L,exec,$ctl next"
+	bind_hyprlang "SUPER SHIFT,bracketleft,exec,$ctl prev"
+	bind_hyprlang "SUPER SHIFT,bracketright,exec,$ctl next"
+	bind_hyprlang "SUPER SHIFT,M,exec,$ctl voice"
+	bind_hyprlang "SUPER SHIFT,BackSpace,exec,$ctl off"
+	mode=hyprlang
+else
+	# Lua config manager
+	hyprctl eval "hl.bind(\"SUPER + Escape\", hl.dsp.exec_cmd(\"$ctl toggle\"))" >/dev/null
+	hyprctl eval "hl.bind(\"SUPER + SHIFT + H\", hl.dsp.exec_cmd(\"$ctl prev\"))" >/dev/null
+	hyprctl eval "hl.bind(\"SUPER + SHIFT + L\", hl.dsp.exec_cmd(\"$ctl next\"))" >/dev/null
+	hyprctl eval "hl.bind(\"SUPER + SHIFT + bracketleft\", hl.dsp.exec_cmd(\"$ctl prev\"))" >/dev/null
+	hyprctl eval "hl.bind(\"SUPER + SHIFT + bracketright\", hl.dsp.exec_cmd(\"$ctl next\"))" >/dev/null
+	hyprctl eval "hl.bind(\"SUPER + SHIFT + M\", hl.dsp.exec_cmd(\"$ctl voice\"))" >/dev/null
+	hyprctl eval "hl.bind(\"SUPER + SHIFT + BACKSPACE\", hl.dsp.exec_cmd(\"$ctl off\"))" >/dev/null
+	mode=lua
+fi
+
+cat <<EOF
+OMP Handsfree binds installed ($mode). SUPER+L lock unchanged.
+
+Live now:
+  SUPER + Escape               toggle Handsfree + Stage
+  SUPER + SHIFT + H / L        Stage carousel prev / next
+  SUPER + SHIFT + [ / ]        same
+  SUPER + SHIFT + M            live voice mic
+  SUPER + SHIFT + Backspace    quit Handsfree
+
+Files:
+  $local_bin/omp-handsfree-ctl  -> $ctl_src
+  $local_binds                  -> $binds_src
+EOF

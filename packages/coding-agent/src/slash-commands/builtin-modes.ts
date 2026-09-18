@@ -99,6 +99,35 @@ function applyExtendedContextCommand(settings: Settings, args: string): string |
 	return undefined;
 }
 
+async function applyRlmCommand(session: AgentSession, args: string): Promise<string | undefined> {
+	const arg = args.trim().toLowerCase();
+	const settings = session.settings;
+	if (arg === "status") {
+		const on = settings.get("rlm.enabled") || settings.get("context.engine") === "rlm" ? "on" : "off";
+		const hasTool = session.getEnabledToolNames().includes("rlm");
+		const engine = settings.get("context.engine") ?? "native";
+		return `RLM is ${on}. engine=${engine} tool=${hasTool ? "active" : "inactive"} spillBytes=${settings.get("rlm.spillBytes")} maxCalls=${settings.get("rlm.maxCalls")} maxDepth=${settings.get("rlm.maxDepth")} maxCost=${settings.get("rlm.maxCost")} wallClockMs=${settings.get("rlm.wallClockMs")}.`;
+	}
+	if (!arg || arg === "toggle" || arg === "on" || arg === "off") {
+		const enabled = arg === "on" ? true : arg === "off" ? false : !settings.get("rlm.enabled");
+		settings.override("rlm.enabled", enabled);
+		// Keep context.engine in sync for exclusive routing readers.
+		settings.override("context.engine", enabled ? "rlm" : "native");
+		const installed = await session.setRlmToolEnabled(enabled);
+		if (enabled && !installed) {
+			settings.override("rlm.enabled", false);
+			settings.override("context.engine", "native");
+			return "RLM could not install the rlm tool in this session.";
+		}
+		return `RLM ${enabled ? "enabled" : "disabled"} for this session (context.engine=${enabled ? "rlm" : "native"}).`;
+	}
+	return undefined;
+}
+
+
+
+
+
 /** Detailed, session-effective `/computer status` diagnostics. */
 function formatComputerUseStatus(session: AgentSession): string {
 	const enabled = session.settings.get("computer.enabled");
@@ -107,11 +136,12 @@ function formatComputerUseStatus(session: AgentSession): string {
 		display: session.settings.get("computer.display"),
 		maxWidth: session.settings.get("computer.maxWidth"),
 		maxHeight: session.settings.get("computer.maxHeight"),
+		jev: session.settings.get("computer.jev"),
 	};
 	return [
 		`Computer use: ${enabled ? "enabled" : "disabled"}`,
 		`prelude: ${active ? "active" : "inactive"}`,
-		`configured: display=${configured.display}, maxWidth=${configured.maxWidth}, maxHeight=${configured.maxHeight}`,
+		`configured: display=${configured.display}, maxWidth=${configured.maxWidth}, maxHeight=${configured.maxHeight}, jev=${configured.jev}`,
 	].join(" · ");
 }
 
@@ -541,6 +571,88 @@ export const BUILTIN_MODE_SLASH_COMMANDS: ReadonlyArray<SlashCommandSpec> = [
 		},
 	},
 	{
+		name: "jev",
+		icon: "compass",
+		description: "TypeSafe Jev skill suggestion status (native System One)",
+		acpDescription: "TypeSafe skill suggestion status",
+		acpInputHint: "[status|auto|typesafe|off|rerank ...]",
+		subcommands: [
+			{ name: "status", description: "Show whether TypeSafe skill suggestion will run" },
+			{ name: "auto", description: "Suggest skills when TypeSafe is authenticated (default)" },
+			{ name: "typesafe", description: "Always use TypeSafe when a key exists" },
+			{ name: "on", description: "Alias for typesafe" },
+			{ name: "off", description: "Disable TypeSafe skill suggestion" },
+			{ name: "rerank", description: "Cookbook call 2 rerank mode (auto|always|off)" },
+		],
+		allowArgs: true,
+		getTuiAutocompleteDescription: runtime => runtime.ctx.session.skillSuggestionStatus(),
+		handle: async (command, runtime) => {
+			const raw = command.args.trim();
+			const parts = raw.split(/\s+/).filter(Boolean);
+			const head = (parts[0] ?? "").toLowerCase();
+			if (head === "rerank") {
+				const mode = (parts[1] ?? "status").toLowerCase();
+				if (!parts[1] || mode === "status") {
+					await runtime.output(`Skill rerank: ${runtime.session.skillSuggestionRerankMode()}`);
+					return commandConsumed();
+				}
+				if (mode === "auto" || mode === "always" || mode === "off") {
+					runtime.session.setSkillSuggestionRerankMode(mode);
+					await runtime.output(runtime.session.skillSuggestionStatus());
+					return commandConsumed();
+				}
+				return usage("Usage: /jev rerank [status|auto|always|off]", runtime);
+			}
+			if (!head || head === "status") {
+				await runtime.output(runtime.session.skillSuggestionStatus());
+				return commandConsumed();
+			}
+			if (head === "on" || head === "typesafe" || head === "auto" || head === "off") {
+				const mode = head === "on" ? "typesafe" : head;
+				runtime.session.setSkillSuggestionMode(mode);
+				await runtime.output(runtime.session.skillSuggestionStatus());
+				return commandConsumed();
+			}
+			return usage("Usage: /jev [status|auto|typesafe|off|rerank ...]", runtime);
+		},
+		handleTui: async (command, runtime) => {
+			const raw = command.args.trim();
+			const parts = raw.split(/\s+/).filter(Boolean);
+			const head = (parts[0] ?? "").toLowerCase();
+			if (head === "rerank") {
+				const mode = (parts[1] ?? "status").toLowerCase();
+				if (!parts[1] || mode === "status") {
+					runtime.ctx.showStatus(`Skill rerank: ${runtime.ctx.session.skillSuggestionRerankMode()}`);
+					runtime.ctx.editor.setText("");
+					return;
+				}
+				if (mode === "auto" || mode === "always" || mode === "off") {
+					runtime.ctx.session.setSkillSuggestionRerankMode(mode);
+					runtime.ctx.showStatus(runtime.ctx.session.skillSuggestionStatus());
+					runtime.ctx.editor.setText("");
+					return;
+				}
+				runtime.ctx.showStatus("Usage: /jev rerank [status|auto|always|off]");
+				runtime.ctx.editor.setText("");
+				return;
+			}
+			if (!head || head === "status") {
+				runtime.ctx.showStatus(runtime.ctx.session.skillSuggestionStatus());
+				runtime.ctx.editor.setText("");
+				return;
+			}
+			if (head === "on" || head === "typesafe" || head === "auto" || head === "off") {
+				const mode = head === "on" ? "typesafe" : head;
+				runtime.ctx.session.setSkillSuggestionMode(mode);
+				runtime.ctx.showStatus(runtime.ctx.session.skillSuggestionStatus());
+				runtime.ctx.editor.setText("");
+				return;
+			}
+			runtime.ctx.showStatus("Usage: /jev [status|auto|typesafe|off|rerank ...]");
+			runtime.ctx.editor.setText("");
+		},
+	},
+	{
 		name: "extended-context",
 		icon: "expand",
 		description: "Toggle extended context windows",
@@ -567,6 +679,35 @@ export const BUILTIN_MODE_SLASH_COMMANDS: ReadonlyArray<SlashCommandSpec> = [
 			runtime.ctx.editor.setText("");
 		},
 	},
+	{
+		name: "rlm",
+		icon: "expand",
+		description: "Toggle the RLM prompt-as-variable context engine",
+		acpDescription: "Toggle RLM context engine",
+		acpInputHint: "[on|off|status]",
+		subcommands: [
+			{ name: "on", description: "Spill oversized tool results and expose the rlm tool" },
+			{ name: "off", description: "Use native compaction only" },
+			{ name: "status", description: "Show RLM engine status" },
+		],
+		allowArgs: true,
+		getTuiAutocompleteDescription: runtime =>
+			`RLM: ${runtime.ctx.session.settings.get("rlm.enabled") ? "on" : "off"}`,
+		handle: async (command, runtime) => {
+			const output = await applyRlmCommand(runtime.session, command.args);
+			if (!output) return usage("Usage: /rlm [on|off|status]", runtime);
+			await runtime.output(output);
+			return commandConsumed();
+		},
+		handleTui: async (command, runtime) => {
+			const output = await applyRlmCommand(runtime.ctx.session, command.args);
+			refreshStatusLine(runtime.ctx);
+			runtime.ctx.showStatus(output ?? "Usage: /rlm [on|off|status]");
+			runtime.ctx.editor.setText("");
+		},
+
+	},
+
 	{
 		name: "computer",
 		icon: "computer",

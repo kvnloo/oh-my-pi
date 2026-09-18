@@ -11,6 +11,7 @@ import textwrap
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 from omp_rpc import (
     AgentEndEvent,
@@ -18,9 +19,37 @@ from omp_rpc import (
     RpcCommandError,
     RpcConcurrencyError,
     RpcError,
+    RpcProcessExitError,
     host_tool,
+    VoiceState,
 )
 from omp_rpc.client import _RpcFrameDecoder
+
+
+class VoiceClientTests(unittest.TestCase):
+    def test_voice_methods_send_correlated_command_names(self) -> None:
+        client = RpcClient()
+        commands: list[str] = []
+
+        def request(_client: RpcClient, command: str, **_payload: object) -> dict[str, object]:
+            commands.append(command)
+            return {"mode": "dictation" if command.startswith("dictation") else "live", "phase": "idle"}
+
+        with patch.object(RpcClient, "_request", request):
+            states = (
+                client.start_dictation(),
+                client.stop_dictation(),
+                client.cancel_dictation(),
+                client.start_live(),
+                client.toggle_live_mute(),
+                client.stop_live(),
+            )
+
+        self.assertEqual(
+            commands,
+            ["dictation_start", "dictation_stop", "dictation_cancel", "live_start", "live_toggle_mute", "live_stop"],
+        )
+        self.assertTrue(all(isinstance(state, VoiceState) for state in states))
 
 
 FAKE_SERVER = textwrap.dedent(
@@ -405,8 +434,11 @@ FAKE_SERVER = textwrap.dedent(
         elif command_type in {"steer", "follow_up", "abort"}:
             respond(request_id, command_type, {})
         elif command_type in {"prompt", "abort_and_prompt"}:
-            respond(request_id, command_type, {})
             message = command["message"]
+            if message == "local only":
+                respond(request_id, command_type, {"agentInvoked": False})
+                continue
+            respond(request_id, command_type, {"agentInvoked": True})
             if message == "needs ui":
                 print(json.dumps({"type": "extension_ui_request", "id": "ui-1", "method": "input", "title": "Need input", "placeholder": "value"}), flush=True)
                 continue
@@ -936,7 +968,7 @@ class RpcClientTests(unittest.TestCase):
             (
                 "omp",
                 "--mode",
-                "rpc",
+                "rpc-ui",
                 "--model",
                 "openrouter/anthropic/claude-sonnet-4.6",
                 "--thinking",
@@ -1111,6 +1143,22 @@ class RpcClientTests(unittest.TestCase):
             client.prompt_and_wait("needs ui", timeout=2.0)
 
         self.assertEqual(seen_methods, ["input"])
+
+    def test_prompt_reports_whether_agent_was_invoked(self) -> None:
+        with self.make_client() as client:
+            self.assertFalse(client.prompt("local only"))
+            self.assertTrue(client.prompt("say hello"))
+            client.wait_for_idle(timeout=2.0)
+
+    def test_close_listener_observes_process_shutdown(self) -> None:
+        errors: list[BaseException] = []
+        client = self.make_client()
+        client.on_close(errors.append)
+        client.start()
+        client.stop()
+
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], RpcProcessExitError)
 
     def test_ready_and_typed_event_listeners(self) -> None:
         ready_types: list[str] = []
