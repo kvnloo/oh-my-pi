@@ -185,19 +185,76 @@ class HandsfreeHarness:
             f"OMP_E2E_WORKSPACE={shlex.quote(self.workspace)}"
         )
         shell_command = f"env {assignment} {shlex.join(command)}"
+        if self.args.dry_run:
+            self.runner.run(
+                ["hyprctl", "dispatch", "exec", f"[dry-run] {shell_command}"],
+                timeout=self.remaining(),
+            )
+            return
         expression = (
             f"hl.dsp.exec_cmd({json.dumps(shell_command)}, "
             f'{{ workspace = "name:{self.workspace}", '
             f'monitor = "{self.output}", no_initial_focus = true }})'
         )
         result = self.runner.run(
-            ["hyprctl", "dispatch", expression], timeout=self.remaining()
+            ["hyprctl", "dispatch", expression],
+            timeout=self.remaining(),
+            check=False,
         )
-        if not self.args.dry_run and result.stdout.strip() not in {"", "ok"}:
-            response = result.stdout.strip() or result.stderr.strip() or "<empty response>"
-            raise HarnessError(f"Hyprland dispatcher rejected launch: {response}")
+        reply = (result.stdout or result.stderr or "").strip()
+        if reply in {"", "ok"}:
+            return
+        # Hyprlang / classic configs: bracket exec on isolated monitor+workspace.
+        legacy = (
+            f"[workspace name:{self.workspace} silent; monitor {self.output}; noinitialfocus] "
+            f"{shell_command}"
+        )
+        legacy_result = self.runner.run(
+            ["hyprctl", "dispatch", "exec", legacy],
+            timeout=self.remaining(),
+            check=False,
+        )
+        legacy_reply = (legacy_result.stdout or legacy_result.stderr or "").strip()
+        if legacy_reply not in {"", "ok"}:
+            raise HarnessError(
+                f"Hyprland dispatcher rejected launch: {reply or legacy_reply}"
+            )
+        self._recover_focus_if_stolen()
 
-
+    def _recover_focus_if_stolen(self) -> None:
+        if self.args.dry_run:
+            return
+        original_address = self.original.get("activewindow")
+        original_workspace = self.original.get("activeworkspace") or {}
+        try:
+            current_window = self.query("activewindow", deadline=self.cleanup_deadline)
+            current_workspace = self.query("activeworkspace", deadline=self.cleanup_deadline)
+        except Exception:
+            return
+        if (
+            current_window.get("address") == original_address
+            and self.workspace_identity(current_workspace)
+            == original_workspace
+        ):
+            return
+        ws_id = original_workspace.get("id")
+        if isinstance(ws_id, int):
+            self.runner.run(
+                ["hyprctl", "dispatch", "workspace", str(ws_id)],
+                timeout=max(1.0, self.remaining(floor=1.0)),
+                check=False,
+            )
+        if isinstance(original_address, str) and original_address:
+            self.runner.run(
+                [
+                    "hyprctl",
+                    "dispatch",
+                    "focuswindow",
+                    f"address:{original_address}",
+                ],
+                timeout=max(1.0, self.remaining(floor=1.0)),
+                check=False,
+            )
 
     def launch(self) -> None:
         fixtures = [
@@ -1040,18 +1097,7 @@ class HandsfreeHarness:
                 })
                 self.output_created = False
                 self.evidence["cleanup"].append({"action": "remove-output", "passed": True})
-            original_address = self.original.get("activewindow")
-            if isinstance(original_address, str) and original_address:
-                self.runner.run(
-                    [
-                        "hyprctl",
-                        "dispatch",
-                        f'hl.dsp.focus({{ window = "address:{original_address}" }})',
-                    ],
-                    timeout=max(1.0, self.cleanup_remaining()),
-                    check=False,
-                )
-                time.sleep(0.1)
+            # Never refocus the user at teardown — they may have moved while we ran.
             try:
                 current_clients = self.query(
                     "clients", deadline=self.cleanup_deadline
