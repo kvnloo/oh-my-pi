@@ -126,12 +126,14 @@ class HudRpcSession:
         # computer tool actions are exec-tier → write mode still prompts.
         # Handsfree is a voice remote: yolo + auto UI confirms.
         # Launch cwd must stay light: monorepo cwd made ready hang 2–3+ min.
+        # Do NOT pass --tools computer: computer is gated by computer.enabled and
+        # is absent from getAllToolNames until /computer on; --tools fails startup.
+        # Full tool set + /computer on below is the working path.
         self._client = RpcClient(
             executable=executable,
             cwd=launch_cwd,
             session_dir=session_dir,
             append_system_prompt=_HANDSFREE_SYSTEM_PROMPT,
-            tools=("computer",),
             no_skills=True,
             no_rules=True,
             extra_args=("--approval-mode", "yolo"),
@@ -139,6 +141,7 @@ class HudRpcSession:
             # live_start does WebRTC + Codex signaling; 30s is too short cold.
             request_timeout=_live_request_timeout_seconds(),
         )
+
         self._client.on_ready(lambda _event: self._on_status("Ready"))
         self._client.on_agent_start(lambda _event: self._on_busy(True))
         self._client.on_agent_end(self._handle_agent_end)
@@ -162,10 +165,24 @@ class HudRpcSession:
         try:
             self._client.start()
             if not self._closed.is_set():
-                self._on_status("Enabling ComputerTool…")
-                agent_invoked = self._client.prompt("/computer on")
-                if not agent_invoked:
+                # Ambient demo: Python Hypr carousel + Jev hotpath only.
+                # /computer on can schedule an agent turn and never flip Ready.
+                if os.environ.get("OMP_HANDSFREE_DEMO_AMBIENT") == "1":
                     self._on_status("Ready")
+                else:
+                    self._on_status("Enabling ComputerTool…")
+                    try:
+                        agent_invoked = self._client.prompt("/computer on")
+                    except Exception as error:
+                        self._on_status(f"Ready · computer skipped ({error})")
+                        agent_invoked = False
+                    # Always surface Ready: slash may invoke agent without
+                    # returning False, which previously left HUD stuck starting.
+                    if agent_invoked:
+                        self._on_status("Ready · computer enabling")
+                    else:
+                        self._on_status("Ready")
+
         except RpcTimeoutError as error:
             stderr = ""
             try:

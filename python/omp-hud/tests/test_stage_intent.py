@@ -24,6 +24,14 @@ class StageIntentTests(unittest.TestCase):
             score_window_match("firefox", app_class="kitty", title="Terminal"),
         )
 
+    def test_quadrant_and_stage_restore(self) -> None:
+        quad = match_stage_intent("split these four into quadrants")
+        assert quad is not None
+        self.assertEqual(quad.action, "quadrant_split")
+        restore = match_stage_intent("back to single window")
+        assert restore is not None
+        self.assertEqual(restore.action, "stage_restore")
+
 
 if __name__ == "__main__":
     unittest.main()

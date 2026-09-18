@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import threading
 import time
@@ -25,13 +26,21 @@ from omp_rpc import (
 )
 
 from .hyprland import (
+    CAROUSEL_BOTTOM_SAFE,
     ContextMonitor,
     HandsfreeCarousel,
     HyprctlError,
     HyprlandContext,
     HyprlandWindow,
     auto_stage_enabled,
+    change_group_active,
+    focus_window_only,
+    layout_quadrants,
+    move_out_of_group,
     promote_hud_overlay,
+    read_group_members,
+    tile_windows,
+    restore_native_layout,
 )
 from .control_server import ControlServer
 from .rpc_session import HudRpcSession
@@ -53,7 +62,7 @@ _HUD_EDGE_MARGIN = 16
 _HUD_HEIGHT = 70
 _RADIUS_PILL = 999
 _RADIUS_CHIP = 999
-_BORDER_WIDTH = 1
+_BORDER_WIDTH = 0
 _CONTROL_SIZE = 34
 _TRANSITION_FAST_MS = 140
 _EDITOR_WIDTH = 520
@@ -111,12 +120,11 @@ _CSS = f"""
 }}
 .capsule {{
   background: {_THEME['surface']};
-  border: {_BORDER_WIDTH}px solid {_THEME['stroke']};
+  border: none;
   border-radius: {_RADIUS_PILL}px;
   box-shadow:
     0 8px 24px {_THEME['shadow']},
-    0 0 16px {_THEME['glow']},
-    inset 0 1px 0 {_THEME['stroke_soft']};
+    0 0 16px {_THEME['glow']};
   padding: 5px 6px 5px 8px;
   min-height: 44px;
   outline: none;
@@ -481,6 +489,8 @@ class HudWindow(Gtk.Window):
         self._carousel = HandsfreeCarousel()
         self._carousel_enabled = auto_stage_enabled()
         self._carousel_bootstrapped = False
+        # stage | quadrant | native
+        self._layout_mode = "stage" if self._carousel_enabled else "native"
         self._local_stage_token: object | None = None
         self._local_stage_action_token: object | None = None
         self._control_server = ControlServer(self._handle_control_command)
@@ -875,6 +885,12 @@ class HudWindow(Gtk.Window):
                     ):
                         return False
                 if event.final:
+                    # Demo ambient: abort speculative Grok blabber; Jev/local decides.
+                    if os.environ.get("OMP_HANDSFREE_DEMO_AMBIENT") == "1":
+                        try:
+                            self._session.abort()
+                        except Exception:
+                            pass
                     self._run_async(
                         lambda: self._jev_hotpath(text, token),
                         on_error=lambda _err: None,
@@ -906,19 +922,15 @@ class HudWindow(Gtk.Window):
 
         handled = False
         if intent.action == "next":
-            if not self._carousel_enabled:
-                return False
-            result = self._carousel_rotate(1)
+            result = self._cycle_window(1)
             self._set_status(
-                "Ready · Stage next" if result.startswith("ok") else f"Stage: {result}"
+                "Ready · next" if result.startswith("ok") else f"Cycle: {result}"
             )
             handled = result.startswith("ok")
         elif intent.action == "prev":
-            if not self._carousel_enabled:
-                return False
-            result = self._carousel_rotate(-1)
+            result = self._cycle_window(-1)
             self._set_status(
-                "Ready · Stage prev" if result.startswith("ok") else f"Stage: {result}"
+                "Ready · prev" if result.startswith("ok") else f"Cycle: {result}"
             )
             handled = result.startswith("ok")
         elif intent.action == "focus":
@@ -934,11 +946,19 @@ class HudWindow(Gtk.Window):
                     best_key = key
             if best_key is not None and best_score >= 20:
                 window = self._windows[best_key]
-                self._select_target(best_key, f"{source} stage", lock=True)
-                if window.address and self._carousel_enabled:
-                    self._carousel_switch_to(window.address)
-                self._set_status(f"Ready · {window.app_class or query}")
+                self._select_target(best_key, f"{source} stage", lock=False)
+                if window.address:
+                    self._enter_stage_view(window.address)
+                self._set_status(f"Ready · Stage · {window.app_class or query}")
                 handled = True
+        elif intent.action == "stage_restore":
+            active = self._stage_active_address()
+            if active and self._carousel_enabled:
+                self._enter_stage_view(active)
+                self._set_status("Ready · Stage")
+                handled = True
+        elif intent.action in {"quadrant_split", "tile", "ungroup"}:
+            handled = self._apply_layout_intent(intent.action, source=source)
 
         if not handled:
             return False
@@ -987,12 +1007,41 @@ class HudWindow(Gtk.Window):
         return self._apply_jev_decision(decision, source=source, abort_agent=abort_agent)
 
     def _jev_hotpath(self, text: str, token: object | None) -> bool:
+        started = time.perf_counter()
+        # Local layout intents win over Jev (quadrants / tile / ungroup).
+        if self._apply_stage_intent(text, source="voice-layout", token=token, abort_agent=True):
+            return True
         decision = jev_window_action(text, self._window_candidates())
+        latency_ms = int((time.perf_counter() - started) * 1000)
+
         if decision is None:
+            if os.environ.get("OMP_HANDSFREE_DEMO_AMBIENT") == "1":
+
+                def paint_defer() -> bool:
+                    self._set_status(f"JEV {latency_ms}ms · none")
+                    return False
+
+                GLib.idle_add(paint_defer)
+            return False
+
+        action = getattr(decision, "action", "none")
+        backend = getattr(decision, "backend", "jev") or "jev"
+        conf = float(getattr(decision, "confidence", 0.0) or 0.0)
+        conf_pct = int(round(conf * 100)) if conf <= 1.0 else int(round(conf))
+        label = f"{backend.upper()} {latency_ms}ms · {action} · {conf_pct}%"
+
+        if action == "none":
+            def paint_none() -> bool:
+                self._set_status(label)
+                return False
+            GLib.idle_add(paint_none)
             return False
 
         def apply() -> bool:
-            self._apply_jev_decision(decision, source="voice-jev", abort_agent=True)
+            handled = self._apply_jev_decision(
+                decision, source="voice-jev", abort_agent=True
+            )
+            self._set_status(label if handled else f"{label} · miss")
             return False
 
         GLib.idle_add(apply)
@@ -1011,8 +1060,9 @@ class HudWindow(Gtk.Window):
             if not address:
                 return False
             for key, window in self._windows.items():
-                if window.address.lower() == str(address).lower():
-                    self._select_target(key, f"{source} jev", lock=True)
+                if window.address and window.address.lower() == str(address).lower():
+                    self._select_target(key, f"{source} jev", lock=False)
+                    self._enter_stage_view(window.address)
                     if abort_agent:
                         try:
                             self._session.abort()
@@ -1433,7 +1483,12 @@ class HudWindow(Gtk.Window):
         if hasattr(self, "_entry"):
             # Match Felix reference: short universal invitation, not product essay.
             self._entry.set_placeholder_text("Ask me anything")
-        if lock and key != _DESKTOP_KEY and target.address:
+        if (
+            lock
+            and key != _DESKTOP_KEY
+            and target.address
+            and os.environ.get("OMP_HANDSFREE_STAGE_ON_FOCUS", "0") == "1"
+        ):
             switch = getattr(self, "_carousel_switch_to", None)
             if callable(switch):
                 switch(target.address)
@@ -1455,6 +1510,11 @@ class HudWindow(Gtk.Window):
 
     def _maybe_open_carousel(self) -> None:
         if not getattr(self, "_carousel_enabled", False):
+            return
+        if os.environ.get("OMP_HANDSFREE_AUTO_STAGE", "1") != "1" and os.environ.get(
+            "OMP_HANDSFREE_STAGE_ON_FOCUS", "0"
+        ) != "1":
+            self._carousel_bootstrapped = True
             return
         if getattr(self, "_carousel_bootstrapped", False) or getattr(self, "_closing", False):
             return
@@ -1486,6 +1546,158 @@ class HudWindow(Gtk.Window):
         self._record_event(ActivityEvent("error", title="Stage Manager", text=error))
         self._set_status(f"Stage: {error}", "error")
         return False
+
+    def _stage_active_address(self) -> str:
+        focused = self._focused_context.address or ""
+        selected = self._targets.get(self._selected_key)
+        if not focused and selected is not None and selected.address:
+            focused = selected.address
+        if focused:
+            return focused
+        members = self._carousel_member_addresses()
+        return members[0] if members else ""
+
+    def _enter_stage_view(self, address: str) -> None:
+        """Felix carousel: centered active + L/R peeks (demo single-window mode)."""
+        if not address:
+            return
+        self._layout_mode = "stage"
+        if self._carousel_enabled:
+            self._carousel_switch_to(address)
+        else:
+            self._focus_address_smooth(address)
+
+    def _focus_address_smooth(self, address: str) -> None:
+        """Focus without Stage L/C/R geometry thrash."""
+        if not address:
+            return
+
+        def run() -> None:
+            try:
+                focus_window_only(address)
+            except HyprctlError as error:
+                GLib.idle_add(self._set_status, f"Focus: {error}")
+
+        self._run_async(run, on_error=lambda err: self._set_status(f"Focus: {err}"))
+
+    def _cycle_window(self, step: int) -> str:
+        """next/prev: group cycle first, then Stage, then plain focus cycle."""
+        focused = ""
+        if self._focused_context.address:
+            focused = self._focused_context.address
+        selected = self._targets.get(self._selected_key)
+        if not focused and selected is not None and selected.address:
+            focused = selected.address
+
+        if focused:
+            try:
+                group = read_group_members(focused)
+            except Exception:
+                group = [focused]
+            if len(group) > 1:
+                try:
+                    change_group_active("f" if step > 0 else "b")
+                    return f"ok group {focused}"
+                except HyprctlError as error:
+                    return f"error {error}"
+
+        if getattr(self, "_layout_mode", "native") == "quadrant":
+            members = self._layout_member_addresses()
+            if not members:
+                return "error no windows"
+            lowered = [m.lower() for m in members]
+            try:
+                idx = lowered.index(focused.lower()) if focused else 0
+            except ValueError:
+                idx = 0
+            nxt = members[(idx + step) % len(members)]
+            try:
+                focus_window_only(nxt)
+            except HyprctlError as error:
+                return f"error {error}"
+            GLib.idle_add(self._sync_chip_to_address, nxt)
+            return f"ok {nxt}"
+
+        if self._carousel_enabled:
+            self._layout_mode = "stage"
+            return self._carousel_rotate(step)
+
+        members = self._carousel_member_addresses()
+        if not members:
+            return "error no windows"
+        lowered = [m.lower() for m in members]
+        try:
+            idx = lowered.index(focused.lower()) if focused else 0
+        except ValueError:
+            idx = 0
+        nxt = members[(idx + step) % len(members)]
+        try:
+            focus_window_only(nxt)
+        except HyprctlError as error:
+            return f"error {error}"
+        GLib.idle_add(self._sync_chip_to_address, nxt)
+        return f"ok {nxt}"
+
+    def _layout_member_addresses(self) -> list[str]:
+        """Windows to rearrange: focused group, else current workspace members."""
+        focused = self._focused_context.address or ""
+        selected = self._targets.get(self._selected_key)
+        if not focused and selected is not None and selected.address:
+            focused = selected.address
+        if focused:
+            try:
+                group = read_group_members(focused)
+            except Exception:
+                group = []
+            if len(group) > 1:
+                return group
+        return self._carousel_member_addresses()
+
+    def _apply_layout_intent(self, action: str, *, source: str) -> bool:
+        members = self._layout_member_addresses()
+        if not members:
+            self._set_status("Layout: no windows")
+            return False
+
+        def run() -> None:
+            try:
+                if self._carousel.is_open:
+                    try:
+                        self._carousel.close()
+                    except HyprctlError:
+                        pass
+                if action == "quadrant_split":
+                    self._layout_mode = "quadrant"
+                    laid = layout_quadrants(members)
+                    label = f"Ready · 4-quad ({len(laid)})"
+                elif action == "tile":
+                    self._layout_mode = "native"
+                    laid = tile_windows(members)
+                    label = f"Ready · tiled ({len(laid)})"
+                elif action == "ungroup":
+                    for addr in members:
+                        move_out_of_group(addr)
+                    laid = members
+                    self._layout_mode = "native"
+                    label = f"Ready · ungrouped ({len(laid)})"
+                else:
+                    label = f"Layout: unknown {action}"
+                    laid = []
+                GLib.idle_add(self._set_status, label)
+                if laid:
+                    GLib.idle_add(self._sync_chip_to_address, laid[0])
+            except HyprctlError as error:
+                GLib.idle_add(self._set_status, f"Layout: {error}")
+
+        self._run_async(run, on_error=lambda err: self._set_status(f"Layout: {err}"))
+        self._record_event(
+            ActivityEvent(
+                "action",
+                title="Layout",
+                text=f"{source}: {action} ×{len(members)}",
+            )
+        )
+        return True
 
     def _carousel_switch_to(self, address: str) -> None:
         if not self._carousel_enabled:
@@ -1559,8 +1771,9 @@ class HudWindow(Gtk.Window):
             ready = "ready" if self._ready else "starting"
             active = self._carousel.active_address or "-"
             status = (self._base_status_text or "").replace("\n", " ")[:80]
+            mode = getattr(self, "_layout_mode", "native")
             return (
-                f"ok hud={ready} carousel={stage} active={active} status={status!r}"
+                f"ok hud={ready} carousel={stage} mode={mode} active={active} status={status!r}"
             )
         if cmd == "quit":
             GLib.idle_add(self.destroy)
@@ -1573,6 +1786,27 @@ class HudWindow(Gtk.Window):
             # Keybind / ctl: same path as mic button.
             GLib.idle_add(self._on_voice, self._voice)
             return "ok voice-toggle"
+        if cmd in {"stage", "carousel", "single"}:
+            active = self._stage_active_address()
+            if not active:
+                return "error no active window"
+            self._enter_stage_view(active)
+            return "ok stage"
+        if cmd in {"quad", "quadrants", "tile-quad"}:
+            ok = self._apply_layout_intent("quadrant_split", source="ctl")
+            return "ok layout quad" if ok else "error layout"
+        if cmd == "tile":
+            ok = self._apply_layout_intent("tile", source="ctl")
+            return "ok layout tile" if ok else "error layout"
+        if cmd == "ungroup":
+            ok = self._apply_layout_intent("ungroup", source="ctl")
+            return "ok layout ungroup" if ok else "error layout"
+        if cmd.startswith("focus "):
+            query = cmd[6:].strip()
+            if not query:
+                return "error focus needs name"
+            ok = self._apply_stage_intent(f"switch to {query}", source="ctl", abort_agent=False)
+            return "ok focus" if ok else "error focus"
         return f"error unknown {cmd}"
 
 
@@ -2007,8 +2241,15 @@ class HudWindow(Gtk.Window):
             self._control_server.stop()
         except Exception:
             pass
+        # Skip carousel.close() — replays stale float geometry and breaks dwindle.
         try:
-            self._carousel.close()
+            self._carousel._open = False
+            self._carousel._baselines = {}
+        except Exception:
+            pass
+        try:
+            focus = self._focused_context.address or None
+            restore_native_layout(preserve_focus=focus)
         except Exception:
             pass
         self._monitor.stop()

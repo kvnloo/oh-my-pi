@@ -637,12 +637,17 @@ def _batch_lua_dispatches(runner: CommandRunner, expressions: list[str]) -> None
         reply = _dispatch(["eval", code], runner)
         if reply in {"ok", ""}:
             return
+        # hyprlang: eval is Lua-only — fail fast for legacy fallback callers.
+        if "only supported with the lua config manager" in reply:
+            raise HyprctlError(f"hyprctl eval failed: {reply}")
         # Batch rejected — fall back one-by-one so partial layouts still progress.
         last = reply
         for expression in expressions:
             one = _dispatch(["eval", expression], runner)
             if one not in {"ok", ""}:
                 last = one
+                if "only supported with the lua config manager" in one:
+                    raise HyprctlError(f"hyprctl eval failed: {one}")
                 if not (
                     one.startswith("Invalid dispatcher")
                     or one.startswith("error:")
@@ -835,6 +840,255 @@ def auto_stage_enabled(env: Mapping[str, str] = os.environ) -> bool:
     return raw not in {"0", "false", "no", "off"}
 
 
+
+def _default_runner() -> CommandRunner:
+    return subprocess.run  # type: ignore[return-value]
+
+
+def focus_window_only(address: str, runner: CommandRunner | None = None) -> None:
+    """Focus without Stage geometry thrash."""
+    _focus_window(_normalize_address(address), runner or _default_runner())
+
+
+def move_out_of_group(address: str, runner: CommandRunner | None = None) -> None:
+    """Detach one window from its Hyprland group (no-op if ungrouped)."""
+    addr = _normalize_address(address)
+    selector = f"address:{addr}"
+    run = runner or _default_runner()
+    try:
+        _dispatch_window_action(
+            addr,
+            lua=[],
+            legacy=["moveoutofgroup", selector],
+            runner=run,
+        )
+    except HyprctlError:
+        # already ungrouped / unsupported — ignore
+        pass
+
+
+def set_window_tiled(address: str, runner: CommandRunner | None = None) -> None:
+    _set_window_floating(_normalize_address(address), False, runner or _default_runner())
+
+
+def set_window_floating(address: str, runner: CommandRunner | None = None) -> None:
+    _set_window_floating(_normalize_address(address), True, runner or _default_runner())
+
+
+def read_group_members(address: str, runner: CommandRunner | None = None) -> list[str]:
+    """Return grouped addresses for the window, or [address] if alone."""
+    addr = _normalize_address(address)
+    run = runner or _default_runner()
+    result = run(
+        ["hyprctl", "-j", "clients"],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3.0,
+    )
+    if result.returncode != 0 or not (result.stdout or "").strip():
+        return [addr]
+    try:
+        clients = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return [addr]
+    if not isinstance(clients, list):
+        return [addr]
+    for client in clients:
+        if not isinstance(client, dict):
+            continue
+        caddr = _normalize_address(str(client.get("address") or ""))
+        if caddr != addr:
+            continue
+        grouped = client.get("grouped") or []
+        if isinstance(grouped, list) and len(grouped) > 1:
+            return [_normalize_address(str(a)) for a in grouped if a]
+        return [addr]
+    return [addr]
+
+
+def focused_monitor(runner: CommandRunner | None = None) -> CarouselMonitor | None:
+    run = runner or _default_runner()
+    result = run(
+        ["hyprctl", "-j", "monitors"],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3.0,
+    )
+    if result.returncode != 0 or not (result.stdout or "").strip():
+        return None
+    try:
+        monitors = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(monitors, list):
+        return None
+    for raw in monitors:
+        if isinstance(raw, dict) and raw.get("focused"):
+            return _logical_monitor(raw)
+    return _logical_monitor(monitors[0]) if monitors and isinstance(monitors[0], dict) else None
+
+
+
+
+def hud_bottom_reserve(
+    monitor: CarouselMonitor,
+    runner: CommandRunner | None = None,
+    *,
+    margin: int = 12,
+) -> int:
+    """Logical px to keep clear above the Handsfree HUD on this monitor."""
+    run = runner or _default_runner()
+    clients = _read_json_array("clients", run)
+    hud = _find_hud_client(clients)
+    if hud is None:
+        return CAROUSEL_BOTTOM_SAFE
+    if hud.get("monitor") != monitor.id:
+        return CAROUSEL_BOTTOM_SAFE
+    at = hud.get("at") if isinstance(hud.get("at"), list) else [0, 0]
+    size = hud.get("size") if isinstance(hud.get("size"), list) else [0, 0]
+    hud_y = int(at[1]) if at else monitor.y + monitor.height
+    left_r, top_r, right_r, bottom_r = monitor.reserved
+    monitor_bottom = monitor.y + monitor.height - int(bottom_r)
+    # Logical px from monitor bottom up to HUD top (tiles stay above capsule).
+    reserve = (monitor_bottom - hud_y) + int(margin)
+    if size and len(size) >= 2:
+        reserve = max(reserve, int(size[1]) + int(margin))
+    return max(CAROUSEL_BOTTOM_SAFE, reserve)
+
+
+def _ensure_unfullscreen(address: str, runner: CommandRunner) -> None:
+    client = _client_at_address(address, runner)
+    if client is None:
+        return
+    if client.get("fullscreen") or client.get("fullscreenMode"):
+        selector = f"address:{_normalize_address(address)}"
+        try:
+            _dispatch(["dispatch", "fullscreen", f"0,{selector}"], runner)
+        except HyprctlError:
+            pass
+
+
+def _place_floating_rect(
+    address: str,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    runner: CommandRunner,
+    *,
+    attempts: int = 3,
+) -> None:
+    addr = _normalize_address(address)
+    for _ in range(attempts):
+        _ensure_unfullscreen(addr, runner)
+        set_window_floating(addr, runner)
+        _resize_window(addr, w, h, runner)
+        _move_window_pixel(addr, x, y, runner)
+        live = _client_at_address(addr, runner)
+        if live is None:
+            continue
+        at = live.get("at") if isinstance(live.get("at"), list) else [0, 0]
+        sz = live.get("size") if isinstance(live.get("size"), list) else [0, 0]
+        if (
+            abs(int(at[0]) - x) <= 6
+            and abs(int(at[1]) - y) <= 6
+            and abs(int(sz[0]) - w) <= 12
+            and abs(int(sz[1]) - h) <= 12
+        ):
+            return
+        threading.Event().wait(0.06)
+    raise HyprctlError(
+        f"window {addr} did not reach ({x},{y}) {w}x{h} after {attempts} attempts"
+    )
+
+
+def compute_quadrant_slots(
+    monitor: CarouselMonitor,
+    *,
+    gap: int = 10,
+    bottom_reserve: int = CAROUSEL_BOTTOM_SAFE,
+    max_windows: int = 4,
+) -> list[tuple[int, int, int, int]]:
+    """Return (x, y, w, h) slots for a 2x2 grid above the Handsfree HUD bar."""
+    left_r, top_r, right_r, bottom_r = monitor.reserved
+    hud_safe = max(int(bottom_reserve), int(bottom_r), CAROUSEL_BOTTOM_SAFE)
+    ox = monitor.x + left_r
+    oy = monitor.y + top_r
+    usable_w = max(240, monitor.width - left_r - right_r)
+    usable_h = max(180, monitor.height - top_r - hud_safe)
+    g = max(0, int(gap))
+    cell_w = max(120, (usable_w - g * 3) // 2)
+    cell_h = max(80, (usable_h - g * 3) // 2)
+    slots = [
+        (ox + g, oy + g, cell_w, cell_h),
+        (ox + g * 2 + cell_w, oy + g, cell_w, cell_h),
+        (ox + g, oy + g * 2 + cell_h, cell_w, cell_h),
+        (ox + g * 2 + cell_w, oy + g * 2 + cell_h, cell_w, cell_h),
+    ]
+    return slots[:max_windows]
+
+
+def layout_quadrants(
+    addresses: list[str],
+    *,
+    gap: int = 10,
+    bottom_reserve: int | None = None,
+    focus_first: bool = True,
+    runner: CommandRunner | None = None,
+) -> list[str]:
+    """Ungroup, float, and place windows in a 2x2 grid on the layout monitor.
+
+    Uses the first member's monitor (not merely focused monitor) and reserves
+    space above the live Handsfree HUD when present.
+    """
+    run = runner or _default_runner()
+    members = [_normalize_address(a) for a in addresses][:4]
+    if not members:
+        raise HyprctlError("no windows for quadrant layout")
+    mon = _pick_monitor_for_client(members[0], run)
+
+    for addr in members:
+        move_out_of_group(addr, run)
+
+    reserve = (
+        int(bottom_reserve)
+        if bottom_reserve is not None
+        else hud_bottom_reserve(mon, run)
+    )
+    slots = compute_quadrant_slots(mon, gap=gap, bottom_reserve=reserve)
+    with _layout_busy():
+        for addr, (x, y, w, h) in zip(members, slots, strict=False):
+            _place_floating_rect(addr, x, y, w, h, run)
+        if focus_first and members:
+            _focus_window(members[0], run)
+    return members
+
+
+def tile_windows(addresses: list[str], runner: CommandRunner | None = None) -> list[str]:
+    """Ungroup then settiled so dwindle/master can take over."""
+    run = runner or _default_runner()
+    members = [_normalize_address(a) for a in addresses]
+    for addr in members:
+        move_out_of_group(addr, run)
+        set_window_tiled(addr, run)
+    if members:
+        _focus_window(members[0], run)
+    return members
+
+
+def change_group_active(direction: str = "f", runner: CommandRunner | None = None) -> None:
+    """Cycle focus inside the active Hyprland group (f/b)."""
+    d = "f" if direction.lower() in {"f", "forward", "next"} else "b"
+    run = runner or _default_runner()
+    reply = _dispatch(["dispatch", "changegroupactive", d], run)
+    if reply not in {"ok", ""} and not reply.startswith("ok"):
+        # some builds return empty
+        if "Invalid" in reply or "error" in reply.lower():
+            raise HyprctlError(f"changegroupactive failed: {reply}")
+
+
 class HandsfreeCarousel:
     """Felix stage: float once, fixed L/C/R slots, switch only reassigns occupants.
 
@@ -1017,7 +1271,23 @@ class HandsfreeCarousel:
             self._placed[address] = (x, y, w, h)
 
         expressions.append(_lua_focus(active))
-        _batch_lua_dispatches(self._runner, expressions)
+        try:
+            _batch_lua_dispatches(self._runner, expressions)
+        except HyprctlError:
+            # hyprlang sessions reject `hyprctl eval` (Lua-only). Fall back to
+            # per-window classic dispatchers so Stage still works.
+            if prepare:
+                for address in self._members:
+                    _move_window_workspace(address, self._workspace, self._runner)
+                    _set_window_floating(address, True, self._runner)
+            order = [a for a in self._members if roles.get(a) != "active"] + [
+                a for a in self._members if roles.get(a) == "active"
+            ]
+            for address in order:
+                x, y, w, h = desired[address]
+                _resize_window(address, w, h, self._runner)
+                _move_window_pixel(address, x, y, self._runner)
+            _focus_window(active, self._runner)
 
 
 def _normalize_address(address: str) -> str:
@@ -1285,3 +1555,316 @@ class ContextMonitor:
                         return
             self._refresh()
             self._stop.wait(self._interval)
+
+# Dotfiles defaults (hyprland.legacy.conf).
+DOTFILES_GAPS_IN = 18
+DOTFILES_GAPS_OUT = 8
+
+# hyprland.legacy.conf windowrules (kitty->1, chrome->2). zen has no rule.
+_DOTFILES_WORKSPACE_BY_CLASS: dict[str, int] = {
+    "kitty": 1,
+    "zen": 2,
+    "google-chrome": 2,
+    "Google-chrome": 2,
+    "firefox": 2,
+}
+
+_USER_APP_CLASSES = frozenset(
+    {
+        "kitty",
+        "zen",
+        "org.telegram.desktop",
+        "google-chrome",
+        "Google-chrome",
+        "firefox",
+        "code",
+        "Code",
+        "Spotify",
+        "spotify",
+    }
+)
+
+
+def _is_handsfree_test_junk(client: dict[str, object]) -> bool:
+    cls = str(client.get("class") or "")
+    title = str(client.get("title") or "")
+    if cls.startswith(("OMP_LAYOUT_", "OMP_TEST_", "OMP_HANDSFREE")):
+        return True
+    if cls in {"__main__.py", "omp-hud"} and (
+        "Handsfree" in title or title.startswith("OMP ")
+    ):
+        return True
+    workspace = client.get("workspace")
+    wid = workspace.get("id") if isinstance(workspace, dict) else workspace
+    if isinstance(wid, int) and wid < 0:
+        return True
+    wname = workspace.get("name") if isinstance(workspace, dict) else ""
+    if isinstance(wname, str) and (
+        wname.startswith("omp-layout-") or wname.startswith("omp-e2e")
+    ):
+        return True
+    return False
+
+
+def _is_rescue_workspace(ws_id: object) -> bool:
+    return isinstance(ws_id, int) and ws_id < 0
+
+
+def _reset_dotfiles_compositor(runner: CommandRunner) -> None:
+    """Re-apply hyprland.legacy.conf general/dwindle/animation defaults."""
+    # Canonical gap reset lives in dotfiles scripts/hypr-gaps.sh (Super+Ctrl+0).
+    gaps_script = Path.home() / "workspace/.files/scripts/hypr-gaps.sh"
+    if gaps_script.is_file():
+        try:
+            subprocess.run(
+                [str(gaps_script), "reset"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=5.0,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    for args in (
+        ["keyword", "general:gaps_in", str(DOTFILES_GAPS_IN)],
+        ["keyword", "general:gaps_out", str(DOTFILES_GAPS_OUT)],
+        ["keyword", "general:border_size", "4"],
+        ["keyword", "general:layout", "dwindle"],
+        ["keyword", "dwindle:preserve_split", "1"],
+        ["keyword", "dwindle:force_split", "2"],
+    ):
+        try:
+            _dispatch(args, runner)
+        except HyprctlError:
+            pass
+    # animations { windowsMove = 1, 4, smoothIn, slide } in hyprland.legacy.conf
+    _set_windows_move_animation(runner, enabled=True, speed=4.0, bezier="default")
+
+
+def _dissolve_all_groups(runner: CommandRunner) -> None:
+    """Ungroup every client. Grouped tabs use groupbar gaps (6/8), not general 18/8."""
+    for _round in range(8):
+        clients = [
+            raw
+            for raw in _read_json_array("clients", runner)
+            if isinstance(raw, dict) and raw.get("address")
+        ]
+        grouped = [raw for raw in clients if raw.get("grouped")]
+        if not grouped:
+            return
+        for raw in grouped:
+            addr = _normalize_address(str(raw["address"]))
+            try:
+                _dispatch(["dispatch", "focuswindow", f"address:{addr}"], runner)
+                _dispatch(["dispatch", "togglegroup"], runner)
+                move_out_of_group(addr, runner)
+            except HyprctlError:
+                pass
+        threading.Event().wait(0.08)
+
+
+def _layoutmsg(runner: CommandRunner, *parts: str) -> None:
+    try:
+        _dispatch(["dispatch", "layoutmsg", *parts], runner)
+    except HyprctlError:
+        pass
+
+
+def _stash_floating_on_workspace(
+    addresses: list[str],
+    stash_ws: int,
+    runner: CommandRunner,
+) -> None:
+    for addr in addresses:
+        try:
+            move_out_of_group(addr, runner)
+            set_window_floating(addr, runner)
+            _dispatch(
+                ["dispatch", "movetoworkspacesilent", f"{stash_ws},address:{addr}"],
+                runner,
+            )
+        except HyprctlError:
+            pass
+    threading.Event().wait(0.12)
+
+
+def _rebuild_dwindle_workspace(
+    ws_id: int,
+    addresses: list[str],
+    runner: CommandRunner,
+) -> None:
+    """Rebuild a fresh dwindle tree (carousel float geometry cannot be toggled away)."""
+    if not addresses:
+        return
+    if len(addresses) == 1:
+        addr = addresses[0]
+        try:
+            move_out_of_group(addr, runner)
+            _dispatch(
+                ["dispatch", "movetoworkspacesilent", f"{ws_id},address:{addr}"],
+                runner,
+            )
+            set_window_tiled(addr, runner)
+        except HyprctlError:
+            pass
+        return
+
+    _stash_floating_on_workspace(addresses, 99, runner)
+    first = addresses[0]
+    try:
+        _dispatch(
+            ["dispatch", "movetoworkspacesilent", f"{ws_id},address:{first}"],
+            runner,
+        )
+        set_window_tiled(first, runner)
+        _dispatch(["dispatch", "focuswindow", f"address:{first}"], runner)
+    except HyprctlError:
+        return
+    threading.Event().wait(0.05)
+
+    if len(addresses) == 2:
+        _layoutmsg(runner, "preselect", "r")
+        second = addresses[1]
+        try:
+            _dispatch(
+                ["dispatch", "movetoworkspacesilent", f"{ws_id},address:{second}"],
+                runner,
+            )
+            set_window_tiled(second, runner)
+        except HyprctlError:
+            pass
+        return
+
+    if len(addresses) == 3:
+        second, third = addresses[1], addresses[2]
+        _layoutmsg(runner, "preselect", "d")
+        try:
+            _dispatch(
+                ["dispatch", "movetoworkspacesilent", f"{ws_id},address:{second}"],
+                runner,
+            )
+            set_window_tiled(second, runner)
+        except HyprctlError:
+            pass
+        threading.Event().wait(0.08)
+        try:
+            _dispatch(["dispatch", "focuswindow", f"address:{first}"], runner)
+        except HyprctlError:
+            pass
+        _layoutmsg(runner, "preselect", "r")
+        try:
+            _dispatch(
+                ["dispatch", "movetoworkspacesilent", f"{ws_id},address:{third}"],
+                runner,
+            )
+            set_window_tiled(third, runner)
+        except HyprctlError:
+            pass
+        return
+
+    for addr in addresses[1:]:
+        _layoutmsg(runner, "preselect", "r")
+        try:
+            _dispatch(
+                ["dispatch", "movetoworkspacesilent", f"{ws_id},address:{addr}"],
+                runner,
+            )
+            set_window_tiled(addr, runner)
+        except HyprctlError:
+            pass
+        threading.Event().wait(0.08)
+
+
+def restore_native_layout(
+    *,
+    preserve_focus: str | None = None,
+    runner: CommandRunner | None = None,
+) -> list[str]:
+    """Return to dotfiles dwindle tiling (reflow, gaps, no carousel baselines)."""
+    run = runner or _default_runner()
+    try:
+        aw = json.loads(subprocess.check_output(["hyprctl", "-j", "activewindow"], text=True))
+        if preserve_focus is None and isinstance(aw, dict):
+            preserve_focus = aw.get("address")
+    except (subprocess.CalledProcessError, json.JSONDecodeError, OSError):
+        pass
+
+    for raw in _read_json_array("clients", run):
+        if not isinstance(raw, dict) or not raw.get("address"):
+            continue
+        if not _is_handsfree_test_junk(raw):
+            continue
+        addr = _normalize_address(str(raw["address"]))
+        try:
+            _dispatch(["dispatch", "killwindow", f"address:{addr}"], run)
+        except HyprctlError:
+            try:
+                _dispatch(["dispatch", "closewindow", f"address:{addr}"], run)
+            except HyprctlError:
+                pass
+
+    clients = [
+        raw
+        for raw in _read_json_array("clients", run)
+        if isinstance(raw, dict) and raw.get("address")
+    ]
+    by_workspace: dict[int, list[str]] = {}
+    restored: list[str] = []
+    for raw in clients:
+        if _is_handsfree_test_junk(raw):
+            continue
+        cls = str(raw.get("class") or "")
+        if cls not in _USER_APP_CLASSES:
+            continue
+        addr = _normalize_address(str(raw["address"]))
+        restored.append(addr)
+
+    _dissolve_all_groups(run)
+
+    for raw in clients:
+        if _is_handsfree_test_junk(raw):
+            continue
+        cls = str(raw.get("class") or "")
+        if cls not in _USER_APP_CLASSES:
+            continue
+        addr = _normalize_address(str(raw["address"]))
+        workspace = raw.get("workspace")
+        ws_id = workspace.get("id") if isinstance(workspace, dict) else None
+        if raw.get("fullscreen"):
+            try:
+                _dispatch(["dispatch", "fullscreen", f"0,address:{addr}"], run)
+            except HyprctlError:
+                pass
+        target_ws = None
+        if _is_rescue_workspace(ws_id):
+            target_ws = _DOTFILES_WORKSPACE_BY_CLASS.get(cls)
+        elif cls in _DOTFILES_WORKSPACE_BY_CLASS and ws_id != _DOTFILES_WORKSPACE_BY_CLASS[cls]:
+            target_ws = _DOTFILES_WORKSPACE_BY_CLASS[cls]
+        if target_ws is not None:
+            try:
+                _dispatch(
+                    [
+                        "dispatch",
+                        "movetoworkspacesilent",
+                        f"{target_ws},address:{addr}",
+                    ],
+                    run,
+                )
+                ws_id = target_ws
+            except HyprctlError:
+                pass
+        if isinstance(ws_id, int):
+            by_workspace.setdefault(ws_id, []).append(addr)
+
+    for ws_id, members in sorted(by_workspace.items()):
+        _rebuild_dwindle_workspace(ws_id, members, run)
+
+    _reset_dotfiles_compositor(run)
+
+    if preserve_focus:
+        try:
+            focus_window_only(str(preserve_focus), run)
+        except HyprctlError:
+            pass
+    return restored
+
