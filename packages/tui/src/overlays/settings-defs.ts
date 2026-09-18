@@ -58,13 +58,15 @@ export const TAB_GROUPS: Record<SettingTab, readonly string[]> = {
 		"Notifications",
 		"Speech",
 		"Collab",
+		"Stream",
 		"Magic Keywords",
 		"Startup & Updates",
 		"Power",
 		"Agent",
 		"Git",
 	],
-	context: ["General", "Compaction", "Rules (TTSR)", "Experimental"],
+	context: ["General", "Compaction", "RLM", "Rules (TTSR)", "Experimental"],
+
 	memory: ["General", "Auto-Learn", "Mnemopi", "Hindsight", "Sharpshooter"],
 	files: ["Editing", "Reading", "Read Summaries", "LSP"],
 	shell: ["Bash", "Eval & Runtimes"],
@@ -133,7 +135,8 @@ export interface SettingsHost {
 	validateProviderLimits(value: unknown): Record<string, number>;
 }
 
-export type SettingValue = boolean | string;
+/** Primitive value displayed by a settings control. */
+export type SettingsDisplayValue = boolean | string;
 
 interface BaseSettingDef {
 	path: string;

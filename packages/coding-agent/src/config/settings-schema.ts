@@ -1,6 +1,6 @@
 import { ADVISOR_DEFAULT_BUDGET_PER_UPDATE } from "../advisor/emission-guard";
 import { THINKING_EFFORTS } from "@oh-my-pi/pi-catalog/effort";
-import { DEFAULT_SHARE_URL } from "@oh-my-pi/pi-wire";
+import { DEFAULT_SHARE_URL, DEFAULT_STREAM_URL } from "@oh-my-pi/pi-wire";
 import { TREE_FILTER_MODES } from "@oh-my-pi/pi-tui/overlays/tree-selector";
 import { SHAPE_VARIANT_NAMES } from "@oh-my-pi/snapcompact";
 import {
@@ -2445,6 +2445,31 @@ export const SETTINGS_SCHEMA = {
 		},
 	},
 
+	// Live streaming (omp stream)
+	"stream.serverUrl": {
+		type: "string",
+		default: DEFAULT_STREAM_URL,
+		ui: {
+			tab: "interaction",
+			group: "Stream",
+			label: "Stream Server",
+			description:
+				"Live stream server used by `omp stream` (https://host[:port]); viewers watch at <base>/<your Stencil username>",
+		},
+	},
+
+	"stream.redactPatterns": {
+		type: "array",
+		default: EMPTY_STRING_ARRAY,
+		ui: {
+			tab: "interaction",
+			group: "Stream",
+			label: "Extra Redaction Patterns",
+			description:
+				"Additional regular expressions redacted from every streamed row, on top of env/secrets.yml values and built-in credential shapes",
+		},
+	},
+
 	// Speech-to-text
 	"stt.enabled": {
 		type: "boolean",
@@ -2542,6 +2567,113 @@ export const SETTINGS_SCHEMA = {
 				"Keep persistent notes and searchable raw history across context windows. Restart to update available tools.",
 		},
 	},
+
+	"context.engine": {
+		type: "string",
+		default: "native",
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "Context engine",
+			description:
+				"native = default compaction ladder. rlm = opt-in prompt-as-variable spill engine (same as rlm.enabled). Never compose both engines on one provider request for the same corpus.",
+		},
+	},
+	"rlm.enabled": {
+		type: "boolean",
+		default: false,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM context engine",
+			description:
+				"Spill oversized tool results out of the neural window and inspect them with peek/search/query. Default off (native compaction). Also enabled when context.engine is rlm.",
+		},
+	},
+	"rlm.maxDepth": {
+		type: "number",
+		default: 0,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max depth",
+			description:
+				"0 = peek/search/query only (v1). 1 = allow one nested rlm subcall over granted handle slices (v2). Depth ≥ 2 is not implemented.",
+		},
+	},
+	"rlm.maxCalls": {
+		type: "number",
+		default: 32,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max calls",
+			description: "Hard cap on rlm query subcalls per session store",
+		},
+	},
+	"rlm.maxTotalTokens": {
+		type: "number",
+		default: 1_000_000,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max tokens",
+			description: "Hard cap on estimated tokens charged to rlm query",
+		},
+	},
+	"rlm.maxCost": {
+		type: "number",
+		default: 0,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM max cost",
+			description: "Hard USD-style cost cap for rlm query subcalls. 0 = unlimited.",
+		},
+	},
+	"rlm.wallClockMs": {
+		type: "number",
+		default: 0,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM wall clock (ms)",
+			description: "Wall-clock budget for the session RLM store from first use. 0 = unlimited.",
+		},
+	},
+	"rlm.spillBytes": {
+		type: "number",
+		default: 20_480,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM spill bytes",
+			description: "Tool-result texts larger than this are stored as handles instead of entering the root prompt",
+		},
+	},
+	"rlm.subModel": {
+		type: "string",
+		default: "",
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM sub-model",
+			description: "Optional model id for query/subcall. Empty = active session model (via rlmComplete).",
+		},
+	},
+	"rlm.kernelBind": {
+		type: "boolean",
+		default: false,
+		ui: {
+			tab: "context",
+			group: "RLM",
+			label: "RLM kernel bind",
+			description:
+				"When true, expose read-only RLM handle helpers to the session EvalRunner kernel (no full-body repr). Default off.",
+		},
+	},
+
+
 
 	"compaction.midTurnEnabled": {
 		type: "boolean",
@@ -3636,7 +3768,7 @@ export const SETTINGS_SCHEMA = {
 
 	"edit.enforceSeenLines": {
 		type: "boolean",
-		default: false,
+		default: true,
 		ui: {
 			tab: "files",
 			group: "Editing",
