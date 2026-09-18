@@ -31,6 +31,15 @@ export type RpcCommand =
 	| { id?: string; type: "follow_up"; message: string; images?: ImageContent[] }
 	| { id?: string; type: "abort" }
 	| { id?: string; type: "abort_and_prompt"; message: string; images?: ImageContent[] }
+
+	// Voice (protocol v2)
+	| { id?: string; type: "dictation_start" }
+	| { id?: string; type: "dictation_stop" }
+	| { id?: string; type: "dictation_cancel" }
+	| { id?: string; type: "live_start" }
+	| { id?: string; type: "live_toggle_mute" }
+	| { id?: string; type: "live_stop" }
+
 	| { id?: string; type: "new_session"; parentSession?: string }
 
 	// State
@@ -87,6 +96,40 @@ export type RpcCommand =
 	// Login
 	| { id?: string; type: "get_login_providers" }
 	| { id?: string; type: "login"; providerId: string };
+
+// ============================================================================
+// Voice (protocol v2 events + state)
+// ============================================================================
+
+export type RpcVoiceMode = "dictation" | "live";
+
+export interface RpcVoiceState {
+	mode: RpcVoiceMode;
+	phase: string;
+	muted?: boolean;
+}
+
+interface RpcVoiceEventBase {
+	voiceSessionId: string;
+	mode: RpcVoiceMode;
+}
+
+export type RpcVoiceEvent =
+	| (RpcVoiceEventBase & { type: "voice_state"; phase: string; muted?: boolean; elapsedMs: number })
+	| (RpcVoiceEventBase & {
+			type: "voice_transcript";
+			role: "user" | "assistant";
+			text: string;
+			final: boolean;
+			turn: number;
+	  })
+	| (RpcVoiceEventBase & { type: "voice_level"; input: number; output: number; elapsedMs: number })
+	| (RpcVoiceEventBase & {
+			type: "voice_terminal";
+			outcome: "stopped" | "cancelled" | "error";
+			elapsedMs: number;
+			error?: string;
+	  });
 
 // ============================================================================
 // RPC State
@@ -333,6 +376,14 @@ export type RpcResponse =
 			data: { providers: Array<{ id: string; name: string; available: boolean; authenticated: boolean }> };
 	  }
 	| { id?: string; type: "response"; command: "login"; success: true; data: { providerId: string } }
+
+	// Voice
+	| { id?: string; type: "response"; command: "dictation_start"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "dictation_stop"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "dictation_cancel"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "live_start"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "live_toggle_mute"; success: true; data: RpcVoiceState }
+	| { id?: string; type: "response"; command: "live_stop"; success: true; data: RpcVoiceState }
 
 	// Error response (any command can fail); `code` is an optional machine-readable reason.
 	| { id?: string; type: "response"; command: string; success: false; error: string; code?: string };

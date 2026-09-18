@@ -47,6 +47,10 @@ import { claimRpcInput, readRpcInputFrames } from "./rpc-input";
 import { pageRpcMessages, RPC_MESSAGES_PAGE_BUSY_ERROR, RpcMessagesPageError } from "./rpc-messages";
 import { RpcOutputWriter } from "./rpc-output";
 import { RpcSubagentRegistry, readRpcSubagentTranscript } from "./rpc-subagents";
+import { RpcVoiceController } from "./rpc-voice";
+import { LiveSessionController } from "../../live/controller";
+import { STTController } from "../../stt/stt-controller";
+import { settings } from "../../config/settings";
 import type {
 	RpcCommand,
 	RpcExtensionUIRequest,
@@ -63,6 +67,7 @@ import type {
 	RpcResponse,
 	RpcSessionState,
 	RpcSubagentSubscriptionLevel,
+	RpcVoiceEvent,
 } from "./rpc-types";
 
 // Re-export types for consumers
@@ -1090,6 +1095,19 @@ export async function runRpcMode(
 	session.subscribe(event => {
 		output(event);
 	});
+	const voiceController = new RpcVoiceController(
+		session,
+		output as (event: RpcVoiceEvent) => void,
+		new STTController(),
+		options =>
+			new LiveSessionController({
+				...options,
+				provider: (settings.get("live.provider") as "auto" | "codex" | "grok" | undefined) ?? "auto",
+				voice: options.voice ?? (settings.get("live.voice") as string | undefined),
+				grokVoice: options.grokVoice ?? (settings.get("live.grokVoice") as string | undefined),
+			}),
+		() => settings.get("live.voice") as string | undefined,
+	);
 
 	// Discriminates a store failure from any other dispose rejection below.
 	let persistenceFailure: Error | undefined;
@@ -1111,6 +1129,7 @@ export async function runRpcMode(
 	 */
 	const disposeAndExit = async (): Promise<never> => {
 		try {
+			await voiceController.stopActive();
 			await session.dispose();
 		} catch (error) {
 			if (!persistenceFailure || error !== persistenceFailure) throw error;
@@ -1258,20 +1277,38 @@ export async function runRpcMode(
 
 			case "abort": {
 				await session.abort({ reason: USER_INTERRUPT_LABEL });
+				// Keep live voice up — ambient/handsfree aborts agent turns on every
+				// final transcript and must not hang up the mic session.
+				await voiceController.stopDictationIfActive();
 				return success(id, "abort");
 			}
 
 			case "abort_and_prompt": {
 				await session.abort({ reason: USER_INTERRUPT_LABEL });
+				await voiceController.stopDictationIfActive();
 				session
 					.prompt(command.message, { images: command.images })
 					.catch(e => output(error(id, "abort_and_prompt", e.message)));
 				return success(id, "abort_and_prompt");
 			}
 
+			case "dictation_start":
+				return success(id, "dictation_start", await voiceController.startDictation());
+			case "dictation_stop":
+				return success(id, "dictation_stop", await voiceController.stopDictation());
+			case "dictation_cancel":
+				return success(id, "dictation_cancel", voiceController.cancelDictation());
+			case "live_start":
+				return success(id, "live_start", await voiceController.startLive());
+			case "live_toggle_mute":
+				return success(id, "live_toggle_mute", voiceController.toggleLiveMute());
+			case "live_stop":
+				return success(id, "live_stop", await voiceController.stopLive());
+
 			case "new_session":
 			case "switch_session":
 			case "branch": {
+				await voiceController.stopActive();
 				const result = await handleRpcSessionChange(session, command, subagentRegistry);
 				if (!result.data.cancelled) await emitAvailableCommandsUpdate();
 				return success(id, result.type, result.data);
@@ -1712,6 +1749,7 @@ export async function runRpcMode(
 	pendingExtensionRequests.rejectAll("RPC client disconnected before extension UI response completed");
 	hostToolBridge.close("RPC client disconnected before host tool execution completed");
 	hostUriBridge.clear("RPC client disconnected before host URI request completed");
+	await voiceController.stopActive();
 	await inputDispatcher.drain();
 	await shutdownCoordinator.drain();
 	subagentRegistry?.dispose();
