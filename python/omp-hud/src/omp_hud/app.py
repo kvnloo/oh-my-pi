@@ -36,7 +36,9 @@ from .hyprland import (
 from .control_server import ControlServer
 from .rpc_session import HudRpcSession
 from .stage_intent import match_stage_intent, score_window_match
+from .jev_decide import WindowCandidate, jev_window_action, local_focus
 from .voice_orb import ThinkingOrb, map_voice_phase_to_orb
+
 
 
 _SPACE_1 = 4
@@ -698,12 +700,14 @@ class HudWindow(Gtk.Window):
         self._submit_message(self._entry.get_text().strip())
 
     def _submit_message(self, message: str) -> None:
-        if not message or self._busy or self._prompt_pending or self._voice_active:
+        if not message or self._busy or self._prompt_pending:
             return
-        # Instant stage commands never wait on the coding agent.
-        if self._apply_stage_intent(message, source="typed"):
+        if self._try_hotpath(message, source="typed", abort_agent=self._voice_active):
             self._entry.set_text("")
             return
+        if self._voice_active:
+            return
+
         target = self._targets.get(self._selected_key)
         if target is None:
             self._set_error("Choose a desktop target before sending")
@@ -860,15 +864,23 @@ class HudWindow(Gtk.Window):
             self._render_voice_state()
             text = (event.text or "").strip()
             if text:
-                # Act on partials once intent is clear — don't wait for final + agent.
                 token = (event.voice_session_id, event.turn, text.lower())
                 if event.final or len(text) >= 6:
-                    self._apply_stage_intent(
+                    if self._try_hotpath(
                         text,
                         source="voice",
                         token=token,
                         abort_agent=True,
+                        allow_jev=False,
+                    ):
+                        return False
+                if event.final:
+                    self._run_async(
+                        lambda: self._jev_hotpath(text, token),
+                        on_error=lambda _err: None,
                     )
+
+
         return False
 
     def _apply_stage_intent(
@@ -943,6 +955,73 @@ class HudWindow(Gtk.Window):
             except Exception:
                 pass
         return True
+
+    def _try_hotpath(
+        self,
+        text: str,
+        *,
+        source: str,
+        token: object | None = None,
+        abort_agent: bool = False,
+        allow_jev: bool = False,
+    ) -> bool:
+        if self._apply_stage_intent(text, source=source, token=token, abort_agent=abort_agent):
+            return True
+        if self._apply_overlap_focus(text, source=source, abort_agent=abort_agent):
+            return True
+        if allow_jev:
+            return self._jev_hotpath(text, token)
+        return False
+
+    def _window_candidates(self) -> list[WindowCandidate]:
+        return [
+            WindowCandidate(window.address, window.app_class, window.title)
+            for window in self._windows.values()
+            if window.address
+        ]
+
+    def _apply_overlap_focus(self, text: str, *, source: str, abort_agent: bool) -> bool:
+        decision = local_focus(text, self._window_candidates())
+        if decision is None or decision.address is None:
+            return False
+        return self._apply_jev_decision(decision, source=source, abort_agent=abort_agent)
+
+    def _jev_hotpath(self, text: str, token: object | None) -> bool:
+        decision = jev_window_action(text, self._window_candidates())
+        if decision is None:
+            return False
+
+        def apply() -> bool:
+            self._apply_jev_decision(decision, source="voice-jev", abort_agent=True)
+            return False
+
+        GLib.idle_add(apply)
+        return True
+
+    def _apply_jev_decision(
+        self, decision: object, *, source: str, abort_agent: bool
+    ) -> bool:
+        action = getattr(decision, "action", None)
+        if action == "next":
+            return self._apply_stage_intent("next window", source=source, abort_agent=abort_agent)
+        if action == "prev":
+            return self._apply_stage_intent("previous window", source=source, abort_agent=abort_agent)
+        if action == "focus":
+            address = getattr(decision, "address", None)
+            if not address:
+                return False
+            for key, window in self._windows.items():
+                if window.address.lower() == str(address).lower():
+                    self._select_target(key, f"{source} jev", lock=True)
+                    if abort_agent:
+                        try:
+                            self._session.abort()
+                        except Exception:
+                            pass
+                    return True
+        return False
+
+
 
 
 
@@ -1360,11 +1439,19 @@ class HudWindow(Gtk.Window):
                 switch(target.address)
 
     def _carousel_member_addresses(self) -> list[str]:
+        active_ws = ""
+        selected = self._targets.get(self._selected_key)
+        if selected is not None and selected.address:
+            active_ws = selected.workspace
+        elif self._focused_context.workspace:
+            active_ws = self._focused_context.workspace
         return [
             self._windows[key].address
             for key in self._ordered_window_keys()
             if self._windows[key].address
+            and (not active_ws or self._windows[key].workspace == active_ws)
         ]
+
 
     def _maybe_open_carousel(self) -> None:
         if not getattr(self, "_carousel_enabled", False):
@@ -1885,8 +1972,9 @@ class HudWindow(Gtk.Window):
         def promote() -> None:
             try:
                 promote_hud_overlay(
-                    width=size[0], height=_HUD_HEIGHT, attempts=40, delay=0.25
+                    width=size[0], height=_HUD_HEIGHT, attempts=8, delay=0.05
                 )
+
             except Exception as error:
                 GLib.idle_add(self._set_overlay_error, str(error))
 

@@ -45,6 +45,7 @@ class HyprlandWindow:
     app_class: str
     title: str
     pid: int | None = None
+    monitor: int | None = None
 
     @property
     def key(self) -> str:
@@ -121,13 +122,17 @@ def read_windows(runner: CommandRunner = subprocess.run) -> tuple[HyprlandWindow
             workspace = str(workspace_data or "")
         raw_pid = raw_client.get("pid")
         pid = raw_pid if isinstance(raw_pid, int) else None
+        raw_mon = raw_client.get("monitor")
+        monitor = raw_mon if isinstance(raw_mon, int) else None
         window = HyprlandWindow(
             address=str(raw_client.get("address") or ""),
             workspace=workspace,
             app_class=str(raw_client.get("class") or ""),
             title=str(raw_client.get("title") or ""),
             pid=pid,
+            monitor=monitor,
         )
+
         if window.address or window.app_class or window.title:
             windows.append(window)
     return tuple(windows)
@@ -1109,9 +1114,10 @@ def compute_stage_layout(
         center=SlotGeom(center_x, center_y, card_w, card_h),
         left=SlotGeom(left_x, center_y, card_w, card_h),
         right=SlotGeom(right_x, center_y, card_w, card_h),
-        park_origin_x=monitor.x + monitor.width + 64,
-        park_origin_y=monitor.y + 64,
+        park_origin_x=monitor.x + gap_out,
+        park_origin_y=monitor.y - gap_out - card_h,
     )
+
 
 
 

@@ -113,7 +113,8 @@ class ResponsiveSizingTests(unittest.TestCase):
             thread.call_args.kwargs["target"]()
 
         thread.assert_called_once()
-        promote.assert_called_once_with(width=1188, height=70, attempts=40, delay=0.25)
+        promote.assert_called_once_with(width=1188, height=70, attempts=8, delay=0.05)
+
         self.assertTrue(window._overlay_checked)
         self.assertFalse(window._overlay_promotion_pending)
         self.assertEqual((1188, 70), overlay_size_when_ready(1188, 70))
