@@ -100,3 +100,6 @@ packages/coding-agent/evals/**/results*.jsonl
 
 # Dev monitor runtime output (scripts are committed)
 /tmp/hf-live-watch/
+
+# Tokenomics sibling clone (see scripts/setup-tokenomics-dep.sh)
+.deps/

@@ -81,6 +81,11 @@ import * as AIError from "@oh-my-pi/pi-ai/error";
 import { resetOpenAICodexHistoryAfterCompaction } from "@oh-my-pi/pi-ai/providers/openai-codex-responses";
 import { toolWireSchema } from "@oh-my-pi/pi-ai/utils/schema";
 import { preferredDialect } from "@oh-my-pi/pi-catalog/identity";
+import {
+	createTokenomicsBridge,
+	deriveContextPolicy,
+	type OmpTokenomicsBridge,
+} from "../rlm/tokenomics-bridge";
 import { modelsAreEqual } from "@oh-my-pi/pi-catalog/models";
 import { type EditStore, PowerAssertion, type PowerAssertionOptions } from "@oh-my-pi/pi-natives";
 import {
@@ -580,6 +585,8 @@ export class AgentSession {
 	getXdevToolEntries: () => Array<{ name: string; summary: string }>;
 	readonly yieldQueue: YieldQueue;
 	editStore?: EditStore;
+	/** Session-scoped Tokenomics emitter (JSONL). Fail-open; OMP_TOKENOMICS=0 disables. */
+	#tokenomics: OmpTokenomicsBridge | undefined;
 
 	/** Materializes this session's live extension-root policy per discovery call. */
 	readonly #extensionRoots: () => EffectiveExtensionRoots;
@@ -3352,6 +3359,24 @@ export class AgentSession {
 					},
 					costUsd: assistantMsg.usage.cost.total,
 				});
+				void this.#tokenomics
+					?.emitModelCall({
+						role: "root",
+						name: "omp.root",
+						provider: assistantMsg.provider,
+						model: assistantMsg.model,
+						usage: assistantMsg.usage,
+						status:
+							assistantMsg.stopReason === "error"
+								? "error"
+								: assistantMsg.stopReason === "aborted"
+									? "cancelled"
+									: "ok",
+						durationMs: assistantMsg.duration,
+						ttftMs: assistantMsg.ttft,
+						costUsd: assistantMsg.usage.cost.total,
+					})
+					.catch(() => {});
 				// Persist which account served this turn so a resumed process can
 				// re-pin it and keep the provider's account-scoped prompt cache
 				// warm (broker-mode sticky routing is process-local).
@@ -9458,10 +9483,39 @@ export class AgentSession {
 			...assistantMessage,
 			content: assistantMessage.content.filter(block => block.type !== "toolCall"),
 		};
+		if (args.isolated === true && sanitizedMessage.usage) {
+			void this.#tokenomics
+				?.emitModelCall({
+					role: "rlm_worker",
+					name: "omp.rlm_worker",
+					provider: sanitizedMessage.provider,
+					model: sanitizedMessage.model,
+					usage: sanitizedMessage.usage,
+					status:
+						sanitizedMessage.stopReason === "error"
+							? "error"
+							: sanitizedMessage.stopReason === "aborted"
+								? "cancelled"
+								: "ok",
+					durationMs: sanitizedMessage.duration,
+					ttftMs: sanitizedMessage.ttft,
+					costUsd: sanitizedMessage.usage.cost?.total,
+				})
+				.catch(() => {});
+		}
 		return {
 			replyText: args.dedupeReply === false ? replyText.trim() : dedupeEphemeralReply(replyText.trim()),
 			assistantMessage: sanitizedMessage,
 		};
+	}
+
+	/** Tokenomics status one-liner (trace totals via SDK summarizeTrace). */
+	getTokenomicsStatusLine(): string {
+		return this.#tokenomics?.formatStatusLine() ?? "tokenomics: off";
+	}
+
+	getTokenomicsBridge(): OmpTokenomicsBridge | undefined {
+		return this.#tokenomics;
 	}
 
 	/**

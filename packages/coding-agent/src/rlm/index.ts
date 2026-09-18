@@ -39,3 +39,14 @@ export {
 export type { ContextEngine, RlmSessionHost } from "./session";
 export { appendRlmRuntimeGuide, RLM_RUNTIME_GUIDE, rlmGuideIsAppendOnly } from "./guide";
 export { wrapToolWithRlmSpill } from "./wrap";
+export {
+	OmpTokenomicsBridge,
+	createTokenomicsBridge,
+	deriveContextPolicy,
+} from "./tokenomics-bridge";
+export type {
+	ContextPolicy,
+	EvidenceQualityLabel,
+	ModelCallEmit,
+	TokenomicsBridgeOptions,
+} from "./tokenomics-bridge";
