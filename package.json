@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "AGY as first-class OMP executor (research + implementation) — front-door routing before Cursor",
+  "description": "AGY as first-class OMP executor (research + implementation) \u2014 front-door routing before Cursor",
   "main": "./src/extension.ts",
   "omp": {
-    "extensions": ["./src/extension.ts"]
+    "extensions": [
+      "./index.ts"
+    ]
   },
   "scripts": {
     "test": "bun test test/",
