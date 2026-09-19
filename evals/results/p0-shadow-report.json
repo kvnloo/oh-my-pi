@@ -1,0 +1,405 @@
+{
+  "schema": "z0.cognitive_state.p0_report",
+  "generated_at": "2026-09-19T05:41:00.600Z",
+  "package": "/home/kvn/tmp/omp-ext-cognitive-state",
+  "omp_core_patches_required": false,
+  "extension_seam_verified": {
+    "context_can_replace_model_visible_messages": true,
+    "canonical_session_history_untouched_by_context_return": true,
+    "p0_does_not_return_messages": true,
+    "seams_used": [
+      "context",
+      "tool_result",
+      "session_start",
+      "before_provider_request"
+    ],
+    "seams_available_unused": [
+      "tool_call",
+      "turn_start",
+      "turn_end",
+      "agent_start",
+      "agent_end",
+      "session_stop"
+    ]
+  },
+  "compile_latency_ms": {
+    "p50": 0.058,
+    "p95": 0.103,
+    "n": 126
+  },
+  "fixtures": [
+    {
+      "fixture": "agy-p0-p01",
+      "native_tokens": 94,
+      "virtual_tokens": 538,
+      "reduction_ratio_measured_not_claimed": -4.7234,
+      "compile_ms": 1.393,
+      "live": 3,
+      "receipt": 1,
+      "external": 1,
+      "externalized_bytes": 150,
+      "measured_tokens_avoided": 0,
+      "reconstruction": {
+        "what are we trying to do?": "Keep agy parameter autoresearch promotion-safe (canonicalize, single league incumbent, NO_OP)",
+        "what is already proven?": "bash → exit code: 0; PASS",
+        "what is still pending?": "bash: exit code: 1",
+        "what invariant must not be violated?": "DO NOT enable kernel_impl yet | Do not alter agy",
+        "what result just arrived?": "bash: exit code: 0",
+        "what is the next action?": "investigate failing tool bash"
+      },
+      "evidence_loss": [],
+      "tokenomics_sample": {
+        "kind": "context",
+        "name": "omp.cognitive_state.shadow_context",
+        "status": "ok",
+        "shadow_only": true,
+        "context": {
+          "native_context_tokens": 94,
+          "virtual_context_tokens": 538,
+          "compile_ms": 1.393,
+          "receipt_tokens": 218,
+          "live_tokens": 59,
+          "evidence_tokens": 92,
+          "externalized_bytes": 150,
+          "measured_tokens_avoided": 0,
+          "live_count": 3,
+          "receipt_count": 1,
+          "external_count": 1,
+          "archived_count": 0,
+          "selected_evidence_handles": [
+            "rlm://h/1",
+            "rlm://h/2"
+          ],
+          "missing_required_evidence": [],
+          "shadow_only": true,
+          "context_mode": "native"
+        },
+        "attributes": {
+          "tokenomics.context.policy": "shadow_cognitive_state_v1",
+          "tokenomics.context_mode": "native",
+          "cognitive_state.native_tokens": 94,
+          "cognitive_state.virtual_tokens": 538,
+          "cognitive_state.compile_ms": 1.393,
+          "cognitive_state.measured_tokens_avoided": 0,
+          "cognitive_state.shadow_only": true
+        },
+        "ts": 1789796460594
+      },
+      "invariants_present": [
+        "DO NOT enable kernel_impl yet",
+        "Do not alter agy"
+      ],
+      "provider_receives": "native"
+    },
+    {
+      "fixture": "heavy-suite-bun-hang",
+      "native_tokens": 1317,
+      "virtual_tokens": 1607,
+      "reduction_ratio_measured_not_claimed": -0.2202,
+      "compile_ms": 0.087,
+      "live": 3,
+      "receipt": 0,
+      "external": 1,
+      "externalized_bytes": 5058,
+      "measured_tokens_avoided": 0,
+      "reconstruction": {
+        "what are we trying to do?": "Diagnose heavy-suite Bun hang without losing unresolved failure signal",
+        "what is already proven?": "(none established)",
+        "what is still pending?": "bash: head:bun test --full",
+        "what invariant must not be violated?": "Do not summarize unresolved tool state away",
+        "what result just arrived?": "(no recent completion)",
+        "what is the next action?": "investigate failing tool bash"
+      },
+      "evidence_loss": [],
+      "tokenomics_sample": {
+        "kind": "context",
+        "name": "omp.cognitive_state.shadow_context",
+        "status": "ok",
+        "shadow_only": true,
+        "context": {
+          "native_context_tokens": 1317,
+          "virtual_context_tokens": 1607,
+          "compile_ms": 0.087,
+          "receipt_tokens": 109,
+          "live_tokens": 1299,
+          "evidence_tokens": 47,
+          "externalized_bytes": 5058,
+          "measured_tokens_avoided": 0,
+          "live_count": 3,
+          "receipt_count": 0,
+          "external_count": 1,
+          "archived_count": 0,
+          "selected_evidence_handles": [
+            "rlm://h/1"
+          ],
+          "missing_required_evidence": [],
+          "shadow_only": true,
+          "context_mode": "native"
+        },
+        "attributes": {
+          "tokenomics.context.policy": "shadow_cognitive_state_v1",
+          "tokenomics.context_mode": "native",
+          "cognitive_state.native_tokens": 1317,
+          "cognitive_state.virtual_tokens": 1607,
+          "cognitive_state.compile_ms": 0.087,
+          "cognitive_state.measured_tokens_avoided": 0,
+          "cognitive_state.shadow_only": true
+        },
+        "ts": 1789796460596
+      },
+      "invariants_present": [
+        "Do not summarize unresolved tool state away"
+      ],
+      "provider_receives": "native"
+    },
+    {
+      "fixture": "openjev-benchmark",
+      "native_tokens": 2035,
+      "virtual_tokens": 364,
+      "reduction_ratio_measured_not_claimed": 0.8211,
+      "compile_ms": 0.097,
+      "live": 1,
+      "receipt": 1,
+      "external": 1,
+      "externalized_bytes": 8034,
+      "measured_tokens_avoided": 0,
+      "reconstruction": {
+        "what are we trying to do?": "Record OpenJev benchmark receipts without stuffing raw benches into LIVE context",
+        "what is already proven?": "bash → head:OpenJev bench; tail:n=200",
+        "what is still pending?": "(none pending)",
+        "what invariant must not be violated?": "Do not wire Jev authority yet",
+        "what result just arrived?": "bash: head:OpenJev bench",
+        "what is the next action?": "continue current objective"
+      },
+      "evidence_loss": [],
+      "tokenomics_sample": {
+        "kind": "context",
+        "name": "omp.cognitive_state.shadow_context",
+        "status": "ok",
+        "shadow_only": true,
+        "context": {
+          "native_context_tokens": 2035,
+          "virtual_context_tokens": 364,
+          "compile_ms": 0.097,
+          "receipt_tokens": 110,
+          "live_tokens": 14,
+          "evidence_tokens": 47,
+          "externalized_bytes": 8034,
+          "measured_tokens_avoided": 0,
+          "live_count": 1,
+          "receipt_count": 1,
+          "external_count": 1,
+          "archived_count": 0,
+          "selected_evidence_handles": [
+            "rlm://h/1"
+          ],
+          "missing_required_evidence": [],
+          "shadow_only": true,
+          "context_mode": "native"
+        },
+        "attributes": {
+          "tokenomics.context.policy": "shadow_cognitive_state_v1",
+          "tokenomics.context_mode": "native",
+          "cognitive_state.native_tokens": 2035,
+          "cognitive_state.virtual_tokens": 364,
+          "cognitive_state.compile_ms": 0.097,
+          "cognitive_state.measured_tokens_avoided": 0,
+          "cognitive_state.shadow_only": true
+        },
+        "ts": 1789796460597
+      },
+      "invariants_present": [
+        "Do not wire Jev authority yet"
+      ],
+      "provider_receives": "native"
+    },
+    {
+      "fixture": "resident-decider",
+      "native_tokens": 2105,
+      "virtual_tokens": 636,
+      "reduction_ratio_measured_not_claimed": 0.6979,
+      "compile_ms": 0.074,
+      "live": 2,
+      "receipt": 2,
+      "external": 2,
+      "externalized_bytes": 8109,
+      "measured_tokens_avoided": 0,
+      "reconstruction": {
+        "what are we trying to do?": "Keep Decider resident shadow + counterfactual replay correct without provider-context switch",
+        "what is already proven?": "bash → exit code: 0; PASS | read → head:export function pairReplay(a0,b0){ return {a0,b0}; }",
+        "what is still pending?": "(none pending)",
+        "what invariant must not be violated?": "Do not make Jev authoritative | Do not switch provider context",
+        "what result just arrived?": "read: head:export function pairReplay(a0,b0){ return {a0,b0}; }",
+        "what is the next action?": "compile CognitiveStatePacket for next root request"
+      },
+      "evidence_loss": [],
+      "tokenomics_sample": {
+        "kind": "context",
+        "name": "omp.cognitive_state.shadow_context",
+        "status": "ok",
+        "shadow_only": true,
+        "context": {
+          "native_context_tokens": 2105,
+          "virtual_context_tokens": 636,
+          "compile_ms": 0.074,
+          "receipt_tokens": 224,
+          "live_tokens": 38,
+          "evidence_tokens": 92,
+          "externalized_bytes": 8109,
+          "measured_tokens_avoided": 0,
+          "live_count": 2,
+          "receipt_count": 2,
+          "external_count": 2,
+          "archived_count": 0,
+          "selected_evidence_handles": [
+            "rlm://h/1",
+            "rlm://h/2"
+          ],
+          "missing_required_evidence": [],
+          "shadow_only": true,
+          "context_mode": "native"
+        },
+        "attributes": {
+          "tokenomics.context.policy": "shadow_cognitive_state_v1",
+          "tokenomics.context_mode": "native",
+          "cognitive_state.native_tokens": 2105,
+          "cognitive_state.virtual_tokens": 636,
+          "cognitive_state.compile_ms": 0.074,
+          "cognitive_state.measured_tokens_avoided": 0,
+          "cognitive_state.shadow_only": true
+        },
+        "ts": 1789796460599
+      },
+      "invariants_present": [
+        "Do not make Jev authoritative",
+        "Do not switch provider context"
+      ],
+      "provider_receives": "native"
+    },
+    {
+      "fixture": "tokenomics-migration",
+      "native_tokens": 1056,
+      "virtual_tokens": 391,
+      "reduction_ratio_measured_not_claimed": 0.6297,
+      "compile_ms": 0.049,
+      "live": 1,
+      "receipt": 1,
+      "external": 1,
+      "externalized_bytes": 4071,
+      "measured_tokens_avoided": 0,
+      "reconstruction": {
+        "what are we trying to do?": "Emit RLM context economics via Tokenomics bridge without claiming avoided tokens",
+        "what is already proven?": "bash → 0 fail; exit code: 0",
+        "what is still pending?": "(none pending)",
+        "what invariant must not be violated?": "Do not claim token savings yet | measured_tokens_avoided = 0",
+        "what result just arrived?": "bash: 0 fail",
+        "what is the next action?": "continue current objective"
+      },
+      "evidence_loss": [],
+      "tokenomics_sample": {
+        "kind": "context",
+        "name": "omp.cognitive_state.shadow_context",
+        "status": "ok",
+        "shadow_only": true,
+        "context": {
+          "native_context_tokens": 1056,
+          "virtual_context_tokens": 391,
+          "compile_ms": 0.049,
+          "receipt_tokens": 119,
+          "live_tokens": 25,
+          "evidence_tokens": 47,
+          "externalized_bytes": 4071,
+          "measured_tokens_avoided": 0,
+          "live_count": 1,
+          "receipt_count": 1,
+          "external_count": 1,
+          "archived_count": 0,
+          "selected_evidence_handles": [
+            "rlm://h/1"
+          ],
+          "missing_required_evidence": [],
+          "shadow_only": true,
+          "context_mode": "native"
+        },
+        "attributes": {
+          "tokenomics.context.policy": "shadow_cognitive_state_v1",
+          "tokenomics.context_mode": "native",
+          "cognitive_state.native_tokens": 1056,
+          "cognitive_state.virtual_tokens": 391,
+          "cognitive_state.compile_ms": 0.049,
+          "cognitive_state.measured_tokens_avoided": 0,
+          "cognitive_state.shadow_only": true
+        },
+        "ts": 1789796460599
+      },
+      "invariants_present": [
+        "Do not claim token savings yet",
+        "measured_tokens_avoided = 0"
+      ],
+      "provider_receives": "native"
+    },
+    {
+      "fixture": "worker-needed-replay",
+      "native_tokens": 409,
+      "virtual_tokens": 366,
+      "reduction_ratio_measured_not_claimed": 0.1051,
+      "compile_ms": 0.035,
+      "live": 1,
+      "receipt": 1,
+      "external": 0,
+      "externalized_bytes": 1554,
+      "measured_tokens_avoided": 0,
+      "reconstruction": {
+        "what are we trying to do?": "Paired counterfactual replay for rlm.worker_needed gold set",
+        "what is already proven?": "bash → exit code: 0; head:WorkerNeededReplayV1; tail:exit code: 0",
+        "what is still pending?": "(none pending)",
+        "what invariant must not be violated?": "Do not delete current RLM paths",
+        "what result just arrived?": "bash: exit code: 0",
+        "what is the next action?": "continue current objective"
+      },
+      "evidence_loss": [],
+      "tokenomics_sample": {
+        "kind": "context",
+        "name": "omp.cognitive_state.shadow_context",
+        "status": "ok",
+        "shadow_only": true,
+        "context": {
+          "native_context_tokens": 409,
+          "virtual_context_tokens": 366,
+          "compile_ms": 0.035,
+          "receipt_tokens": 121,
+          "live_tokens": 17,
+          "evidence_tokens": 47,
+          "externalized_bytes": 1554,
+          "measured_tokens_avoided": 0,
+          "live_count": 1,
+          "receipt_count": 1,
+          "external_count": 0,
+          "archived_count": 0,
+          "selected_evidence_handles": [
+            "rlm://h/1"
+          ],
+          "missing_required_evidence": [],
+          "shadow_only": true,
+          "context_mode": "native"
+        },
+        "attributes": {
+          "tokenomics.context.policy": "shadow_cognitive_state_v1",
+          "tokenomics.context_mode": "native",
+          "cognitive_state.native_tokens": 409,
+          "cognitive_state.virtual_tokens": 366,
+          "cognitive_state.compile_ms": 0.035,
+          "cognitive_state.measured_tokens_avoided": 0,
+          "cognitive_state.shadow_only": true
+        },
+        "ts": 1789796460600
+      },
+      "invariants_present": [
+        "Do not delete current RLM paths"
+      ],
+      "provider_receives": "native"
+    }
+  ],
+  "evidence_loss_findings": [],
+  "next_blocker_for_active_canary": "Provider still receives native context; active canary blocked until a guarded virtual-context flag flips provider path (extension already sufficient — no core patch). Keep measured_tokens_avoided=0 until then."
+}

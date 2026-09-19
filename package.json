@@ -1,0 +1,22 @@
+{
+  "name": "@z0/omp-ext-cognitive-state",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Shadow + guarded canary CognitiveStatePacket compiler (RLM Phase II P0/P1) — out-of-tree OMP extension",
+  "main": "./src/extension.ts",
+  "exports": {
+    ".": "./src/extension.ts",
+    "./schema": "./src/schema.ts",
+    "./compiler": "./src/compiler.ts",
+    "./visibility": "./src/visibility.ts",
+    "./receipts": "./src/receipts.ts",
+    "./mode": "./src/mode.ts",
+    "./canary": "./src/canary-runtime.ts"
+  },
+  "scripts": {
+    "test": "bun test test/",
+    "eval:reconstruction": "bun evals/reconstruction-harness.ts",
+    "eval:canary": "bun evals/canary-ab-harness.ts"
+  }
+}

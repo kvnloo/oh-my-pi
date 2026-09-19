@@ -1,0 +1,25 @@
+{
+  "id": "worker-needed-replay",
+  "objective": "Paired counterfactual replay for rlm.worker_needed gold set",
+  "acceptance": [
+    "A0/B0/A1/B1 paired",
+    "gold labels stable"
+  ],
+  "invariants": [
+    "Do not delete current RLM paths"
+  ],
+  "phase": "worker-needed",
+  "bottleneck": "paired replay labels",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Full Track A P0 WorkerNeededReplay. Do not delete current RLM paths."
+    },
+    {
+      "role": "tool",
+      "tool_name": "bash",
+      "tool_call_id": "tc-wn-1",
+      "content": "WorkerNeededReplayV1\npairs=16\ngold_ok=16\nexit code: 0\npair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair "
+    }
+  ]
+}

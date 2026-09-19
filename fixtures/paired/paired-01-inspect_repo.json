@@ -1,0 +1,49 @@
+{
+  "id": "paired-01-inspect_repo",
+  "task_class": "repository_inspection",
+  "objective": "Inspect src layout. Locate the compiler entrypoint.",
+  "acceptance": [
+    "k_winners canonicalize",
+    "NO_OP supported",
+    "no kernel_impl"
+  ],
+  "invariants": [
+    "DO NOT enable kernel_impl yet",
+    "Do not alter agy",
+    "Canonical transcript unchanged",
+    "Do not make virtual context default"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Inspect src layout. Locate the compiler entrypoint.\nInvariants: Do not switch provider context as default. Canonical transcript unchanged."
+    },
+    {
+      "role": "tool",
+      "tool_name": "bash",
+      "tool_call_id": "tc-agy-1",
+      "is_error": true,
+      "content": "Error: false KEEP from empty agy-p0 champion\nexit code: 1\nstack: ResearchDriver...\n"
+    },
+    {
+      "role": "assistant",
+      "content": "Fixing empty champion KEEP false positive."
+    },
+    {
+      "role": "tool",
+      "tool_name": "bash",
+      "tool_call_id": "tc-agy-2",
+      "content": "PASS agy-p01 24/24\nNO_OP ok\nk_winners canonicalize ok\nexit code: 0\n"
+    },
+    {
+      "role": "user",
+      "content": "Confirm league champion is single incumbent."
+    }
+  ],
+  "verifier": {
+    "type": "reconstruction_and_evidence",
+    "require_objective_substring": "Inspect src layout. Loca",
+    "require_invariants": true,
+    "require_evidence_handles_resolvable": true
+  }
+}

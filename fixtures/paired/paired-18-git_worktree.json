@@ -1,0 +1,32 @@
+{
+  "id": "paired-18-git_worktree",
+  "task_class": "git_status_diff",
+  "objective": "Explain worktree dirty state from status output.",
+  "acceptance": [
+    "A0/B0/A1/B1 paired",
+    "gold labels stable"
+  ],
+  "invariants": [
+    "Do not delete current RLM paths",
+    "Canonical transcript unchanged",
+    "Do not make virtual context default"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain worktree dirty state from status output.\nInvariants: Do not switch provider context as default. Canonical transcript unchanged."
+    },
+    {
+      "role": "tool",
+      "tool_name": "bash",
+      "tool_call_id": "tc-wn-1",
+      "content": "WorkerNeededReplayV1\npairs=16\ngold_ok=16\nexit code: 0\npair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair "
+    }
+  ],
+  "verifier": {
+    "type": "reconstruction_and_evidence",
+    "require_objective_substring": "Explain worktree dirty s",
+    "require_invariants": true,
+    "require_evidence_handles_resolvable": true
+  }
+}

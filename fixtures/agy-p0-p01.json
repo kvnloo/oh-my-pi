@@ -1,0 +1,43 @@
+{
+  "id": "agy-p0-p01",
+  "objective": "Keep agy parameter autoresearch promotion-safe (canonicalize, single league incumbent, NO_OP)",
+  "acceptance": [
+    "k_winners canonicalize",
+    "NO_OP supported",
+    "no kernel_impl"
+  ],
+  "invariants": [
+    "DO NOT enable kernel_impl yet",
+    "Do not alter agy"
+  ],
+  "phase": "agy-promotion",
+  "bottleneck": "promotion integrity",
+  "plan_generation": "agy-p0.1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "agy P0.1 promotion integrity. DO NOT enable kernel_impl yet. Do not alter agy beyond promotion-safe path."
+    },
+    {
+      "role": "tool",
+      "tool_name": "bash",
+      "tool_call_id": "tc-agy-1",
+      "is_error": true,
+      "content": "Error: false KEEP from empty agy-p0 champion\nexit code: 1\nstack: ResearchDriver...\n"
+    },
+    {
+      "role": "assistant",
+      "content": "Fixing empty champion KEEP false positive."
+    },
+    {
+      "role": "tool",
+      "tool_name": "bash",
+      "tool_call_id": "tc-agy-2",
+      "content": "PASS agy-p01 24/24\nNO_OP ok\nk_winners canonicalize ok\nexit code: 0\n"
+    },
+    {
+      "role": "user",
+      "content": "Confirm league champion is single incumbent."
+    }
+  ]
+}

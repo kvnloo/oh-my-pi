@@ -1,0 +1,32 @@
+{
+  "id": "paired-12-unresolved_hang",
+  "task_class": "deterministic_debugging",
+  "objective": "Unresolved bun hang must remain LIVE. Do not summarize unresolved tool state away.",
+  "acceptance": [
+    "A0/B0/A1/B1 paired",
+    "gold labels stable"
+  ],
+  "invariants": [
+    "Do not delete current RLM paths",
+    "Canonical transcript unchanged",
+    "Do not make virtual context default"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Unresolved bun hang must remain LIVE. Do not summarize unresolved tool state away.\nInvariants: Do not switch provider context as default. Canonical transcript unchanged."
+    },
+    {
+      "role": "tool",
+      "tool_name": "bash",
+      "tool_call_id": "tc-wn-1",
+      "content": "WorkerNeededReplayV1\npairs=16\ngold_ok=16\nexit code: 0\npair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair pair "
+    }
+  ],
+  "verifier": {
+    "type": "reconstruction_and_evidence",
+    "require_objective_substring": "Unresolved bun hang must",
+    "require_invariants": true,
+    "require_evidence_handles_resolvable": true
+  }
+}

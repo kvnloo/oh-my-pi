@@ -1,0 +1,22 @@
+[
+  "paired-01-inspect_repo",
+  "paired-02-git_diff_reason",
+  "paired-03-branch_state",
+  "paired-04-run_unit_tests",
+  "paired-05-edit_visibility",
+  "paired-06-debug_failing_test",
+  "paired-07-read_receipts",
+  "paired-08-token_metrics",
+  "paired-09-worker_receipt",
+  "paired-10-stale_plan",
+  "paired-11-completed_suite",
+  "paired-12-unresolved_hang",
+  "paired-13-long_tool_history",
+  "paired-14-retrieval_heavy",
+  "paired-15-openjev_facts",
+  "paired-16-agy_noop",
+  "paired-17-decider_pairs",
+  "paired-18-git_worktree",
+  "paired-19-targeted_patch",
+  "paired-20-inspect_extension"
+]
