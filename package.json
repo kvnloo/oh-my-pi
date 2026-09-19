@@ -1,0 +1,17 @@
+{
+  "name": "@z0/omp-ext-z0-live-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "z0 bootstrap/operator extension for OMP live-runtime status and safe reload",
+  "main": "./src/extension.ts",
+  "exports": {
+    ".": "./src/extension.ts"
+  },
+  "scripts": {
+    "test": "bun test test/"
+  },
+  "peerDependencies": {
+    "@oh-my-pi/pi-coding-agent": "*"
+  }
+}
