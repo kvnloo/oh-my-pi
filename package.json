@@ -8,6 +8,11 @@
   "exports": {
     ".": "./src/extension.ts"
   },
+  "omp": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
   "scripts": {
     "test": "bun test test/"
   },
