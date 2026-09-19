@@ -572,6 +572,12 @@ export async function runCli(argv: string[]): Promise<void> {
 		return;
 	}
 
+	if (resolvedArgv[0] === "--dev-live") {
+		process.argv = [process.argv[0]!, process.argv[1]!, ...resolvedArgv.slice(1)];
+		await import("./live-runtime/dev-live");
+		return;
+	}
+
 	try {
 		const [{ run }, { commands, resolveCliArgv }] = await Promise.all([
 			import("@oh-my-pi/pi-utils/cli"),
