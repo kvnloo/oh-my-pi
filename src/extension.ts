@@ -12,8 +12,14 @@ import {
 	pruneDeadRegistryEntries,
 	readPendingActivationMarker,
 	clearPendingActivationMarker,
+	sendControlMessage,
+	type RuntimeSnapshot,
 } from "@oh-my-pi/pi-coding-agent/live-runtime";
-import { formatRuntimeStatus, formatRuntimeStatusAll, findSnapshotExtension, resolvePresence } from "./format.ts";
+import {
+	formatRuntimeStatus,
+	formatRuntimeStatusAll,
+	summarizeExpected,
+} from "./format.ts";
 import { EXPECTED_EXTENSIONS } from "./manifest.ts";
 
 const QUEUED_RELOAD_KEY = "__omp_z0_runtime_reload_queued_generation";
@@ -49,31 +55,66 @@ export default function z0LiveRuntimeExtension(pi: ExtensionAPI): void {
 					const profileId = process.env.OMP_PROFILE || "default";
 					await pruneDeadRegistryEntries(profileId);
 					const entries = await listRuntimeRegistry(profileId);
-					const snap = await attestation.snapshot();
+					const localSnap = await attestation.snapshot();
 					const rows = [];
 					for (const entry of entries) {
-						const cognitive = resolvePresence(findSnapshotExtension(snap, "cognitive-state"));
-						const agy = resolvePresence(findSnapshotExtension(snap, "agy-executor"));
+						let snap: RuntimeSnapshot | undefined;
+						let busy = entry.pid === process.pid && attestation.isBusy ? "busy" : "idle";
+						if (entry.session_id === localSnap.session.session_id) {
+							snap = localSnap;
+							busy = attestation.isBusy ? "busy" : "idle";
+						} else {
+							try {
+								const reply = await sendControlMessage(
+									entry.socket_path,
+									{ type: "status_request", request_id: `status-all-${entry.session_id}` },
+									2500,
+								);
+								if (reply.type === "status_reply") {
+									busy = reply.busy;
+									if (reply.snapshot && typeof reply.snapshot === "object") {
+										snap = reply.snapshot as RuntimeSnapshot;
+									}
+								}
+							} catch {
+								snap = undefined;
+							}
+						}
+						if (!snap) {
+							rows.push({
+								session_id: entry.session_id,
+								pid: entry.pid,
+								core: entry.core_sha ?? "?",
+								generation: entry.runtime_generation,
+								cognitive: "UNKNOWN" as const,
+								agy: "UNKNOWN" as const,
+								agy_sha: "-",
+								state: busy,
+							});
+							continue;
+						}
+						const summary = summarizeExpected(snap);
 						rows.push({
 							session_id: entry.session_id,
 							pid: entry.pid,
 							core: entry.core_sha ?? snap.core.git_sha ?? "?",
-							generation: entry.runtime_generation,
-							cognitive: entry.session_id === snap.session.session_id ? cognitive : ("UNKNOWN" as const),
-							agy: entry.session_id === snap.session.session_id ? agy : ("UNKNOWN" as const),
-							state: entry.pid === process.pid && attestation.isBusy ? "busy" : "idle",
+							generation: snap.runtime.generation ?? entry.runtime_generation,
+							cognitive: summary.cognitive,
+							agy: summary.agy,
+							agy_sha: summary.agy_sha,
+							state: busy,
 						});
 					}
 					if (rows.length === 0) {
-						const cognitive = resolvePresence(findSnapshotExtension(snap, "cognitive-state"));
-						const agy = resolvePresence(findSnapshotExtension(snap, "agy-executor"));
+						const summary = summarizeExpected(localSnap);
 						rows.push({
-							session_id: snap.session.session_id,
-							pid: snap.process.pid,
-							core: snap.core.git_sha ?? "?",
-							generation: snap.runtime.generation,
-							cognitive,
-							agy,
+							session_id: localSnap.session.session_id,
+							pid: localSnap.process.pid,
+							core: localSnap.core.git_sha ?? "?",
+							generation: localSnap.runtime.generation,
+							cognitive: summary.cognitive,
+							agy: summary.agy,
+							agy_sha: summary.agy_sha,
 							state: attestation.isBusy ? "busy" : "idle",
 						});
 					}

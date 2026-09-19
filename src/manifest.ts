@@ -2,6 +2,7 @@
 export interface ExpectedExtension {
 	id: string;
 	expectedLocation: string;
+	/** Full or prefix git SHA of the package HEAD we want sessions to run. */
 	expectedCommit?: string;
 }
 
@@ -15,11 +16,20 @@ export const EXPECTED_EXTENSIONS: ExpectedExtension[] = [
 	{
 		id: "cognitive-state",
 		expectedLocation: "/home/kvn/tmp/omp-ext-cognitive-state",
-		expectedCommit: "e452c37fbd9bf72f93f704b6ca679a86010e87eb",
+		expectedCommit: "ce151e54b240c016ee3d666d86520a99028b242b",
 	},
 	{
 		id: "agy-executor",
 		expectedLocation: "/home/kvn/tmp/omp-ext-agy-executor",
-		expectedCommit: "0ab322140d1a9170c8dcf917bdb4681d04c4e719",
+		// P0.6 everyday manual lane
+		expectedCommit: "a1686ceed36731da83346fcd5c7d3418406d8cf6",
 	},
 ];
+
+export function commitMatches(actual: string | undefined, expected: string | undefined): boolean {
+	if (!expected) return true;
+	if (!actual) return false;
+	const a = actual.toLowerCase();
+	const e = expected.toLowerCase();
+	return a === e || a.startsWith(e) || e.startsWith(a);
+}
