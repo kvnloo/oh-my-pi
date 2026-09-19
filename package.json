@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Shadow + guarded canary CognitiveStatePacket compiler (RLM Phase II P0/P1) — out-of-tree OMP extension",
+  "description": "Shadow + guarded canary CognitiveStatePacket compiler (RLM Phase II P0/P1) \u2014 out-of-tree OMP extension",
   "main": "./src/extension.ts",
   "exports": {
     ".": "./src/extension.ts",
@@ -13,6 +13,11 @@
     "./receipts": "./src/receipts.ts",
     "./mode": "./src/mode.ts",
     "./canary": "./src/canary-runtime.ts"
+  },
+  "omp": {
+    "extensions": [
+      "./index.ts"
+    ]
   },
   "scripts": {
     "test": "bun test test/",
