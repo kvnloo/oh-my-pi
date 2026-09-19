@@ -315,8 +315,12 @@ export class RuntimeControlServer {
 		const { promise, resolve } = Promise.withResolvers<void>();
 		server.close(() => resolve());
 		await promise;
-		// Do NOT unlink the path here. After warm reboot the successor may already
-		// own this path; unlinking would delete the live listener's directory entry
-		// while the inode remains open (ENOENT for new clients). start() unlinks.
+		// Safe: sockets are per-pid (`${sessionId}.${pid}.sock`), so this cannot
+		// delete a successor listener's path.
+		try {
+			await fs.unlink(this.#socketPath);
+		} catch (err) {
+			if (!isEnoent(err)) throw err;
+		}
 	}
 }
