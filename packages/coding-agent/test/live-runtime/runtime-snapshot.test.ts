@@ -262,3 +262,29 @@ describe("Runtime generation (P0.3)", () => {
 		expect(snap.runtime.generation).toBe(1);
 	});
 });
+
+describe("package-aware extension fingerprints", () => {
+	it("does not collide on identical index.ts barrels with different implementations", async () => {
+		const root = await tempDir("omp-runtime-pkg-fp-");
+		async function makePkg(name: string, body: string): Promise<string> {
+			const dir = path.join(root, name);
+			await fs.mkdir(path.join(dir, "src"), { recursive: true });
+			await Bun.write(
+				path.join(dir, "package.json"),
+				JSON.stringify({ name, type: "module", omp: { extensions: ["./index.ts"] } }, null, 2) + "\n",
+			);
+			await Bun.write(path.join(dir, "index.ts"), 'export { default } from "./src/extension.ts";\n');
+			await Bun.write(path.join(dir, "src/extension.ts"), body);
+			return path.join(dir, "index.ts");
+		}
+		const a = await makePkg("agy-like", "export default function agy() { return \"a\"; }\n");
+		const b = await makePkg("cognitive-like", "export default function cognitive() { return \"b\"; }\n");
+		const fa = await fingerprintExtensionSource(a);
+		const fb = await fingerprintExtensionSource(b);
+		expect(fa).not.toBe(fb);
+		// Changing only the implementation changes the fingerprint.
+		await Bun.write(path.join(root, "agy-like/src/extension.ts"), "export default function agy() { return \"a2\"; }\n");
+		const fa2 = await fingerprintExtensionSource(a);
+		expect(fa2).not.toBe(fa);
+	});
+});
