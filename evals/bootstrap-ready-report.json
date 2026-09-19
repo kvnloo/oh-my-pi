@@ -1,0 +1,26 @@
+{
+  "milestone": "LIVE-RUNTIME bootstrap attestation",
+  "BOOTSTRAP_READY": true,
+  "core_sha": "0a63649dc2c575a949f2cead88a198b01a38a283",
+  "agy_expected": "a1686ceed36731da83346fcd5c7d3418406d8cf6",
+  "z0_live_runtime": "f4cd0c6",
+  "fixes": [
+    "omp.extensions discovery already resolved package entries (agy/cognitive/z0-live)",
+    "fingerprintExtensionSource now hashes package implementation (no barrel collision)",
+    "expectedCommit agy-executor pinned to a1686ce",
+    "/runtime status shows git SHA + fingerprint; --all adds AGY_SHA and queries remote snapshots"
+  ],
+  "sacrificial_proof": {
+    "session_id_prefix": "01a0b877",
+    "agy_loaded": true,
+    "agy_fingerprint": "3048041949f81a85",
+    "agy_git": "a1686ceed367",
+    "distinct_from_cognitive_fp": true
+  },
+  "operator_next": [
+    "Restart/migrate remaining long-running OMP sessions onto core 0a63649 (or newer) once",
+    "Confirm /runtime status --all shows AGY ACTIVE a1686ce for every session",
+    "Dogfood /agy research and /agy implement manually",
+    "Defer Jev shadow routing until labels are collected from attested sessions"
+  ]
+}
