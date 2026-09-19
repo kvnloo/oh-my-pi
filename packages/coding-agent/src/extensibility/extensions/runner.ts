@@ -603,8 +603,8 @@ export class ExtensionRunner {
 	}
 
 	constructor(
-		private readonly extensions: Extension[],
-		private readonly runtime: ExtensionRuntime,
+		private extensions: Extension[],
+		private runtime: ExtensionRuntime,
 		/** Ignored: `cwd` is always read live via the `cwd` getter below, not cached here. */
 		_initialCwd: string,
 		private readonly sessionManager: SessionManager,
@@ -895,6 +895,23 @@ export class ExtensionRunner {
 
 	hasUI(): boolean {
 		return this.#uiContext !== noOpUIContext;
+	}
+
+	replaceExtensions(extensions: Extension[], runtime: ExtensionRuntime): void {
+		// Preserve live action bindings installed by initialize().
+		const live = this.runtime as ExtensionRuntime & Record<string, unknown>;
+		const next = runtime as ExtensionRuntime & Record<string, unknown>;
+		for (const key of Object.keys(live)) {
+			const value = live[key];
+			if (typeof value === "function") {
+				next[key] = value;
+			}
+		}
+		for (const [name, value] of live.flagValues ?? []) {
+			runtime.flagValues.set(name, value);
+		}
+		this.extensions = extensions;
+		this.runtime = runtime;
 	}
 
 	getExtensionPaths(): string[] {

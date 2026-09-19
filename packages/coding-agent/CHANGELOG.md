@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+
+### Added
+
+- Added live-runtime attestation (`omp.runtime.v1`), `/runtime`-ready reload seams, same-profile reload broadcast registry, and `omp --dev-live` / `bun run dev:live` supervised warm reboot for core source changes.
+
 ### Fixed
 
 - Fixed `omp auth-broker token` and `omp auth-gateway token` exiting silently without creating a token on Windows when no token file exists yet; token and config reads now use `node:fs` instead of `Bun.file`.

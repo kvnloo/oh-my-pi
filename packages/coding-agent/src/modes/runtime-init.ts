@@ -151,7 +151,7 @@ export async function initializeExtensions(session: AgentSession, options: Initi
 				return { cancelled: !success };
 			},
 			reload: async () => {
-				await session.reload();
+				await session.reloadRuntime();
 			},
 			compact: instructionsOrOptions => runExtensionCompact(session, instructionsOrOptions),
 		},

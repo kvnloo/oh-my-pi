@@ -222,7 +222,7 @@ export class ExtensionUiController {
 			getContextUsage: () => this.ctx.session.getContextUsage(),
 			waitForIdle: () => this.ctx.session.agent.waitForIdle(),
 			reload: async () => {
-				await this.ctx.session.reload();
+				await this.ctx.session.reloadRuntime();
 				await this.ctx.renderInitialMessages({ clearTerminalHistory: true });
 				await this.ctx.reloadTodos();
 				this.ctx.showStatus("Reloaded session");
@@ -453,7 +453,7 @@ export class ExtensionUiController {
 			getContextUsage: () => this.ctx.session.getContextUsage(),
 			waitForIdle: () => this.ctx.session.agent.waitForIdle(),
 			reload: async () => {
-				await this.ctx.session.reload();
+				await this.ctx.session.reloadRuntime();
 				await this.ctx.renderInitialMessages({ clearTerminalHistory: true });
 				await this.ctx.reloadTodos();
 				this.ctx.showStatus("Reloaded session");

@@ -95,6 +95,7 @@ import {
 } from "./extensibility/custom-commands";
 import { discoverCustomToolPaths, loadCustomTools, type ToolPathWithSource } from "./extensibility/custom-tools";
 import type { CustomTool, CustomToolContext, CustomToolSessionEvent } from "./extensibility/custom-tools/types";
+import { ensureRuntimeAttestation } from "./live-runtime";
 import {
 	bindPreparedExtensions,
 	discoverAndLoadExtensions,
@@ -3970,6 +3971,7 @@ async function createAgentSessionScoped(options: CreateAgentSessionOptions): Pro
 			titleSystemPrompt: options.titleSystemPrompt,
 		});
 		hasSession = true;
+		void ensureRuntimeAttestation(session);
 		// Backfill the resumed advisor spend without blocking startup: the scan
 		// runs after the session is live, so `--resume` no longer scales with the
 		// advisor transcript size (issue #9553).
