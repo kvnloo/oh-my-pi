@@ -141,7 +141,12 @@ export async function ensureRuntimeAttestation(session: AgentSession): Promise<v
 			if (message.type === "reload_request") {
 				const result = await session.reloadRuntime({ reason: message.reason });
 				if (result.status === "pending") {
-					return { type: "reload_ack", request_id: message.request_id, status: "pending", generation: result.generation };
+					return {
+						type: "reload_ack",
+						request_id: message.request_id,
+						status: "pending",
+						generation: result.generation,
+					};
 				}
 				if (result.status === "failed") {
 					return {
@@ -152,7 +157,12 @@ export async function ensureRuntimeAttestation(session: AgentSession): Promise<v
 						failure_reason: result.failure_reason,
 					};
 				}
-				return { type: "reload_ack", request_id: message.request_id, status: "reloading", generation: result.generation };
+				return {
+					type: "reload_ack",
+					request_id: message.request_id,
+					status: "reloading",
+					generation: result.generation,
+				};
 			}
 			return { type: "pong", request_id: (message as { request_id: string }).request_id };
 		});
@@ -203,12 +213,9 @@ export async function shutdownRuntimeAttestationRegistry(): Promise<void> {
 	await controlServer?.stop();
 	controlServer = undefined;
 	if (registeredSessionId) {
-		await unregisterRuntimeSession(
-			registeredSessionId,
-			registeredProfileId,
-			registeredConfigRoot,
-			process.pid,
-		).catch(() => undefined);
+		await unregisterRuntimeSession(registeredSessionId, registeredProfileId, registeredConfigRoot, process.pid).catch(
+			() => undefined,
+		);
 	}
 	registeredSessionId = undefined;
 	registeredProfileId = undefined;

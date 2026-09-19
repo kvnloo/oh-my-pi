@@ -8,7 +8,7 @@
  */
 
 import * as path from "node:path";
-import { $ } from "bun";
+import { $, type Subprocess } from "bun";
 import { VERSION } from "@oh-my-pi/pi-utils/dirs";
 import { logger } from "@oh-my-pi/pi-utils";
 import {
@@ -33,12 +33,12 @@ const watchRoots = [
 	path.join(repoRoot, "packages/utils/src"),
 ];
 
-let child: ReturnType<typeof Bun.spawn> | undefined;
+let child: Subprocess | undefined;
 let generation = 1;
 let activePid = 0;
-let busy = false;
+const busy = false;
 
-async function spawnChild(handoff?: WarmRebootHandoff): Promise<ReturnType<typeof Bun.spawn>> {
+async function spawnChild(handoff?: WarmRebootHandoff): Promise<Subprocess> {
 	if (handoff) await writeHandoffFile(handoffPath, handoff);
 	const resumeArgs: string[] = [];
 	const resumeTarget =
@@ -84,7 +84,8 @@ const supervisor = new LiveRuntimeSupervisor({
 		if (check.exitCode !== 0) {
 			return {
 				ok: false,
-				failure_reason: check.stderr.toString().slice(0, 400) || check.stdout.toString().slice(0, 400) || "bun build failed",
+				failure_reason:
+					check.stderr.toString().slice(0, 400) || check.stdout.toString().slice(0, 400) || "bun build failed",
 			};
 		}
 		return { ok: true };
@@ -197,7 +198,7 @@ logger.info("dev-live supervisor started", { pid: activePid, generation, version
 
 // Stay alive across warm reboots: only exit when the current child exits without replacement.
 for (;;) {
-	const current = child;
+	const current: Subprocess | undefined = child;
 	if (!current) break;
 	const exitCode = await current.exited;
 	if (child !== current) continue;

@@ -256,15 +256,19 @@ async function scanSessionLinesIfPresent(file: string, onLine: (line: Uint8Array
 		const stream = Bun.file(file).stream();
 		if (file.endsWith(COMPRESSED_SESSION_SUFFIX)) {
 			const gunzip = createGunzip();
-			await pipeline(stream, gunzip, async (source: NodeJS.ReadableStream) => {
-				// Match the native stream's byte budget, not one arbitrary chunk or
-				// a default queue that counts each potentially large chunk as size 1.
-				await scan(
-					Readable.toWeb(source, {
-						strategy: new ByteLengthQueuingStrategy({ highWaterMark: gunzip.readableHighWaterMark }),
-					}),
-				);
-			});
+			await pipeline(
+				Readable.fromWeb(stream as Parameters<typeof Readable.fromWeb>[0]),
+				gunzip,
+				async (source: AsyncIterable<Buffer>) => {
+					// Match the native stream's byte budget, not one arbitrary chunk or
+					// a default queue that counts each potentially large chunk as size 1.
+					await scan(
+						Readable.toWeb(Readable.from(source), {
+							strategy: new ByteLengthQueuingStrategy({ highWaterMark: gunzip.readableHighWaterMark }),
+						}) as ReadableStream<Uint8Array>,
+					);
+				},
+			);
 		} else {
 			await scan(stream);
 		}

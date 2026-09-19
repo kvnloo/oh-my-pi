@@ -9494,7 +9494,8 @@ export class AgentSession {
 					schema: "omp.runtime.pending.v1",
 					from_generation: fromGeneration,
 					requested_at: startedAt,
-						changed_files: paths,
+					reason: this.isStreaming ? "session_streaming" : "queued_messages",
+					changed_files: paths,
 					strategy: "runtime-reload",
 					session_id: this.sessionManager.getSessionId(),
 				},
@@ -9532,12 +9533,13 @@ export class AgentSession {
 		}
 
 		attestation?.replaceExtensions(validated.records);
-		const toGeneration = attestation?.commitActivation({
-			strategy: "runtime-reload",
-			started_at: startedAt,
-			changed_files: validated.changed_files,
-			extensions: validated.records,
-		}) ?? fromGeneration + 1;
+		const toGeneration =
+			attestation?.commitActivation({
+				strategy: "runtime-reload",
+				started_at: startedAt,
+				changed_files: validated.changed_files,
+				extensions: validated.records,
+			}) ?? fromGeneration + 1;
 
 		await this.#extensionRunner?.emit({ type: "session_start" });
 		await clearPendingActivationMarker(options?.agentDir);

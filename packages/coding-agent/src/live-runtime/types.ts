@@ -1,11 +1,7 @@
 /** Stable schema id for runtime attestation snapshots. */
 export const RUNTIME_SNAPSHOT_SCHEMA = "omp.runtime.v1" as const;
 
-export type RuntimeActivationStrategy =
-	| "startup"
-	| "resource-reload"
-	| "runtime-reload"
-	| "warm-reboot";
+export type RuntimeActivationStrategy = "startup" | "resource-reload" | "runtime-reload" | "warm-reboot";
 
 export type RuntimeActivationStatus = "success" | "failed" | "pending" | "rejected";
 

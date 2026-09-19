@@ -163,10 +163,7 @@ describe("Active-vs-disk proof (P0.2)", () => {
 	it("reports active=v1 disk=v2 stale=true without reload", async () => {
 		const directory = await tempDir("omp-runtime-p02-");
 		const extensionPath = path.join(directory, "fixture-ext.ts");
-		await Bun.write(
-			extensionPath,
-			`export default function fixtureV1(pi) { pi.setLabel("v1"); }\n`,
-		);
+		await Bun.write(extensionPath, `export default function fixtureV1(pi) { pi.setLabel("v1"); }\n`);
 		const v1 = await fingerprintExtensionSource(extensionPath);
 		const state = new RuntimeAttestationState({
 			session_id: "proof-session",
@@ -188,10 +185,7 @@ describe("Active-vs-disk proof (P0.2)", () => {
 		expect(before.extensions[0]?.disk_fingerprint).toBe(v1);
 		expect(before.extensions[0]?.stale).toBe(false);
 
-		await Bun.write(
-			extensionPath,
-			`export default function fixtureV2(pi) { pi.setLabel("v2"); }\n`,
-		);
+		await Bun.write(extensionPath, `export default function fixtureV2(pi) { pi.setLabel("v2"); }\n`);
 		const v2 = await fingerprintExtensionSource(extensionPath);
 		expect(v2).not.toBe(v1);
 
@@ -277,13 +271,13 @@ describe("package-aware extension fingerprints", () => {
 			await Bun.write(path.join(dir, "src/extension.ts"), body);
 			return path.join(dir, "index.ts");
 		}
-		const a = await makePkg("agy-like", "export default function agy() { return \"a\"; }\n");
-		const b = await makePkg("cognitive-like", "export default function cognitive() { return \"b\"; }\n");
+		const a = await makePkg("agy-like", 'export default function agy() { return "a"; }\n');
+		const b = await makePkg("cognitive-like", 'export default function cognitive() { return "b"; }\n');
 		const fa = await fingerprintExtensionSource(a);
 		const fb = await fingerprintExtensionSource(b);
 		expect(fa).not.toBe(fb);
 		// Changing only the implementation changes the fingerprint.
-		await Bun.write(path.join(root, "agy-like/src/extension.ts"), "export default function agy() { return \"a2\"; }\n");
+		await Bun.write(path.join(root, "agy-like/src/extension.ts"), 'export default function agy() { return "a2"; }\n');
 		const fa2 = await fingerprintExtensionSource(a);
 		expect(fa2).not.toBe(fa);
 	});

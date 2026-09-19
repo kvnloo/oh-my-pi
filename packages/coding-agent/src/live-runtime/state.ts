@@ -101,7 +101,9 @@ export class RuntimeAttestationState {
 		this.#setExtensions(extensions);
 	}
 
-	markPendingActivation(event: Omit<RuntimeActivationEvent, "status"> & { status?: RuntimeActivationEvent["status"] }): void {
+	markPendingActivation(
+		event: Omit<RuntimeActivationEvent, "status"> & { status?: RuntimeActivationEvent["status"] },
+	): void {
 		this.#pendingActivation = { ...event, status: event.status ?? "pending" };
 		this.#reloadPending = true;
 	}

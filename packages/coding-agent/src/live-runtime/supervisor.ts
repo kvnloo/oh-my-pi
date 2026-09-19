@@ -1,5 +1,4 @@
 import * as fsSync from "node:fs";
-import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { isEnoent, logger } from "@oh-my-pi/pi-utils";
 
@@ -232,7 +231,7 @@ function shouldIgnore(filePath: string, patterns: string[]): boolean {
 	const normalized = filePath.replaceAll("\\", "/");
 	for (const pattern of patterns) {
 		const bare = pattern.replace(/^\*\*\//, "").replace(/\/\*\*$/, "");
-			// Require a path-segment boundary so "/home/kvn/tmp/..." is not
+		// Require a path-segment boundary so "/home/kvn/tmp/..." is not
 		// treated as ignore pattern "**/tmp/**".
 		if (normalized.includes(`/${bare}/`) || normalized.endsWith(`/${bare}`)) return true;
 		if (bare.startsWith("*.") && normalized.endsWith(bare.slice(1))) return true;

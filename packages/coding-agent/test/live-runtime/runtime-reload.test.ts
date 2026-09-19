@@ -71,9 +71,7 @@ describe("single-session runtime reload (P3)", () => {
 				cwd: directory,
 				core_version: "test",
 				source_fingerprint: "core",
-				extensions: [
-					{ id: "sentinel", path: extensionPath, fingerprint: v1, loaded_at: new Date().toISOString() },
-				],
+				extensions: [{ id: "sentinel", path: extensionPath, fingerprint: v1, loaded_at: new Date().toISOString() }],
 			});
 
 			const beforeEntries = session.sessionManager.getBranch().length;
@@ -111,10 +109,7 @@ describe("single-session runtime reload (P3)", () => {
 	it("P3.2 failed reload keeps generation and leaves session usable", async () => {
 		const directory = await tempDir("omp-runtime-p32-");
 		const extensionPath = path.join(directory, "sentinel.ts");
-		await Bun.write(
-			extensionPath,
-			`export default function (pi) {\n  pi.setLabel("ok");\n}\n`,
-		);
+		await Bun.write(extensionPath, `export default function (pi) {\n  pi.setLabel("ok");\n}\n`);
 		const v1 = await fingerprintExtensionSource(extensionPath);
 		const authStorage = createInMemoryAuthStorage();
 		const modelRegistry = new ModelRegistry(authStorage, path.join(directory, "models.yml"));
@@ -145,9 +140,7 @@ describe("single-session runtime reload (P3)", () => {
 				cwd: directory,
 				core_version: "test",
 				source_fingerprint: "core",
-				extensions: [
-					{ id: "sentinel", path: extensionPath, fingerprint: v1, loaded_at: new Date().toISOString() },
-				],
+				extensions: [{ id: "sentinel", path: extensionPath, fingerprint: v1, loaded_at: new Date().toISOString() }],
 			});
 			const beforeEntries = session.sessionManager.getBranch().length;
 
@@ -200,9 +193,7 @@ describe("single-session runtime reload (P3)", () => {
 				cwd: directory,
 				core_version: "test",
 				source_fingerprint: "core",
-				extensions: [
-					{ id: "sentinel", path: extensionPath, fingerprint: v1, loaded_at: new Date().toISOString() },
-				],
+				extensions: [{ id: "sentinel", path: extensionPath, fingerprint: v1, loaded_at: new Date().toISOString() }],
 			});
 			// Simulate busy turn via attestation busy flag + streaming check path:
 			// force queued follow-up by setting attestation busy and stubbing isStreaming via pending marker path.

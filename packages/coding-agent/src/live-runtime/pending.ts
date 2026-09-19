@@ -28,9 +28,7 @@ export async function writePendingActivationMarker(
 	return filePath;
 }
 
-export async function readPendingActivationMarker(
-	agentDir?: string,
-): Promise<PendingActivationMarker | undefined> {
+export async function readPendingActivationMarker(agentDir?: string): Promise<PendingActivationMarker | undefined> {
 	const filePath = pendingActivationPath(agentDir);
 	try {
 		return (await Bun.file(filePath).json()) as PendingActivationMarker;

@@ -256,10 +256,7 @@ export class RuntimeControlServer {
 	#socketPath: string;
 	#handler: (message: RuntimeControlMessage) => Promise<RuntimeControlReply>;
 
-	constructor(
-		socketPath: string,
-		handler: (message: RuntimeControlMessage) => Promise<RuntimeControlReply>,
-	) {
+	constructor(socketPath: string, handler: (message: RuntimeControlMessage) => Promise<RuntimeControlReply>) {
 		this.#socketPath = socketPath;
 		this.#handler = handler;
 	}

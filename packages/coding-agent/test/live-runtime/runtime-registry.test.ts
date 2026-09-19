@@ -9,7 +9,6 @@ import {
 	listRuntimeRegistry,
 	pruneDeadRegistryEntries,
 	registerRuntimeSession,
-	sendControlMessage,
 	unregisterRuntimeSession,
 	type RuntimeControlMessage,
 	type RuntimeControlReply,
@@ -35,19 +34,25 @@ describe("multi-session registry reload-all (P5)", () => {
 		const busySocket = path.join(dir, "busy.sock");
 
 		let idleReloads = 0;
-		const idleServer = new RuntimeControlServer(idleSocket, async (message: RuntimeControlMessage): Promise<RuntimeControlReply> => {
-			if (message.type === "reload_request") {
-				idleReloads += 1;
-				return { type: "reload_ack", request_id: message.request_id, status: "reloading", generation: 2 };
-			}
-			return { type: "pong", request_id: message.request_id };
-		});
-		const busyServer = new RuntimeControlServer(busySocket, async (message: RuntimeControlMessage): Promise<RuntimeControlReply> => {
-			if (message.type === "reload_request") {
-				return { type: "reload_ack", request_id: message.request_id, status: "pending", generation: 1 };
-			}
-			return { type: "pong", request_id: message.request_id };
-		});
+		const idleServer = new RuntimeControlServer(
+			idleSocket,
+			async (message: RuntimeControlMessage): Promise<RuntimeControlReply> => {
+				if (message.type === "reload_request") {
+					idleReloads += 1;
+					return { type: "reload_ack", request_id: message.request_id, status: "reloading", generation: 2 };
+				}
+				return { type: "pong", request_id: message.request_id };
+			},
+		);
+		const busyServer = new RuntimeControlServer(
+			busySocket,
+			async (message: RuntimeControlMessage): Promise<RuntimeControlReply> => {
+				if (message.type === "reload_request") {
+					return { type: "reload_ack", request_id: message.request_id, status: "pending", generation: 1 };
+				}
+				return { type: "pong", request_id: message.request_id };
+			},
+		);
 		await idleServer.start();
 		await busyServer.start();
 

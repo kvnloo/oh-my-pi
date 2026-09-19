@@ -58,8 +58,8 @@ describe("warm reboot supervisor (P7)", () => {
 	});
 
 	it("keeps generation 1 when candidate crashes before READY", async () => {
-		let activePid = 100;
-		let generation = 1;
+		const activePid = 100;
+		const generation = 1;
 		const killed: number[] = [];
 		let rejected: string | undefined;
 

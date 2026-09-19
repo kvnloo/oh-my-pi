@@ -80,7 +80,9 @@ async function collectPackageFingerprintParts(packageRoot: string, entryFile?: s
 	for (const candidate of candidates) {
 		try {
 			const bytes = await Bun.file(candidate).arrayBuffer();
-			parts.push(`${path.relative(packageRoot, candidate) || path.basename(candidate)}\0${fingerprintBytes(new Uint8Array(bytes))}`);
+			parts.push(
+				`${path.relative(packageRoot, candidate) || path.basename(candidate)}\0${fingerprintBytes(new Uint8Array(bytes))}`,
+			);
 		} catch (err) {
 			if (!isEnoent(err)) throw err;
 		}
@@ -120,11 +122,22 @@ export async function fingerprintExtensionSource(extensionPath: string): Promise
 /** Resolve git HEAD for an extension path's package/repo when available. */
 export async function resolveExtensionGitSha(extensionPath: string): Promise<string | undefined> {
 	const packageRoot = (await findExtensionPackageRoot(extensionPath)) ?? path.resolve(extensionPath);
-	const root = (await fs.stat(packageRoot).then(s => (s.isDirectory() ? packageRoot : path.dirname(packageRoot))).catch(() => path.dirname(path.resolve(extensionPath))));
+	const root = await fs
+		.stat(packageRoot)
+		.then(s => (s.isDirectory() ? packageRoot : path.dirname(packageRoot)))
+		.catch(() => path.dirname(path.resolve(extensionPath)));
 	try {
-		const repo = vcs.git(root) ?? vcs.repo(root);
-		const sha = (await repo?.headSha?.()) ?? (await repo?.headId?.()) ?? undefined;
-		return sha?.trim() || undefined;
+		const gitRepo = vcs.git(root);
+		if (gitRepo) {
+			const sha = await gitRepo.headSha();
+			return sha?.trim() || undefined;
+		}
+		const repo = vcs.repo(root);
+		if (repo) {
+			const id = await repo.headId();
+			return id?.trim() || undefined;
+		}
+		return undefined;
 	} catch {
 		return undefined;
 	}
@@ -156,18 +169,22 @@ export async function resolveCoreIdentity(options?: {
 
 	let git_sha: string | undefined;
 	try {
-		const repo = vcs.git(sourceRoot) ?? vcs.repo(sourceRoot);
-		git_sha = (await repo?.headSha?.()) ?? (await repo?.headId?.()) ?? undefined;
-		if (git_sha) git_sha = git_sha.trim();
+		const gitRepo = vcs.git(sourceRoot);
+		if (gitRepo) {
+			git_sha = (await gitRepo.headSha())?.trim() || undefined;
+		} else {
+			const repo = vcs.repo(sourceRoot);
+			if (repo) {
+				git_sha = (await repo.headId())?.trim() || undefined;
+			}
+		}
 	} catch {
 		git_sha = undefined;
 	}
 
 	const packageJsonPath = path.join(sourceRoot, "packages", "coding-agent", "package.json");
 	const packageJsonAlt = path.join(sourceRoot, "package.json");
-	const pkgFp = await fingerprintFile(
-		(await fileExists(packageJsonPath)) ? packageJsonPath : packageJsonAlt,
-	);
+	const pkgFp = await fingerprintFile((await fileExists(packageJsonPath)) ? packageJsonPath : packageJsonAlt);
 	const versionTag = options?.version ?? "";
 	const source_fingerprint = fingerprintBytes(
 		[`root=${sourceRoot}`, `git=${git_sha ?? ""}`, `pkg=${pkgFp}`, `ver=${versionTag}`].join("\n"),

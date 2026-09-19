@@ -38,8 +38,7 @@ export async function buildRuntimeSnapshot(input: BuildRuntimeSnapshotInput): Pr
 
 	const extensions = await Promise.all(
 		dedupeExtensions(input.extensions).map(async (ext): Promise<RuntimeExtensionInfo> => {
-			const disk =
-				input.diskFingerprints?.get(pathKey(ext.path)) ?? (await fingerprintExtensionSource(ext.path));
+			const disk = input.diskFingerprints?.get(pathKey(ext.path)) ?? (await fingerprintExtensionSource(ext.path));
 			return {
 				id: ext.id,
 				path: ext.path,

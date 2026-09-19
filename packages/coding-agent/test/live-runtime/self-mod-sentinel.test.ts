@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {
 	LIVE_RUNTIME_DEV_SENTINEL,
@@ -9,10 +8,7 @@ import {
 
 describe("self-mod live activation sentinel (P9)", () => {
 	it("proves N → N+1 → N+2 via sentinel file edits and warm reboot", async () => {
-		const sentinelPath = path.resolve(
-			import.meta.dir,
-			"../../src/live-runtime/dev-sentinel.ts",
-		);
+		const sentinelPath = path.resolve(import.meta.dir, "../../src/live-runtime/dev-sentinel.ts");
 		const original = await Bun.file(sentinelPath).text();
 		let generation = 1;
 		let activePid = 10;
