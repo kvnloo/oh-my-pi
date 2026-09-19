@@ -115,6 +115,14 @@
       "types": "./src/async/*.ts",
       "import": "./src/async/*.ts"
     },
+    "./live-runtime": {
+      "types": "./src/live-runtime/index.ts",
+      "import": "./src/live-runtime/index.ts"
+    },
+    "./live-runtime/*": {
+      "types": "./src/live-runtime/*.ts",
+      "import": "./src/live-runtime/*.ts"
+    },
     "./autoresearch": {
       "types": "./src/autoresearch/index.ts",
       "import": "./src/autoresearch/index.ts"
