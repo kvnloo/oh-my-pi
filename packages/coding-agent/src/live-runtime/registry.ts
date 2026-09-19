@@ -16,12 +16,15 @@ export interface RuntimeRegistryEntry {
 	profile_id: string;
 	cwd: string;
 	core_sha?: string;
+	/** Materialized transcript path for warm-reboot --resume. */
+	session_path?: string;
 }
 
 export type RuntimeControlMessage =
 	| { type: "reload_request"; request_id: string; reason?: string }
 	| { type: "status_request"; request_id: string }
-	| { type: "ping"; request_id: string };
+	| { type: "ping"; request_id: string }
+	| { type: "prepare_handoff"; request_id: string };
 
 export type RuntimeControlReply =
 	| {
@@ -37,6 +40,13 @@ export type RuntimeControlReply =
 			entry: RuntimeRegistryEntry;
 			busy: SessionBusyState;
 			snapshot?: unknown;
+	  }
+	| {
+			type: "prepare_handoff_reply";
+			request_id: string;
+			session_id: string;
+			session_path?: string;
+			cwd: string;
 	  }
 	| { type: "pong"; request_id: string };
 
@@ -74,9 +84,19 @@ export async function unregisterRuntimeSession(
 	sessionId: string,
 	profileId = "default",
 	configRoot = getConfigRootDir(),
+	expectedPid?: number,
 ): Promise<void> {
+	const filePath = runtimeRegistryEntryPath(sessionId, profileId, configRoot);
+	if (expectedPid !== undefined) {
+		try {
+			const entry = (await Bun.file(filePath).json()) as RuntimeRegistryEntry;
+			if (entry.pid !== expectedPid) return;
+		} catch {
+			return;
+		}
+	}
 	try {
-		await fs.unlink(runtimeRegistryEntryPath(sessionId, profileId, configRoot));
+		await fs.unlink(filePath);
 	} catch (err) {
 		if (isEnoent(err)) return;
 		throw err;
