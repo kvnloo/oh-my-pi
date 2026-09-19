@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+CANON="$HOME/.omp/launcher/omp"
+DEST="${OMP_LAUNCHER_DEST:-$HOME/.bun/bin/omp}"
+STOCK_DIR="$(dirname "$DEST")"
+if [ ! -f "$CANON" ]; then
+  echo "missing $CANON" >&2
+  exit 1
+fi
+# If DEST is ELF and omp.bin missing, preserve binary
+if [ -f "$DEST" ] && file -b "$DEST" | grep -qi ELF; then
+  if [ ! -x "$STOCK_DIR/omp.bin" ]; then
+    mv "$DEST" "$STOCK_DIR/omp.bin"
+    echo "moved ELF to $STOCK_DIR/omp.bin"
+  fi
+fi
+cp "$CANON" "$DEST"
+chmod +x "$DEST"
+echo "installed launcher → $DEST"
+file "$DEST" "$STOCK_DIR/omp.bin" 2>/dev/null || true

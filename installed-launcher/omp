@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# omp-rlm-launcher v1 — PATH entry for omp.
+# - default: stock release binary (omp.bin) — gets `omp update`
+# - --rlm / OMP_RLM=1: experimental RLM worktree CLI
+# Marker: omp-rlm-launcher (do not remove; heal uses it)
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+# When installed as ~/.bun/bin/omp, stock sits beside us.
+# Canonical copy may live in ~/.omp/launcher/omp — still resolve stock via PATH dir or env.
+resolve_stock() {
+  if [ -n "${OMP_STOCK_BIN:-}" ] && [ -x "${OMP_STOCK_BIN}" ]; then
+    printf '%s\n' "${OMP_STOCK_BIN}"
+    return
+  fi
+  # Prefer sibling omp.bin next to this script when we are the PATH entry.
+  if [ -x "${HERE}/omp.bin" ]; then
+    printf '%s\n' "${HERE}/omp.bin"
+    return
+  fi
+  # Canonical launcher in ~/.omp/launcher → look at ~/.bun/bin
+  if [ -x "${HOME}/.bun/bin/omp.bin" ]; then
+    printf '%s\n' "${HOME}/.bun/bin/omp.bin"
+    return
+  fi
+  return 1
+}
+
+STOCK="$(resolve_stock)" || {
+  echo "omp: stock binary omp.bin not found (set OMP_STOCK_BIN)" >&2
+  exit 127
+}
+
+EXP_ROOT="${OMP_RLM_ROOT:-/home/kvn/tmp/oh-my-pi-rlm/packages/coding-agent}"
+EXP_CLI="${EXP_ROOT}/src/cli.ts"
+BUN_EXE="${OMP_BUN:-}"
+if [ -z "$BUN_EXE" ]; then
+  BUN_EXE="$(command -v bun 2>/dev/null || true)"
+fi
+if [ -z "$BUN_EXE" ] && [ -x "${HOME}/.bun/bin/bun" ]; then
+  BUN_EXE="${HOME}/.bun/bin/bun"
+fi
+
+CANON="${HOME}/.omp/launcher/omp"
+PATH_OMP="$(dirname "$STOCK")/omp"
+
+heal_path_entry() {
+  # If update replaced PATH omp with an ELF (or deleted wrapper), restore launcher
+  # and keep the new binary as omp.bin.
+  local path_omp="$PATH_OMP"
+  [ -e "$path_omp" ] || {
+    if [ -f "$CANON" ]; then
+      cp "$CANON" "$path_omp"
+      chmod +x "$path_omp"
+      echo "omp: restored launcher at $path_omp" >&2
+    fi
+    return
+  }
+  # ELF masquerading as omp → move to omp.bin, restore launcher
+  if file -b "$path_omp" 2>/dev/null | grep -qi 'ELF'; then
+    mv -f "$path_omp" "$STOCK"
+    cp "$CANON" "$path_omp"
+    chmod +x "$path_omp"
+    echo "omp: update landed on PATH entry; moved binary to omp.bin and restored launcher" >&2
+    return
+  fi
+  # Wrapper lost marker (corrupted) → restore from canon
+  if [ -f "$CANON" ] && ! grep -q 'omp-rlm-launcher' "$path_omp" 2>/dev/null; then
+    cp "$CANON" "$path_omp"
+    chmod +x "$path_omp"
+    echo "omp: restored launcher (marker missing)" >&2
+  fi
+}
+
+want_rlm=0
+if [ "${OMP_RLM:-0}" = "1" ] || [ "${OMP_RLM:-}" = "true" ]; then
+  want_rlm=1
+fi
+
+# First positional command detection (skip global flags)
+cmd=""
+want_rlm_scan=1
+prev=""
+for a in "$@"; do
+  if [ "$want_rlm_scan" -eq 1 ]; then
+    case "$a" in
+      --) want_rlm_scan=0 ;;
+      --rlm) want_rlm=1 ;;
+      -*)
+        # value-taking flags we care about for not eating "update"
+        case "$a" in
+          --model|--provider|--profile|--api-key|--cwd|--mode|--config|--resume|-r|--session-dir|--export|--thinking|--smol|--slow|--plan|--tools|--skills|--hook|--extension|-e|--add-dir|--max-time|--approval-mode|--system-prompt|--append-system-prompt|--models|--alias|--plan-yolo-into|--prewalk-into|--service-tier)
+            prev=needval
+            ;;
+          --*=*) prev= ;;
+          *) prev= ;;
+        esac
+        if [ "$prev" = "needval" ]; then
+          prev=skipnext
+        fi
+        ;;
+      *)
+        if [ "$prev" = "skipnext" ]; then
+          prev=
+        else
+          cmd="$a"
+          want_rlm_scan=0
+        fi
+        ;;
+    esac
+  fi
+done
+
+# --- update: never let stock replace the PATH wrapper ---
+if [ "$cmd" = "update" ]; then
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/omp-update-path.XXXXXX")"
+  cleanup() { rm -rf "$tmp"; }
+  trap cleanup EXIT
+  # PATH entry "omp" → real stock binary so replaceBinary updates omp.bin only
+  ln -s "$STOCK" "$tmp/omp"
+  # Run stock update with isolated PATH head
+  set +e
+  PATH="$tmp:$PATH" "$STOCK" "$@"
+  ec=$?
+  set -e
+  trap - EXIT
+  cleanup
+  heal_path_entry
+  # Ensure canon stays in sync if we edit PATH copy later
+  if [ -f "$PATH_OMP" ] && grep -q 'omp-rlm-launcher' "$PATH_OMP" 2>/dev/null; then
+    cp "$PATH_OMP" "$CANON" 2>/dev/null || true
+  fi
+  exit "$ec"
+fi
+
+if [ "$want_rlm" -eq 1 ]; then
+  if [ ! -f "$EXP_CLI" ]; then
+    echo "omp --rlm: missing exp CLI at $EXP_CLI" >&2
+    echo "Set OMP_RLM_ROOT to packages/coding-agent on exp/rlm-evidence-addressing." >&2
+    exit 127
+  fi
+  if [ -z "$BUN_EXE" ] || [ ! -x "$BUN_EXE" ]; then
+    echo "omp --rlm: bun not found" >&2
+    exit 127
+  fi
+  cd "$EXP_ROOT"
+  exec "$BUN_EXE" "$EXP_CLI" "$@"
+fi
+
+# --- BWS / Hermes-parity secret inject (fail-open) ---
+# Same keyring item + BSM project as Hermes; no plaintext token in ~/.omp/.env.
+if [ "${OMP_BWS_INJECT_ENABLE:-1}" != "0" ]; then
+  _omp_bws_inject="${OMP_BWS_INJECT:-$HOME/.omp/bin/omp-bws-inject.sh}"
+  if [ -x "$_omp_bws_inject" ]; then
+    # shellcheck disable=SC1090
+    eval "$("$_omp_bws_inject")" 2>/dev/null || true
+  fi
+  unset _omp_bws_inject
+fi
+
+if [ ! -x "$STOCK" ]; then
+  echo "omp: stock binary missing at $STOCK" >&2
+  exit 127
+fi
+exec "$STOCK" "$@"
