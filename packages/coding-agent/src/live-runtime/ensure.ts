@@ -90,7 +90,7 @@ export async function ensureRuntimeAttestation(session: AgentSession): Promise<v
 
 	const profileId = process.env.OMP_PROFILE || "default";
 	const configRoot = getConfigRootDir();
-	const socketPath = path.join(configRoot, "runtime", profileId, `${sessionId}.sock`);
+	const socketPath = path.join(configRoot, "runtime", profileId, `${sessionId}.${process.pid}.sock`);
 	const sessionPath = await materializeSessionPath(session).catch(() => undefined);
 	const startedAt = new Date().toISOString();
 
