@@ -14,6 +14,7 @@ import { logger } from "@oh-my-pi/pi-utils";
 import {
 	LiveRuntimeSupervisor,
 	classifyChangeTier,
+	listRuntimeRegistry,
 	resolveCoreIdentity,
 	writeHandoffFile,
 	type WarmRebootHandoff,
@@ -21,6 +22,8 @@ import {
 
 const repoRoot = path.resolve(import.meta.dir, "../../../..");
 const handoffPath = path.join(repoRoot, "tmp", "live-runtime-handoff.json");
+const cliEntry = path.join(repoRoot, "packages/coding-agent/src/cli.ts");
+const codingAgentDir = path.join(repoRoot, "packages/coding-agent");
 
 const watchRoots = [
 	path.join(repoRoot, "packages/coding-agent/src"),
@@ -36,7 +39,11 @@ let busy = false;
 
 async function spawnChild(handoff?: WarmRebootHandoff): Promise<ReturnType<typeof Bun.spawn>> {
 	if (handoff) await writeHandoffFile(handoffPath, handoff);
-	const args = ["run", path.join(repoRoot, "packages/coding-agent/src/cli.ts"), ...process.argv.slice(2)];
+	const resumeArgs: string[] = [];
+	if (handoff?.session_id && handoff.session_id !== "dev-live") {
+		resumeArgs.push("--resume", handoff.session_id);
+	}
+	const args = ["run", cliEntry, ...resumeArgs, ...process.argv.slice(2)];
 	const proc = Bun.spawn(["bun", ...args], {
 		cwd: process.cwd(),
 		stdout: "inherit",
@@ -50,6 +57,7 @@ async function spawnChild(handoff?: WarmRebootHandoff): Promise<ReturnType<typeo
 		},
 	});
 	activePid = proc.pid;
+	child = proc;
 	return proc;
 }
 
@@ -63,9 +71,17 @@ const supervisor = new LiveRuntimeSupervisor({
 		while (busy) await Bun.sleep(100);
 	},
 	validateCandidate: async () => {
-		const check = await $`bun check --cwd ${path.join(repoRoot, "packages/coding-agent")}`.nothrow().quiet();
+		// Cheap syntax/bundle gate (plan). Full `bun check` fails on pre-existing lint.
+		const outdir = path.join(repoRoot, "tmp", "live-runtime-validate-build");
+		const check = await $`bun build ${cliEntry} --outdir=${outdir} --target=bun --packages=external`
+			.cwd(codingAgentDir)
+			.nothrow()
+			.quiet();
 		if (check.exitCode !== 0) {
-			return { ok: false, failure_reason: check.stderr.toString().slice(0, 400) || "bun check failed" };
+			return {
+				ok: false,
+				failure_reason: check.stderr.toString().slice(0, 400) || check.stdout.toString().slice(0, 400) || "bun build failed",
+			};
 		}
 		return { ok: true };
 	},
@@ -78,24 +94,36 @@ const supervisor = new LiveRuntimeSupervisor({
 	},
 	getSessionIdentity: async () => {
 		const core = await resolveCoreIdentity({ version: VERSION, source_root: repoRoot });
+		const entries = await listRuntimeRegistry();
+		const match =
+			entries.find(e => e.pid === activePid) ??
+			entries.find(e => e.cwd === process.cwd()) ??
+			entries.at(-1);
 		return {
-			cwd: process.cwd(),
-			session_id: process.env.OMP_SESSION_ID ?? "dev-live",
-			core_sha_before: core.git_sha,
+			cwd: match?.cwd ?? process.cwd(),
+			session_id: match?.session_id ?? process.env.OMP_SESSION_ID ?? "dev-live",
+			core_sha_before: match?.core_sha ?? core.git_sha,
 		};
 	},
 	spawnCandidate: async handoff => {
 		const proc = await spawnChild(handoff);
 		const ready = (async () => {
-			// Candidate signals READY by writing a ready file or surviving briefly.
-			await Bun.sleep(500);
-			if (proc.exitCode !== null) throw new Error(`candidate exited early: ${proc.exitCode}`);
-			return {
-				pid: proc.pid,
-				generation: handoff.to_generation,
-				session_id: handoff.session_id,
-				core_sha: handoff.core_sha_before,
-			};
+			const deadline = Date.now() + 45_000;
+			while (Date.now() < deadline) {
+				if (proc.exitCode !== null) throw new Error(`candidate exited early: ${proc.exitCode}`);
+				const entries = await listRuntimeRegistry();
+				const hit = entries.find(e => e.pid === proc.pid);
+				if (hit) {
+					return {
+						pid: proc.pid,
+						generation: handoff.to_generation,
+						session_id: hit.session_id,
+						core_sha: hit.core_sha ?? handoff.core_sha_before,
+					};
+				}
+				await Bun.sleep(150);
+			}
+			throw new Error("candidate ready timeout waiting for registry entry");
 		})();
 		return { pid: proc.pid, ready };
 	},
@@ -131,6 +159,12 @@ generation = 1;
 await supervisor.start();
 logger.info("dev-live supervisor started", { pid: activePid, generation, version: VERSION });
 
-const exitCode = await child.exited;
-await supervisor.stop();
-process.exit(exitCode);
+// Stay alive across warm reboots: only exit when the current child exits without replacement.
+for (;;) {
+	const current = child;
+	if (!current) break;
+	const exitCode = await current.exited;
+	if (child !== current) continue;
+	await supervisor.stop();
+	process.exit(exitCode);
+}
