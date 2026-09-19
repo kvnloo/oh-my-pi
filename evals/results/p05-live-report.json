@@ -40,8 +40,8 @@
   "exact_commands": {
     "research_cold": "/home/kvn/.local/bin/agy --mode=plan --agent z0-researcher --sandbox --output-format json [--json-schema <path>] --print-timeout=...s -p <prompt>",
     "research_warm": "/home/kvn/.local/bin/agy --mode=plan --agent z0-researcher --sandbox --output-format json --conversation <id> -p <prompt>",
-    "implement": "/home/kvn/.local/bin/agy --mode=accept-edits --agent z0-implementer --sandbox --output-format json --print-timeout=...s -p <prompt>",
-    "note": "Real AGY stream-json under pipe spawn does not emit usable stdout (redirects to CLI log). Warm reuse uses --conversation across cold -p processes."
+    "implement": "/home/kvn/.local/bin/agy --mode=accept-edits --add-dir <worktree> --sandbox --output-format json --effort=low --print-timeout=...s -p <prompt>   # note: omit --agent (default) for P0.5; z0-implementer -p gets reduced toolset",
+    "note": "Warm reuse via --conversation across cold -p processes (same conversation_id). stream-json emits init+result on the pipe but the process often stays resident past short probe timeouts; P0.5 driver uses print+conversation, not PID residency. Custom z0-implementer currently lacks edit tools in -p; implement lane uses default agent."
   },
   "research": {
     "cold": {
@@ -419,7 +419,10 @@
     }
   },
   "live_issues": [
-    "stream_json_unusable:init=true,result=true,timeout=true"
+    "stream_json_unusable:init=true,result=true,timeout=true",
+    "z0-implementer custom agent in -p mode reports only view/search tools; implement uses default agent",
+    "head_sha equals base_sha when edit is uncommitted working-tree change (changed_files still accurate)",
+    "any single soft-deny aborts headless turn (agent must not probe ~/.bash_history etc.)"
   ],
   "acceptance": {
     "research_cold_ok": true,
@@ -431,5 +434,5 @@
     "cursor_root_calls_zero": true,
     "no_omp_root_fallback": true
   },
-  "next_blocker_to_everyday_use": "Everyday use blocked on: (1) bake per-worktree permissions apply/restore into AgyDriver automatically, (2) stream-json residency unusable under pipe spawn — conversation-id warm is OK but not true process residency, (3) more paired quality samples, (4) keep mode=manual until denial semantics are operator-visible in OMP UI, (5) still no Jev auto-routing."
+  "next_blocker_to_everyday_use": "Everyday use blocked on: (1) bake per-worktree permissions apply/restore into AgyDriver, (2) fix z0-implementer custom-agent -p toolset (currently reduced; default agent works), (3) optional true stream-json residency once turn completion/exit semantics are reliable, (4) more paired quality samples under manual /agy traffic, (5) keep mode=manual \u2014 no Jev auto-routing yet."
 }
