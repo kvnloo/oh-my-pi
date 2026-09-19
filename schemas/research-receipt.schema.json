@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["task_id", "role", "status", "findings", "evidence", "unresolved", "recommendation"],
+  "properties": {
+    "task_id": {"type": "string"},
+    "role": {"const": "research"},
+    "status": {"type": "string", "enum": ["ok", "error", "timeout", "unavailable", "malformed", "permission_denied"]},
+    "findings": {"type": "array", "items": {"type": "string"}},
+    "evidence": {"type": "array", "items": {"type": "string"}},
+    "unresolved": {"type": "array", "items": {"type": "string"}},
+    "recommendation": {"type": "string"},
+    "conversation_id": {"type": ["string", "null"]},
+    "model": {"type": ["string", "null"]},
+    "agent": {"type": ["string", "null"]},
+    "effort": {"type": ["string", "null"]},
+    "usage": {"type": ["object", "null"]},
+    "duration_ms": {"type": "number"}
+  }
+}

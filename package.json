@@ -1,0 +1,12 @@
+{
+  "name": "@z0/omp-ext-agy-executor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AGY as first-class OMP executor (research + implementation) — front-door routing before Cursor",
+  "main": "./src/extension.ts",
+  "scripts": {
+    "test": "bun test test/",
+    "eval:e2e": "bun evals/e2e-harness.ts"
+  }
+}

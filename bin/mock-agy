@@ -1,0 +1,139 @@
+#!/usr/bin/env bun
+/**
+ * Deterministic mock of `agy` headless CLI for executor tests/E2E.
+ * Supports: -p/--print json, and stream-json stdin sessions.
+ */
+import { createInterface } from "node:readline";
+
+const args = process.argv.slice(2);
+const has = (f) => args.includes(f);
+const get = (f) => {
+  const i = args.indexOf(f);
+  return i >= 0 ? args[i + 1] : undefined;
+};
+const mode = get("--mode") ?? "";
+const agent = get("--agent") ?? "default";
+const outFmt = get("--output-format") ?? "text";
+const inFmt = get("--input-format") ?? "text";
+const printIdx = args.findIndex((a) => a === "-p" || a === "--print" || a === "--prompt");
+const printPrompt = printIdx >= 0 ? args[printIdx + 1] : undefined;
+
+function usage(prompt) {
+  const n = Math.max(10, Math.min(500, String(prompt || "").length));
+  return {
+    input_tokens: 100 + n,
+    output_tokens: 40 + Math.floor(n / 4),
+    thinking_tokens: 0,
+    cache_read_tokens: 50,
+    total_tokens: 190 + n,
+  };
+}
+
+function researchPayload(prompt) {
+  return {
+    task_id: "mock-research",
+    role: "research",
+    status: "ok",
+    findings: [`Mock finding for: ${String(prompt).slice(0, 80)}`],
+    evidence: ["mock://evidence/1"],
+    unresolved: [],
+    recommendation: "Proceed with a minimal targeted change after verification.",
+    conversation_id: null,
+    model: "mock-model",
+    agent,
+    effort: "low",
+    usage: usage(prompt),
+    duration_ms: 12,
+  };
+}
+
+function implementPayload(prompt) {
+  return {
+    task_id: "mock-implement",
+    role: "implementation",
+    status: "ok",
+    repo: process.cwd(),
+    worktree: process.cwd(),
+    base_sha: "base",
+    head_sha: "head",
+    changed_files: ["src/example.ts"],
+    tests: { ran: true, passed: true, command: "bun test" },
+    verifier: { ok: true, name: "mock-verifier" },
+    findings: [`Implemented: ${String(prompt).slice(0, 80)}`],
+    blockers: [],
+    artifacts: [],
+    conversation_id: null,
+    model: "mock-model",
+    agent,
+    effort: "low",
+    usage: usage(prompt),
+    duration_ms: 25,
+  };
+}
+
+function resultFor(prompt, conversation_id, num_turns) {
+  const isPlan = mode.includes("plan") || /research/i.test(agent) || /research/i.test(prompt);
+  const structured = isPlan ? researchPayload(prompt) : implementPayload(prompt);
+  const started = Date.now();
+  // Simulate tiny work
+  const response = JSON.stringify(structured);
+  return {
+    conversation_id,
+    status: "SUCCESS",
+    response,
+    structured_output: structured,
+    duration_seconds: (Date.now() - started) / 1000,
+    num_turns,
+    usage: usage(prompt),
+    model: "mock-model",
+    agent,
+  };
+}
+
+if (inFmt === "stream-json") {
+  const conversation_id = crypto.randomUUID();
+  console.log(JSON.stringify({
+    event: "init",
+    conversation_id,
+    init: { cwd: process.cwd(), tools: ["run_command", "write_to_file"], permission_mode: "request-review", agent, model: "mock-model" },
+  }));
+  let turns = 0;
+  const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+  for await (const line of rl) {
+    if (!line.trim()) continue;
+    let msg;
+    try { msg = JSON.parse(line); } catch {
+      console.log(JSON.stringify({ event: "result", result: { conversation_id, status: "ERROR", response: "", error: "invalid JSON", duration_seconds: 0, num_turns: turns, usage: usage("") } }));
+      process.exit(1);
+    }
+    if (msg.event !== "user") {
+      console.error(`warning: ignoring unsupported stream input message event "${msg.event}"`);
+      continue;
+    }
+    const content = typeof msg.message?.content === "string"
+      ? msg.message.content
+      : (msg.message?.content?.[0]?.text ?? "");
+    turns += 1;
+    const result = resultFor(content, conversation_id, turns);
+    console.log(JSON.stringify({ event: "step_update", step_update: { conversation_id, step_index: turns, state: "DONE", step_type: "agent_response", text_delta: result.response.slice(0, 40) } }));
+    console.log(JSON.stringify({ event: "result", result }));
+  }
+  process.exit(0);
+}
+
+if (printPrompt != null) {
+  const conversation_id = crypto.randomUUID();
+  const result = resultFor(printPrompt, conversation_id, 1);
+  if (outFmt === "json") {
+    console.log(JSON.stringify(result));
+  } else if (outFmt === "stream-json") {
+    console.log(JSON.stringify({ event: "init", conversation_id, init: { cwd: process.cwd(), tools: [], permission_mode: "request-review", agent } }));
+    console.log(JSON.stringify({ event: "result", result }));
+  } else {
+    console.log(result.response);
+  }
+  process.exit(0);
+}
+
+console.error("mock-agy: expected -p prompt or --input-format stream-json");
+process.exit(2);

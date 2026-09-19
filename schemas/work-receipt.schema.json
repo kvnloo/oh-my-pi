@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["task_id", "role", "status", "repo", "worktree", "changed_files", "tests", "verifier"],
+  "properties": {
+    "task_id": {"type": "string"},
+    "role": {"const": "implementation"},
+    "status": {"type": "string"},
+    "repo": {"type": "string"},
+    "worktree": {"type": "string"},
+    "base_sha": {"type": ["string", "null"]},
+    "head_sha": {"type": ["string", "null"]},
+    "changed_files": {"type": "array", "items": {"type": "string"}},
+    "tests": {"type": "object"},
+    "verifier": {"type": "object"},
+    "findings": {"type": "array", "items": {"type": "string"}},
+    "blockers": {"type": "array", "items": {"type": "string"}},
+    "artifacts": {"type": "array", "items": {"type": "string"}},
+    "conversation_id": {"type": ["string", "null"]},
+    "model": {"type": ["string", "null"]},
+    "agent": {"type": ["string", "null"]},
+    "effort": {"type": ["string", "null"]},
+    "usage": {"type": ["object", "null"]},
+    "duration_ms": {"type": "number"}
+  }
+}
