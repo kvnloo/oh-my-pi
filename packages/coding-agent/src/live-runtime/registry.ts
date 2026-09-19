@@ -315,10 +315,8 @@ export class RuntimeControlServer {
 		const { promise, resolve } = Promise.withResolvers<void>();
 		server.close(() => resolve());
 		await promise;
-		try {
-			await fs.unlink(this.#socketPath);
-		} catch (err) {
-			if (!isEnoent(err)) throw err;
-		}
+		// Do NOT unlink the path here. After warm reboot the successor may already
+		// own this path; unlinking would delete the live listener's directory entry
+		// while the inode remains open (ENOENT for new clients). start() unlinks.
 	}
 }
