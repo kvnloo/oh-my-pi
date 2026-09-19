@@ -1,0 +1,11 @@
+# Dogfood assembly lock — source of truth for dogfood/main
+# Rebuild: scripts/rebuild-dogfood
+upstream_sha=62a4aa98a4
+profile=default
+core/patches:
+  core/live-runtime: 180d1068d3 (validated; 14 commits ahead of upstream/main)
+extensions:
+  z0-live-runtime: 93baf8a1751e6bc0c5f4386b22bb6cdbd1c0c3d7
+  cognitive-state: ce151e54b240c016ee3d666d86520a99028b242b
+  agy-executor: a1686ceed36731da83346fcd5c7d3418406d8cf6
+rebuild_command: bash scripts/rebuild-dogfood

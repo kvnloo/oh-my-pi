@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Rebuild dogfood/main from upstream/main + selected core/* patches
+# Usage: bash scripts/rebuild-dogfood
+set -euo pipefail
+UPSTREAM=upstream/main
+CORE="core/live-runtime"
+echo "Rebuilding dogfood/main from ${UPSTREAM} + ${CORE}"
+git fetch upstream || true
+git checkout -B dogfood/main ${UPSTREAM}
+git merge --no-ff -m "rebuild $(date -u +%Y%m%d)" ${CORE} || git merge -X theirs ${CORE} || true
+echo "DONE. dogfood/main at $(git rev-parse --short HEAD)"
