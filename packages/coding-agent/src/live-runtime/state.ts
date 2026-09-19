@@ -38,9 +38,13 @@ export class RuntimeAttestationState {
 		this.#gitSha = init.git_sha;
 		this.#sourceRoot = init.source_root;
 		this.#sourceFingerprint = init.source_fingerprint;
-		this.#generation = 1;
+		const handedOff =
+			typeof init.generation === "number" && Number.isFinite(init.generation) && init.generation >= 1
+				? Math.floor(init.generation)
+				: 1;
+		this.#generation = handedOff;
 		this.#activatedAt = this.#startedAt;
-		this.#strategy = init.strategy ?? "startup";
+		this.#strategy = init.strategy ?? (handedOff > 1 ? "warm-reboot" : "startup");
 		this.#setExtensions(init.extensions ?? []);
 	}
 

@@ -93,4 +93,6 @@ export interface RuntimeAttestationInit {
 	strategy?: RuntimeActivationStrategy;
 	started_at?: string;
 	pid?: number;
+	/** Active generation for warm-reboot handoff; defaults to 1. */
+	generation?: number;
 }

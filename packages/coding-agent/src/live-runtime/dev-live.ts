@@ -16,6 +16,7 @@ import {
 	classifyChangeTier,
 	listRuntimeRegistry,
 	resolveCoreIdentity,
+	sendControlMessage,
 	writeHandoffFile,
 	type WarmRebootHandoff,
 } from "./index";
@@ -40,8 +41,11 @@ let busy = false;
 async function spawnChild(handoff?: WarmRebootHandoff): Promise<ReturnType<typeof Bun.spawn>> {
 	if (handoff) await writeHandoffFile(handoffPath, handoff);
 	const resumeArgs: string[] = [];
-	if (handoff?.session_id && handoff.session_id !== "dev-live") {
-		resumeArgs.push("--resume", handoff.session_id);
+	const resumeTarget =
+		handoff?.session_path ||
+		(handoff?.session_id && handoff.session_id !== "dev-live" ? handoff.session_id : undefined);
+	if (resumeTarget) {
+		resumeArgs.push("--resume", resumeTarget);
 	}
 	const args = ["run", cliEntry, ...resumeArgs, ...process.argv.slice(2)];
 	const proc = Bun.spawn(["bun", ...args], {
@@ -99,9 +103,31 @@ const supervisor = new LiveRuntimeSupervisor({
 			entries.find(e => e.pid === activePid) ??
 			entries.find(e => e.cwd === process.cwd()) ??
 			entries.at(-1);
+		let sessionPath = match?.session_path;
+		if (match?.socket_path) {
+			try {
+				const prepared = await sendControlMessage(
+					match.socket_path,
+					{ type: "prepare_handoff", request_id: crypto.randomUUID() },
+					10_000,
+				);
+				if (prepared.type === "prepare_handoff_reply") {
+					sessionPath = prepared.session_path ?? sessionPath;
+					return {
+						cwd: prepared.cwd || match.cwd || process.cwd(),
+						session_id: prepared.session_id || match.session_id,
+						session_path: sessionPath,
+						core_sha_before: match.core_sha ?? core.git_sha,
+					};
+				}
+			} catch (err) {
+				console.error(`[dev-live] prepare_handoff failed: ${err}`);
+			}
+		}
 		return {
 			cwd: match?.cwd ?? process.cwd(),
 			session_id: match?.session_id ?? process.env.OMP_SESSION_ID ?? "dev-live",
+			session_path: sessionPath,
 			core_sha_before: match?.core_sha ?? core.git_sha,
 		};
 	},
