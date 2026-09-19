@@ -1,3 +1,4 @@
+import * as fsSync from "node:fs";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { isEnoent, logger } from "@oh-my-pi/pi-utils";
@@ -77,7 +78,7 @@ export class LiveRuntimeSupervisor {
 	#phase: WarmRebootPhase = "stable";
 	#debounceTimer: ReturnType<typeof setTimeout> | undefined;
 	#pendingChangeFiles: string[] = [];
-	#watchers: fs.FSWatcher[] = [];
+	#watchers: fsSync.FSWatcher[] = [];
 	#closed = false;
 	#activationLock: Promise<void> = Promise.resolve();
 
@@ -93,7 +94,8 @@ export class LiveRuntimeSupervisor {
 		const debounceMs = this.#options.debounceMs ?? 200;
 		for (const root of this.#options.watchRoots) {
 			try {
-				const watcher = fs.watch(root, { recursive: true }, (_event, filename) => {
+				// node:fs.watch (callback FSWatcher) — not fs/promises.watch (async iterator).
+				const watcher = fsSync.watch(root, { recursive: true }, (_event, filename) => {
 					if (!filename) return;
 					const full = path.join(root, filename.toString());
 					if (shouldIgnore(full, this.#options.ignoreGlobs ?? DEFAULT_IGNORE)) return;
