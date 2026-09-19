@@ -98,13 +98,18 @@ const supervisor = new LiveRuntimeSupervisor({
 	},
 	getSessionIdentity: async () => {
 		const core = await resolveCoreIdentity({ version: VERSION, source_root: repoRoot });
-		const entries = await listRuntimeRegistry();
-		const match =
-			entries.find(e => e.pid === activePid) ??
-			entries.find(e => e.cwd === process.cwd()) ??
-			entries.at(-1);
-		let sessionPath = match?.session_path;
-		if (match?.socket_path) {
+		const cwd = process.cwd();
+		const entries = (await listRuntimeRegistry()).filter(e => e.cwd === cwd);
+		const match = entries.find(e => e.pid === activePid) ?? entries.at(-1);
+		if (!match) {
+			return {
+				cwd,
+				session_id: "dev-live",
+				core_sha_before: core.git_sha,
+			};
+		}
+		let sessionPath = match.session_path;
+		if (match.socket_path) {
 			try {
 				const prepared = await sendControlMessage(
 					match.socket_path,
@@ -114,7 +119,7 @@ const supervisor = new LiveRuntimeSupervisor({
 				if (prepared.type === "prepare_handoff_reply") {
 					sessionPath = prepared.session_path ?? sessionPath;
 					return {
-						cwd: prepared.cwd || match.cwd || process.cwd(),
+						cwd: prepared.cwd || match.cwd || cwd,
 						session_id: prepared.session_id || match.session_id,
 						session_path: sessionPath,
 						core_sha_before: match.core_sha ?? core.git_sha,
@@ -125,10 +130,10 @@ const supervisor = new LiveRuntimeSupervisor({
 			}
 		}
 		return {
-			cwd: match?.cwd ?? process.cwd(),
-			session_id: match?.session_id ?? process.env.OMP_SESSION_ID ?? "dev-live",
+			cwd: match.cwd ?? cwd,
+			session_id: match.session_id,
 			session_path: sessionPath,
-			core_sha_before: match?.core_sha ?? core.git_sha,
+			core_sha_before: match.core_sha ?? core.git_sha,
 		};
 	},
 	spawnCandidate: async handoff => {
@@ -180,6 +185,11 @@ supervisor.notifyCoreChange = async (files: string[]) => {
 	await originalNotify(files);
 };
 
+try {
+	await Bun.write(handoffPath, "");
+} catch {
+	/* ignore */
+}
 child = await spawnChild();
 generation = 1;
 await supervisor.start();
