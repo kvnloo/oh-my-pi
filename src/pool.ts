@@ -25,6 +25,9 @@ export interface TurnResult {
 	error?: string;
 	model?: string;
 	agent?: string;
+	stderr?: string;
+	pid?: number;
+	denied_actions?: unknown[];
 }
 
 export interface AgySession {
@@ -34,6 +37,8 @@ export interface AgySession {
 	state: AgyProcessState;
 	conversation_id?: string;
 	proc?: ChildProcessWithoutNullStreams;
+	pid?: number;
+	stderr_buf: string;
 	queue: Array<{
 		prompt: string;
 		resolve: (r: TurnResult) => void;
@@ -96,6 +101,7 @@ export class AgyPool {
 			cwd: key.cwd,
 			state: "STARTING",
 			queue: [],
+			stderr_buf: "",
 			recent_failures: s?.recent_failures ?? 0,
 		};
 		this.sessions.set(id, s);
@@ -118,17 +124,25 @@ export class AgyPool {
 			env: { ...process.env },
 		});
 		s.proc = proc;
+		s.pid = proc.pid;
 		const rl = createInterface({ input: proc.stdout, crlfDelay: Infinity });
 		rl.on("line", (line) => this.#onLine(s!, line));
-		proc.stderr.on("data", () => {});
+		proc.stderr.on("data", (d) => {
+			s!.stderr_buf += String(d);
+			if (s!.stderr_buf.length > 32_000) s!.stderr_buf = s!.stderr_buf.slice(-32_000);
+		});
 		proc.on("exit", (code) => {
 			s!.state = "FAILED";
 			s!.recent_failures += 1;
 			const err = new Error(`agy exited code=${code}`);
 			while (s!.queue.length) s!.queue.shift()!.reject(err);
 		});
-		// Wait briefly for init / READY; if no init, still mark READY (mock may emit on first turn)
-		await new Promise((r) => setTimeout(r, 30));
+		// Wait for init event (up to 15s); then READY even if mock emits late.
+		const started = Date.now();
+		while (s.state === "STARTING" && Date.now() - started < 15_000) {
+			await new Promise((r) => setTimeout(r, 50));
+			if (s.conversation_id) break;
+		}
 		if (s.state === "STARTING") s.state = "READY";
 		return s;
 	}
@@ -148,6 +162,8 @@ export class AgyPool {
 		if (ev.event === "result") {
 			const result = ev.result as TurnResult;
 			s.conversation_id = result.conversation_id ?? s.conversation_id;
+			result.stderr = s.stderr_buf;
+			result.pid = s.pid;
 			const job = s.queue.shift();
 			s.state = s.queue.length ? "BUSY" : "READY";
 			if (!job) return;
@@ -209,17 +225,30 @@ export async function coldPrint(opts: {
 	prompt: string;
 	json_schema_path?: string;
 	timeout_ms?: number;
+	/** Resume an existing AGY conversation (real-binary warm path). */
+	conversation_id?: string;
+	/** Resume last conversation in this cwd (--continue). */
+	continue_last?: boolean;
+	effort?: "low" | "medium" | "high";
+	add_dirs?: string[];
 }): Promise<TurnResult> {
 	const args = [
 		`--mode=${opts.mode}`,
-		"--agent",
-		opts.agent,
 		"--sandbox",
 		"--output-format",
 		"json",
-		`--print-timeout=${Math.ceil((opts.timeout_ms ?? 120000) / 1000)}s`,
+		`--print-timeout=${Math.ceil((opts.timeout_ms ?? 180000) / 1000)}s`,
 	];
+	if (opts.agent && opts.agent !== "default") {
+		args.push("--agent", opts.agent);
+	}
 	if (opts.json_schema_path) args.push("--json-schema", opts.json_schema_path);
+	if (opts.conversation_id) args.push("--conversation", opts.conversation_id);
+	else if (opts.continue_last) args.push("--continue");
+	if (opts.effort) args.push(`--effort=${opts.effort}`);
+	for (const d of opts.add_dirs ?? []) {
+		args.push("--add-dir", d);
+	}
 	args.push("-p", opts.prompt);
 	const proc = spawn(opts.agy_bin, args, { cwd: opts.cwd, stdio: ["ignore", "pipe", "pipe"] });
 	let stdout = "";
@@ -230,20 +259,27 @@ export async function coldPrint(opts: {
 		const t = setTimeout(() => {
 			proc.kill("SIGKILL");
 			resolve(124);
-		}, opts.timeout_ms ?? 120000);
+		}, opts.timeout_ms ?? 180000);
 		proc.on("exit", (c) => {
 			clearTimeout(t);
 			resolve(c ?? 1);
 		});
 	});
 	if (code === 124) {
-		return { conversation_id: "", status: "ERROR", response: "", error: "timeout" };
+		return {
+			conversation_id: opts.conversation_id ?? "",
+			status: "ERROR",
+			response: "",
+			error: "timeout",
+			stderr,
+			pid: proc.pid,
+		};
 	}
 	try {
 		const line = stdout.trim().split(/\n/).filter(Boolean).at(-1) ?? "{}";
 		const env = JSON.parse(line);
 		return {
-			conversation_id: env.conversation_id ?? "",
+			conversation_id: env.conversation_id ?? opts.conversation_id ?? "",
 			status: env.status ?? (code === 0 ? "SUCCESS" : "ERROR"),
 			response: env.response ?? "",
 			structured_output: env.structured_output,
@@ -252,13 +288,18 @@ export async function coldPrint(opts: {
 			error: env.error,
 			model: env.model,
 			agent: env.agent ?? opts.agent,
+			denied_actions: env.denied_actions,
+			stderr,
+			pid: proc.pid,
 		};
 	} catch {
 		return {
-			conversation_id: "",
+			conversation_id: opts.conversation_id ?? "",
 			status: "ERROR",
 			response: stdout,
 			error: `malformed json (stderr=${stderr.slice(0, 200)})`,
+			stderr,
+			pid: proc.pid,
 		};
 	}
 }

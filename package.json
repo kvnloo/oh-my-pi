@@ -7,6 +7,7 @@
   "main": "./src/extension.ts",
   "scripts": {
     "test": "bun test test/",
-    "eval:e2e": "bun evals/e2e-harness.ts"
+    "eval:e2e": "bun evals/e2e-harness.ts",
+    "eval:p05": "bun evals/p05-live-harness.ts"
   }
 }

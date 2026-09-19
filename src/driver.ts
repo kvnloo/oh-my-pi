@@ -19,10 +19,19 @@ export interface DriverOptions {
 }
 
 function statusFrom(turn: TurnResult): ReceiptStatus {
-	if (turn.status === "SUCCESS") return "ok";
+	if (turn.status === "SUCCESS") {
+		// Headless soft-deny aborts with SUCCESS + empty response + denied_actions.
+		const denied = (turn as any).denied_actions;
+		if (Array.isArray(denied) && denied.length && !(turn.response || "").trim() && !turn.structured_output) {
+			return "permission_denied";
+		}
+		return "ok";
+	}
 	if (/timeout/i.test(turn.error ?? "")) return "timeout";
 	if (/auth/i.test(turn.error ?? "")) return "unavailable";
-	if (/permission|denied/i.test(turn.error ?? "")) return "permission_denied";
+	if (/permission|denied/i.test(turn.error ?? "") || /permission|denied/i.test(turn.stderr ?? "")) {
+		return "permission_denied";
+	}
 	if (/malformed|json/i.test(turn.error ?? "")) return "malformed";
 	return "error";
 }
@@ -38,9 +47,47 @@ function parseStructured<T>(turn: TurnResult): T | null {
 	}
 }
 
+function normalizeResearch(parsed: Partial<ResearchReceipt> | null, turn: TurnResult): Partial<ResearchReceipt> {
+	const raw = parsed ?? {};
+	const findings = Array.isArray(raw.findings)
+		? raw.findings.map((f) => (typeof f === "string" ? f : JSON.stringify(f)))
+		: turn.response
+			? [turn.response.slice(0, 500)]
+			: [];
+	const evidence = Array.isArray(raw.evidence)
+		? raw.evidence.map((e) => (typeof e === "string" ? e : JSON.stringify(e)))
+		: [];
+	const statusRaw = String(raw.status ?? "");
+	const status =
+		statusRaw === "ok" || statusRaw === "success"
+			? ("ok" as const)
+			: statusRaw === "permission_denied"
+				? ("permission_denied" as const)
+				: undefined;
+	return {
+		...raw,
+		status: status as ResearchReceipt["status"] | undefined,
+		findings,
+		evidence,
+		unresolved: Array.isArray(raw.unresolved) ? raw.unresolved.map(String) : [],
+		recommendation:
+			typeof raw.recommendation === "string"
+				? raw.recommendation
+				: typeof (raw as any).summary === "string"
+					? (raw as any).summary
+					: "review findings",
+	};
+}
+
+function isMockAgy(bin: string): boolean {
+	return /mock-agy/.test(bin);
+}
+
 export class AgyDriver {
 	readonly pool: AgyPool;
 	readonly opts: Required<DriverOptions>;
+	/** Last research conversation_id per cwd (real AGY warm via --conversation). */
+	private researchConversations = new Map<string, string>();
 
 	constructor(opts: DriverOptions = {}) {
 		this.opts = {
@@ -58,19 +105,37 @@ export class AgyDriver {
 		});
 	}
 
-	async research(prompt: string, opts?: { cwd?: string; task_id?: string; warm?: boolean }): Promise<ResearchReceipt> {
+	async research(
+		prompt: string,
+		opts?: {
+			cwd?: string;
+			task_id?: string;
+			warm?: boolean;
+			conversation_id?: string;
+			/** Force stream-json residency (mock-agy / experimental). Real AGY pipes hang. */
+			use_stream_json?: boolean;
+		},
+	): Promise<ResearchReceipt> {
 		const task_id = opts?.task_id ?? `research-${randomUUID().slice(0, 8)}`;
 		const cwd = opts?.cwd ?? process.cwd();
 		const t0 = Date.now();
 		const schema = path.join(this.opts.schema_dir, "research-receipt.schema.json");
 		const fullPrompt =
 			`Return ONLY JSON matching the research receipt schema.\n` +
-			`Role=research. No file writes. No shell.\n\nTASK:\n${prompt}`;
+			`Role=research. No file writes. No shell.\n` +
+			`Stay strictly inside the task repository paths. Do not read home dotfiles, shell history, SSH keys, or unrelated paths.\n` +
+			`Do not use SearchWeb/ReadUrlContent unless the task explicitly requires it.\n` +
+			`If a tool is denied, stop and return status=permission_denied with what you already know.\n\nTASK:\n${prompt}`;
+		const wantWarm = opts?.warm ?? this.opts.prefer_warm;
+		const useStream =
+			opts?.use_stream_json === true || (wantWarm && isMockAgy(this.opts.agy_bin) && opts?.use_stream_json !== false);
 		let turn: TurnResult;
 		try {
-			if (opts?.warm ?? this.opts.prefer_warm) {
+			if (useStream) {
 				turn = await this.pool.ask({ role: "research", cwd }, fullPrompt, 120_000);
 			} else {
+				const conversation_id =
+					opts?.conversation_id ?? (wantWarm ? this.researchConversations.get(cwd) : undefined);
 				turn = await coldPrint({
 					agy_bin: this.opts.agy_bin,
 					cwd,
@@ -78,6 +143,9 @@ export class AgyDriver {
 					agent: this.opts.research_agent,
 					prompt: fullPrompt,
 					json_schema_path: fs.existsSync(schema) ? schema : undefined,
+					conversation_id,
+					timeout_ms: 180_000,
+					effort: "low",
 				});
 			}
 		} catch (e) {
@@ -96,17 +164,19 @@ export class AgyDriver {
 				executor: "agy",
 			};
 		}
-		const parsed = parseStructured<Partial<ResearchReceipt>>(turn);
+		const parsed = normalizeResearch(parseStructured<Partial<ResearchReceipt>>(turn), turn);
 		const status = statusFrom(turn);
+		const conversation_id = turn.conversation_id || parsed?.conversation_id || null;
+		if (conversation_id) this.researchConversations.set(cwd, conversation_id);
 		return {
 			task_id,
 			role: "research",
 			status: parsed?.status === "ok" || status === "ok" ? "ok" : status,
-			findings: parsed?.findings ?? (turn.response ? [turn.response.slice(0, 500)] : []),
-			evidence: parsed?.evidence ?? [],
-			unresolved: parsed?.unresolved ?? [],
-			recommendation: parsed?.recommendation ?? "review findings",
-			conversation_id: turn.conversation_id || parsed?.conversation_id || null,
+			findings: parsed.findings ?? [],
+			evidence: parsed.evidence ?? [],
+			unresolved: parsed.unresolved ?? [],
+			recommendation: parsed.recommendation ?? "review findings",
+			conversation_id,
 			model: turn.model ?? parsed?.model ?? null,
 			agent: turn.agent ?? this.opts.research_agent,
 			effort: parsed?.effort ?? null,
@@ -120,7 +190,13 @@ export class AgyDriver {
 
 	async implement(
 		prompt: string,
-		opts?: { repo?: string; task_id?: string; warm?: boolean; verifier_cmd?: string },
+		opts?: {
+			repo?: string;
+			task_id?: string;
+			warm?: boolean;
+			verifier_cmd?: string;
+			use_stream_json?: boolean;
+		},
 	): Promise<WorkReceipt> {
 		const task_id = opts?.task_id ?? `impl-${randomUUID().slice(0, 8)}`;
 		const t0 = Date.now();
@@ -130,12 +206,16 @@ export class AgyDriver {
 			root: this.opts.worktree_root || undefined,
 		});
 		const fullPrompt =
-			`You are in an isolated worktree. Make the smallest coherent change.\n` +
-			`Do not merge/push/deploy. Stay inside this worktree.\n` +
+			`You are in an isolated worktree at: ${wt.worktree}\n` +
+			`Use replace_file_content/write_to_file/run_command. Do not claim tools are missing.\n` +
+			`Make the smallest coherent change. Do not merge/push/deploy. Write only inside this worktree.\n` +
 			`Return JSON work receipt fields in your final answer.\n\nTASK:\n${prompt}`;
+		const wantWarm = opts?.warm ?? this.opts.prefer_warm;
+		const useStream =
+			opts?.use_stream_json === true || (wantWarm && isMockAgy(this.opts.agy_bin) && opts?.use_stream_json !== false);
 		let turn: TurnResult;
 		try {
-			if (opts?.warm ?? this.opts.prefer_warm) {
+			if (useStream) {
 				turn = await this.pool.ask({ role: "implementation", cwd: wt.worktree }, fullPrompt, 180_000);
 			} else {
 				turn = await coldPrint({
@@ -144,6 +224,9 @@ export class AgyDriver {
 					mode: "accept-edits",
 					agent: this.opts.implement_agent,
 					prompt: fullPrompt,
+					timeout_ms: 240_000,
+					effort: "low",
+					add_dirs: [wt.worktree],
 				});
 			}
 		} catch (e) {

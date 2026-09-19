@@ -1,0 +1,116 @@
+{
+  "stage": "feature_detect",
+  "version": "1.2.7",
+  "missing": []
+}
+{
+  "stage": "stream_json_probe",
+  "usable": false,
+  "timed_out": true,
+  "exit_code": null,
+  "stdout_bytes": 2046,
+  "has_init": true,
+  "has_result": true,
+  "stderr_excerpt": "",
+  "stdout_excerpt": "{\"event\":\"init\",\"conversation_id\":\"134e81b9-1d66-4793-804d-396450f27fdc\",\"init\":{\"cwd\":\"/home/kvn/tmp/agy-p05-fixture\",\"agent\":\"z0-researcher\",\"tools\":[\"ask_custom_permission\",\"ask_permission\",\"ask_question\",\"browser_click_element\",\"browser_drag_pixel_to_pixel\",\"browser_get_dom\",\"browser_get_network_request\",\"browser_input\",\"browser_list_network_requests\",\"browser_mouse_down\",\"browser_mouse_up\",\"b",
+  "warm_strategy": "print+--conversation"
+}
+{
+  "stage": "research_cold_start"
+}
+{
+  "stage": "research_cold",
+  "status": "ok",
+  "ms": 11921,
+  "conversation_id": "1286a21c-5d72-4d78-9829-54eb8b317642",
+  "findings_n": 1
+}
+{
+  "stage": "research_warm_1_start"
+}
+{
+  "stage": "research_warm_1",
+  "status": "ok",
+  "ms": 9431,
+  "conversation_id": "1286a21c-5d72-4d78-9829-54eb8b317642"
+}
+{
+  "stage": "research_warm_2_start"
+}
+{
+  "stage": "research_warm_2",
+  "status": "ok",
+  "ms": 5818,
+  "conversation_id": "1286a21c-5d72-4d78-9829-54eb8b317642"
+}
+{
+  "stage": "research_denial_start"
+}
+{
+  "stage": "timeout_start"
+}
+{
+  "stage": "implement_start"
+}
+Preparing worktree (new branch 'agy/impl-dc0e31d02c')
+
+ 1 pass
+ 0 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [12.00ms]
+{
+  "stage": "implement",
+  "status": "ok",
+  "ms": 15363,
+  "worktree": "/home/kvn/tmp/agy-p05-worktrees/impl-dc0e31d02c",
+  "changed": [
+    "src/greet.ts"
+  ],
+  "tests": {
+    "ran": true,
+    "passed": true,
+    "command": "bun test",
+    "output_excerpt": "bun test v1.3.14 (0d9b296a)\n"
+  }
+}
+
+ 1 pass
+ 0 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [15.00ms]
+{
+  "stage": "implement_denial_start"
+}
+{
+  "stage": "front_door_start"
+}
+
+ 1 pass
+ 0 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [11.00ms]
+{
+  "version": "1.2.7",
+  "cold_ms": 11921,
+  "warm_p50": 9431,
+  "same_conversation": true,
+  "implement_wall_ms": 15363,
+  "test_pass": true,
+  "parent_untouched": true,
+  "cursor_avoided": 5,
+  "cursor_root_calls": 0,
+  "acceptance": {
+    "research_cold_ok": true,
+    "warm_reuse": true,
+    "implement_ok": true,
+    "permissions_no_skip_all": true,
+    "denial_survived": true,
+    "cursor_avoided_gt0": true,
+    "cursor_root_calls_zero": true,
+    "no_omp_root_fallback": true
+  },
+  "issues": [
+    "stream_json_unusable:init=true,result=true,timeout=true"
+  ]
+}
+EXIT:0

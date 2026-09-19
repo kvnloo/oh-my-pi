@@ -36,8 +36,15 @@ export function createIsolatedWorktree(opts: {
 	try {
 		git(repo, ["worktree", "add", "-b", branch, worktree, "HEAD"]);
 	} catch {
-		// branch may exist
-		git(repo, ["worktree", "add", worktree, branch]);
+		// Branch or registration may exist from a prior crashed run — force clean then recreate.
+		try {
+			git(repo, ["worktree", "remove", "--force", worktree]);
+		} catch {}
+		try {
+			git(repo, ["branch", "-D", branch]);
+		} catch {}
+		git(repo, ["worktree", "prune"]);
+		git(repo, ["worktree", "add", "-b", branch, worktree, "HEAD"]);
 	}
 	return { repo, worktree, base_sha, branch };
 }
