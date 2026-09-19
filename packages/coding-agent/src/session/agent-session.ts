@@ -263,6 +263,14 @@ import type { AgentDefinition } from "../task/types";
 import type { ModelMention } from "@oh-my-pi/pi-tui/prompt/model-mention-syntax";
 import { ModelMentionRegistry } from "./model-mentions";
 import { parseCommandArgs } from "../utils/command-args";
+import {
+	clearPendingActivationMarker,
+	getRuntimeAttestation,
+	shutdownRuntimeAttestationRegistry,
+	validateExtensionCandidates,
+	writePendingActivationMarker,
+} from "../live-runtime";
+
 import type { EditMode } from "@oh-my-pi/pi-tui/tools/edit";
 import { resolveFileDisplayMode } from "../utils/file-display-mode";
 import { extractFileMentions, generateFileMentionMessages } from "../utils/file-mentions";
@@ -4905,6 +4913,7 @@ export class AgentSession {
 
 	async #doDispose(options: AgentSessionDisposeOptions = {}): Promise<void> {
 		this.beginDispose();
+		await shutdownRuntimeAttestationRegistry().catch(() => undefined);
 		this.#recordSessionExit(options.reason ?? "dispose");
 		this.#cancelExitRecorder?.();
 		this.#cancelExitRecorder = undefined;
@@ -7162,7 +7171,7 @@ export class AgentSession {
 				return { cancelled: !success };
 			},
 			reload: async () => {
-				await this.reload();
+				await this.reloadRuntime();
 			},
 			getSystemPrompt: () => this.systemPrompt,
 			setInterval: (callback, ms, ...args) => this.#fallbackTimers().setInterval(callback, ms, ...args),
@@ -9761,6 +9770,85 @@ export class AgentSession {
 		if (!sessionFile) return;
 		const switched = await this.switchSession(sessionFile);
 		if (!switched) throw new Error("Session reload cancelled");
+	}
+
+	/**
+	 * Tier-A runtime reload: validate candidate extension sources, replace the
+	 * in-process extension generation, then re-emit session_start. Does not
+	 * mutate the canonical transcript. Generation advances only after success.
+	 */
+	async reloadRuntime(options?: { reason?: string; agentDir?: string }): Promise<{
+		status: "reloaded" | "pending" | "failed";
+		generation: number;
+		failure_reason?: string;
+	}> {
+		const attestation = getRuntimeAttestation();
+		const fromGeneration = attestation?.generation ?? 1;
+		const startedAt = new Date().toISOString();
+		const paths = [...(this.extensionPaths ?? [])].filter(p => !p.startsWith("<inline"));
+
+		if (this.isStreaming || this.queuedMessageCount > 0) {
+			attestation?.markPendingActivation({
+				from_generation: fromGeneration,
+				to_generation: fromGeneration + 1,
+				strategy: "runtime-reload",
+				changed_files: paths,
+				started_at: startedAt,
+			});
+			await writePendingActivationMarker(
+				{
+					schema: "omp.runtime.pending.v1",
+					from_generation: fromGeneration,
+					requested_at: startedAt,
+						changed_files: paths,
+					strategy: "runtime-reload",
+					session_id: this.sessionManager.getSessionId(),
+				},
+				options?.agentDir,
+			);
+			return { status: "pending", generation: fromGeneration };
+		}
+
+		const validated = await validateExtensionCandidates(paths, this.sessionManager.getCwd());
+		if (!validated.ok) {
+			attestation?.rejectActivation({
+				strategy: "runtime-reload",
+				started_at: startedAt,
+				failure_reason: validated.failure_reason,
+				changed_files: validated.changed_files,
+			});
+			return { status: "failed", generation: fromGeneration, failure_reason: validated.failure_reason };
+		}
+
+		await writePendingActivationMarker(
+			{
+				schema: "omp.runtime.pending.v1",
+				from_generation: fromGeneration,
+				requested_at: startedAt,
+				reason: options?.reason ?? "runtime-reload",
+				changed_files: validated.changed_files,
+				strategy: "runtime-reload",
+				session_id: this.sessionManager.getSessionId(),
+			},
+			options?.agentDir,
+		);
+
+		if (this.#extensionRunner) {
+			this.#extensionRunner.replaceExtensions(validated.extensions.extensions, validated.extensions.runtime);
+		}
+
+		attestation?.replaceExtensions(validated.records);
+		const toGeneration = attestation?.commitActivation({
+			strategy: "runtime-reload",
+			started_at: startedAt,
+			changed_files: validated.changed_files,
+			extensions: validated.records,
+		}) ?? fromGeneration + 1;
+
+		await this.#extensionRunner?.emit({ type: "session_start" });
+		await clearPendingActivationMarker(options?.agentDir);
+		await this.refreshSkills().catch(() => undefined);
+		return { status: "reloaded", generation: toGeneration };
 	}
 	/**
 	 * Switch to a different session file.
