@@ -1,0 +1,56 @@
+{
+  "milestone": "AGY P0.6 \u2014 Everyday Manual Lane",
+  "package": "/home/kvn/tmp/omp-ext-agy-executor",
+  "ts": "2026-09-19T06:50:00Z",
+  "acceptance": {
+    "agy_research_works": true,
+    "agy_implement_uses_z0_implementer": true,
+    "permissions_narrow_per_worktree": true,
+    "permissions_restore_after_success": true,
+    "permissions_restore_after_denial_or_throw": true,
+    "permissions_restore_after_timeout_like": true,
+    "no_dangerously_skip_permissions": true,
+    "no_omp_root_fallback": true,
+    "conversation_reuse_preserved": true,
+    "tokenomics_attribution_preserved": true,
+    "unit_tests_green": true
+  },
+  "live_smokes": {
+    "implement": {
+      "agent": "z0-implementer",
+      "status": "ok",
+      "changed_files": [
+        "src/greet.ts"
+      ],
+      "tests_passed": true,
+      "permissions": {
+        "applied": true,
+        "restored": true
+      },
+      "settings_restored_equal": true,
+      "wall_ms": 15235,
+      "worktree": "/home/kvn/tmp/agy-p05-worktrees/impl-b5674d8de0"
+    },
+    "research": {
+      "cold_status": "ok",
+      "warm_status": "ok",
+      "same_conversation": true,
+      "cold_ms": 28371,
+      "warm_ms": 7856,
+      "permissions_restored": true
+    }
+  },
+  "fixes": [
+    "Bake withPermissions() into AgyDriver.research/implement (serialized, finally restore, process exit best-effort)",
+    "z0-implementer agent.md now declares explicit tools: so -p mode gets write/replace/run_command (was lean toolset)",
+    "z0-researcher agent.md declares read-only tools allowlist",
+    "Implement receipt status becomes error when verifier fails",
+    "Live harness uses driver-owned permissions + z0-implementer"
+  ],
+  "still": {
+    "jev_execution_authority": false,
+    "auto_routing": false,
+    "stream_json_residency": false
+  },
+  "next": "Jev shadow routing (predict only; compare with manual outcomes)"
+}

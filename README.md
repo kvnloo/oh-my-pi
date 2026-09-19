@@ -16,21 +16,37 @@ agy:r <prompt>
 agy:i <prompt>
 ```
 
+## P0.6 everyday manual lane
+
+- `AgyDriver` applies per-turn permission profiles and **always restores** (`finally` + process `exit` best-effort).
+- Never uses `--dangerously-skip-permissions`.
+- Warm path: `print + --conversation` (no stream-json residency).
+- Agents:
+  - `z0-researcher` — read-only tools allowlist
+  - `z0-implementer` — explicit edit/test tools in frontmatter (`tools:`) so `-p` has parity with default agent
+- Tokenomics lanes remain: `omp.agy.route` / `omp.agy.research` / `omp.agy.implementation`
+
+Sync agents into AGY global config:
+
+```bash
+cp -a agents/z0-*/agent.md ~/.gemini/config/agents/z0-*/
+```
+
 ## Modes
 
 - `manual` (default): only explicit routes
-- `shadow-auto`: Jev/heuristic predicts lane, no authority
-- `auto`: not enabled in P0
+- `shadow-auto`: Jev/heuristic predicts lane, **no authority**
+- `auto`: not enabled
 
 ```bash
-export OMP_AGY_EXECUTOR_MODE=shadow-auto
+export OMP_AGY_EXECUTOR_MODE=manual
 export AGY_BIN=agy   # or path to mock-agy for tests
 ```
 
 ## Load
 
 ```bash
-ln -s /home/kvn/tmp/omp-ext-agy-executor/src/extension.ts \
+ln -s /home/kvn/tmp/omp-ext-agy-executor/index.ts \
   ~/.omp/agent/extensions/agy-executor.ts
 ```
 
@@ -39,4 +55,5 @@ ln -s /home/kvn/tmp/omp-ext-agy-executor/src/extension.ts \
 ```bash
 bun test
 bun run eval:e2e
+AGY_BIN=/home/kvn/.local/bin/agy bun run eval:p05
 ```

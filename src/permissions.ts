@@ -4,6 +4,9 @@
  *
  * Writes/merges into ~/.gemini/antigravity-cli/settings.json
  * (installed CLI has no --settings override flag).
+ *
+ * Everyday lane: AgyDriver calls withPermissions() so apply/restore is
+ * crash-safe for success, denial, timeout, and thrown errors (finally).
  */
 
 import * as fs from "node:fs";
@@ -21,9 +24,40 @@ export interface AppliedPermissions {
 	backup_path: string;
 	profile: PermissionLists;
 	trusted_workspaces: string[];
+	tag: string;
+}
+
+export interface PermissionScope {
+	applied: boolean;
+	restored: boolean;
+	settings_path?: string;
+	backup_path?: string;
+	tag?: string;
+	allow?: string[];
+	deny?: string[];
 }
 
 const DEFAULT_SETTINGS = path.join(os.homedir(), ".gemini/antigravity-cli/settings.json");
+
+/** Serialize global settings.json mutations across concurrent AGY turns. */
+let permissionTail: Promise<unknown> = Promise.resolve();
+
+const activeScopes = new Set<AppliedPermissions>();
+
+function restoreAllActive(): void {
+	for (const applied of [...activeScopes]) {
+		try {
+			restorePermissions(applied.backup_path, applied.settings_path);
+		} catch {
+			/* best-effort on process exit */
+		}
+		activeScopes.delete(applied);
+	}
+}
+
+if (typeof process !== "undefined" && typeof process.on === "function") {
+	process.on("exit", restoreAllActive);
+}
 
 export function researchPermissions(repoRoot: string): PermissionLists {
 	const abs = path.resolve(repoRoot);
@@ -31,8 +65,6 @@ export function researchPermissions(repoRoot: string): PermissionLists {
 	const pkg = path.resolve(path.join(import.meta.dir, ".."));
 	return {
 		allow: [
-			// AGY ViewFile confirmations match read_file(<dir-or-file>) rules.
-			// Agent also reads its agent.md + schemas outside the target repo.
 			`read_file(${abs})`,
 			`read_file(${pkg})`,
 			`read_file(${path.join(home, ".gemini/config/agents")})`,
@@ -70,7 +102,6 @@ export function implementPermissions(worktree: string, parentRepo?: string): Per
 		allow: [
 			`write_file(${abs})`,
 			`read_file(${abs})`,
-			// Parent is read-only context; AGY often opens the main checkout path first.
 			...(parent && parent !== abs ? [`read_file(${parent})`] : []),
 			`read_file(${pkg})`,
 			`read_file(${path.join(home, ".gemini/config/agents")})`,
@@ -111,7 +142,8 @@ export function applyPermissions(opts: {
 }): AppliedPermissions {
 	const settings_path = opts.settings_path ?? DEFAULT_SETTINGS;
 	fs.mkdirSync(path.dirname(settings_path), { recursive: true });
-	const backup_path = `${settings_path}.bak-agy-p05-${opts.tag ?? Date.now()}`;
+	const tag = opts.tag ?? String(Date.now());
+	const backup_path = `${settings_path}.bak-agy-${tag}`;
 	let existing: Record<string, unknown> = {};
 	if (fs.existsSync(settings_path)) {
 		const raw = fs.readFileSync(settings_path, "utf8");
@@ -146,15 +178,72 @@ export function applyPermissions(opts: {
 		},
 	};
 	fs.writeFileSync(settings_path, JSON.stringify(next, null, 2) + "\n");
-	return {
+	const applied: AppliedPermissions = {
 		settings_path,
 		backup_path,
 		profile: { allow: opts.profile.allow, deny, ask: opts.profile.ask },
 		trusted_workspaces: trusted,
+		tag,
 	};
+	activeScopes.add(applied);
+	return applied;
 }
 
 export function restorePermissions(backup_path: string, settings_path = DEFAULT_SETTINGS): void {
 	if (!fs.existsSync(backup_path)) return;
 	fs.copyFileSync(backup_path, settings_path);
+	try {
+		fs.unlinkSync(backup_path);
+	} catch {
+		/* leave backup if unlink fails */
+	}
+	for (const a of [...activeScopes]) {
+		if (a.backup_path === backup_path) activeScopes.delete(a);
+	}
+}
+
+/**
+ * Apply a permission profile, run `fn`, always restore (success / throw / denial path).
+ * Serialized so concurrent AGY turns do not clobber settings.json.
+ */
+export async function withPermissions<T>(
+	opts: {
+		profile: PermissionLists;
+		trusted_workspaces?: string[];
+		deny_write_paths?: string[];
+		settings_path?: string;
+		tag?: string;
+	},
+	fn: (applied: AppliedPermissions) => Promise<T> | T,
+): Promise<{ result: T; scope: PermissionScope }> {
+	const scope: PermissionScope = { applied: false, restored: false };
+	let release!: () => void;
+	const gate = new Promise<void>((r) => {
+		release = r;
+	});
+	const prev = permissionTail;
+	permissionTail = prev.then(() => gate).catch(() => gate);
+	await prev.catch(() => undefined);
+
+	let applied: AppliedPermissions | null = null;
+	try {
+		applied = applyPermissions(opts);
+		scope.applied = true;
+		scope.settings_path = applied.settings_path;
+		scope.backup_path = applied.backup_path;
+		scope.tag = applied.tag;
+		scope.allow = applied.profile.allow;
+		scope.deny = applied.profile.deny;
+		const result = await fn(applied);
+		return { result, scope };
+	} finally {
+		try {
+			if (applied) {
+				restorePermissions(applied.backup_path, applied.settings_path);
+				scope.restored = true;
+			}
+		} finally {
+			release();
+		}
+	}
 }

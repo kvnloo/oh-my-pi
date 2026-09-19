@@ -44,6 +44,12 @@ export interface ResearchReceipt {
 	raw_error?: string;
 	cursor_calls_avoided: 1;
 	executor: "agy";
+	/** Present when AgyDriver managed settings.json permissions for this turn. */
+	permissions?: {
+		applied: boolean;
+		restored: boolean;
+		tag?: string;
+	};
 }
 
 export interface WorkReceipt {
@@ -70,6 +76,12 @@ export interface WorkReceipt {
 	parent_checkout_untouched: true;
 	cursor_calls_avoided: 1;
 	executor: "agy";
+	/** Present when AgyDriver managed settings.json permissions for this turn. */
+	permissions?: {
+		applied: boolean;
+		restored: boolean;
+		tag?: string;
+	};
 }
 
 export interface RoutingDecision {
