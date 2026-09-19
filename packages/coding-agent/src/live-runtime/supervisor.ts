@@ -232,7 +232,9 @@ function shouldIgnore(filePath: string, patterns: string[]): boolean {
 	const normalized = filePath.replaceAll("\\", "/");
 	for (const pattern of patterns) {
 		const bare = pattern.replace(/^\*\*\//, "").replace(/\/\*\*$/, "");
-		if (normalized.includes(`/${bare}/`) || normalized.includes(`/${bare}`)) return true;
+			// Require a path-segment boundary so "/home/kvn/tmp/..." is not
+		// treated as ignore pattern "**/tmp/**".
+		if (normalized.includes(`/${bare}/`) || normalized.endsWith(`/${bare}`)) return true;
 		if (bare.startsWith("*.") && normalized.endsWith(bare.slice(1))) return true;
 	}
 	return false;
