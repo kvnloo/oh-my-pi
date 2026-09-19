@@ -65,7 +65,7 @@ const DEFAULT_IGNORE = [
 	"**/logs/**",
 	"**/sessions/**",
 	"**/artifacts/**",
-	"**/tmp/**",
+	// Do not ignore "**/tmp/**": worktrees under /home/*/tmp/... would match.
 	"**/*.map",
 ];
 
