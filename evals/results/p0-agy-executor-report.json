@@ -1,0 +1,237 @@
+{
+  "schema": "z0.agy_executor.p0_e2e",
+  "generated_at": "2026-09-19T05:47:53.163Z",
+  "package": "/home/kvn/tmp/omp-ext-agy-executor",
+  "agy_bin": "/home/kvn/tmp/omp-ext-agy-executor/bin/mock-agy",
+  "omp_core_patches_required": false,
+  "front_door_seam": {
+    "event": "input",
+    "returns_handled_true": true,
+    "provider_short_circuit_confirmed": true
+  },
+  "contracts": {
+    "research": {
+      "cli": "agy --mode=plan --agent=z0-researcher --sandbox (--input-format stream-json --output-format stream-json | -p --output-format json)",
+      "receipt": "ResearchReceipt",
+      "permissions": "no --dangerously-skip-permissions; scoped allow rules preferred"
+    },
+    "implementation": {
+      "cli": "agy --mode=accept-edits --agent=z0-implementer --sandbox stream-json",
+      "receipt": "WorkReceipt",
+      "worktree": "isolated .agy-worktrees/impl-*",
+      "no_auto_merge": true
+    }
+  },
+  "custom_agents": [
+    "z0-researcher",
+    "z0-implementer"
+  ],
+  "explicit_ux": [
+    "/agy research",
+    "/agy implement",
+    "agy:r",
+    "agy:i"
+  ],
+  "worktree": {
+    "path": "/tmp/agy-e2e-kKAcpG/.agy-worktrees/impl-9542e11c71",
+    "parent_head_before": "589dbaa8e7c501540990d84b93b07cdf2ec5a8ee",
+    "parent_head_after": "589dbaa8e7c501540990d84b93b07cdf2ec5a8ee",
+    "parent_untouched": true
+  },
+  "persistent_process": {
+    "warm_conversation_id": "d81b12b6-c237-462b-85d2-98e441a94eff",
+    "cold_ms": 30,
+    "warm_p50_ms": 2,
+    "warm_p95_ms": 43,
+    "implement_wall_ms": 69
+  },
+  "acceptance": {
+    "research_no_cursor": true,
+    "implement_isolated_wt": true,
+    "concurrent_agy_with_omp_sim": true,
+    "tokenomics_distinguishes_lanes": true
+  },
+  "cursor_calls_avoided": 9,
+  "omp_provider_requests_intercepted": 2,
+  "tokenomics_sample": [
+    {
+      "kind": "executor",
+      "name": "omp.agy.research",
+      "status": "ok",
+      "service": "agy",
+      "role": "research",
+      "attributes": {
+        "service": "agy",
+        "role": "research",
+        "task_id": "research-077bac51",
+        "conversation_id": "d81b12b6-c237-462b-85d2-98e441a94eff",
+        "model": "mock-model",
+        "agent": "z0-researcher",
+        "effort": "low",
+        "duration_ms": 43,
+        "status": "ok",
+        "cursor_calls_avoided": 1,
+        "usage.input_tokens": 243,
+        "usage.output_tokens": 75,
+        "usage.total_tokens": 333,
+        "cost_usd": "UNKNOWN",
+        "route.predicted": null,
+        "route.selected": "AGY_RESEARCH",
+        "route.shadow_only": true
+      },
+      "ts": 1789796873020
+    },
+    {
+      "kind": "executor",
+      "name": "omp.agy.research",
+      "status": "ok",
+      "service": "agy",
+      "role": "research",
+      "attributes": {
+        "service": "agy",
+        "role": "research",
+        "task_id": "research-30c506a7",
+        "conversation_id": "d81b12b6-c237-462b-85d2-98e441a94eff",
+        "model": "mock-model",
+        "agent": "z0-researcher",
+        "effort": "low",
+        "duration_ms": 1,
+        "status": "ok",
+        "cursor_calls_avoided": 1,
+        "usage.input_tokens": 243,
+        "usage.output_tokens": 75,
+        "usage.total_tokens": 333,
+        "cost_usd": "UNKNOWN",
+        "route.predicted": null,
+        "route.selected": "AGY_RESEARCH",
+        "route.shadow_only": true
+      },
+      "ts": 1789796873021
+    },
+    {
+      "kind": "executor",
+      "name": "omp.agy.research",
+      "status": "ok",
+      "service": "agy",
+      "role": "research",
+      "attributes": {
+        "service": "agy",
+        "role": "research",
+        "task_id": "research-a03e996f",
+        "conversation_id": "d81b12b6-c237-462b-85d2-98e441a94eff",
+        "model": "mock-model",
+        "agent": "z0-researcher",
+        "effort": "low",
+        "duration_ms": 1,
+        "status": "ok",
+        "cursor_calls_avoided": 1,
+        "usage.input_tokens": 243,
+        "usage.output_tokens": 75,
+        "usage.total_tokens": 333,
+        "cost_usd": "UNKNOWN",
+        "route.predicted": null,
+        "route.selected": "AGY_RESEARCH",
+        "route.shadow_only": true
+      },
+      "ts": 1789796873022
+    },
+    {
+      "kind": "executor",
+      "name": "omp.agy.research",
+      "status": "ok",
+      "service": "agy",
+      "role": "research",
+      "attributes": {
+        "service": "agy",
+        "role": "research",
+        "task_id": "research-021dbc30",
+        "conversation_id": "d81b12b6-c237-462b-85d2-98e441a94eff",
+        "model": "mock-model",
+        "agent": "z0-researcher",
+        "effort": "low",
+        "duration_ms": 2,
+        "status": "ok",
+        "cursor_calls_avoided": 1,
+        "usage.input_tokens": 243,
+        "usage.output_tokens": 75,
+        "usage.total_tokens": 333,
+        "cost_usd": "UNKNOWN",
+        "route.predicted": null,
+        "route.selected": "AGY_RESEARCH",
+        "route.shadow_only": true
+      },
+      "ts": 1789796873024
+    },
+    {
+      "kind": "executor",
+      "name": "omp.agy.research",
+      "status": "ok",
+      "service": "agy",
+      "role": "research",
+      "attributes": {
+        "service": "agy",
+        "role": "research",
+        "task_id": "research-0bb14e5a",
+        "conversation_id": "d81b12b6-c237-462b-85d2-98e441a94eff",
+        "model": "mock-model",
+        "agent": "z0-researcher",
+        "effort": "low",
+        "duration_ms": 2,
+        "status": "ok",
+        "cursor_calls_avoided": 1,
+        "usage.input_tokens": 243,
+        "usage.output_tokens": 75,
+        "usage.total_tokens": 333,
+        "cost_usd": "UNKNOWN",
+        "route.predicted": null,
+        "route.selected": "AGY_RESEARCH",
+        "route.shadow_only": true
+      },
+      "ts": 1789796873026
+    },
+    {
+      "kind": "executor",
+      "name": "omp.agy.implementation",
+      "status": "ok",
+      "service": "agy",
+      "role": "implementation",
+      "attributes": {
+        "service": "agy",
+        "role": "implementation",
+        "task_id": "impl-6b42999c",
+        "conversation_id": "be452a2e-0381-4fa3-9fb2-73ea866a616b",
+        "repo": "/tmp/agy-e2e-kKAcpG",
+        "worktree": "/tmp/agy-e2e-kKAcpG/.agy-worktrees/impl-9542e11c71",
+        "model": "mock-model",
+        "agent": "z0-implementer",
+        "effort": null,
+        "duration_ms": 68,
+        "status": "ok",
+        "verifier_ok": true,
+        "cursor_calls_avoided": 1,
+        "usage.total_tokens": 417,
+        "cost_usd": "UNKNOWN",
+        "route.predicted": null,
+        "route.selected": "AGY_IMPLEMENT"
+      },
+      "ts": 1789796873095
+    }
+  ],
+  "jev_shadow_routing": {
+    "predicted": "AGY_IMPLEMENT",
+    "selected": "AGY_IMPLEMENT",
+    "confidence": 0.88,
+    "mode": "shadow-auto",
+    "reason": "writes_under_provider_pressure",
+    "features": {
+      "requires_writes": true,
+      "research_heavy": false,
+      "destructive_risk": false,
+      "recent_429": 2,
+      "agy_ready": true,
+      "estimated_duration_s": 120
+    },
+    "shadow_only": true
+  },
+  "recommendation_next_blocker": "Safe auto-routing blocked until: (1) real-agy live paired quality vs OMP_ROOT, (2) scoped permissions.allow baked per worktree, (3) resident Jev calibration on shadow labels, (4) pressure signal wired from live 429 observers — keep mode=shadow-auto."
+}

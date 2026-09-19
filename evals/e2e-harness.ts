@@ -79,27 +79,36 @@ const ctx = {
 	appendEntry() {},
 	ui: { notify() {} },
 };
-// Simulate an ordinary OMP turn "active" counter while AGY runs
-const ompActive = { turns: 1 };
-const results = await Promise.all([
-	(async () => {
-		ompActive.turns += 1;
-		await new Promise((r) => setTimeout(r, 20));
-		ompActive.turns -= 1;
-		return "omp-sim";
-	})(),
-	handlers.get("input")![0]!({ type: "input", text: "agy:r concurrent research while omp active", source: "interactive" }, ctx),
-	handlers.get("input")![0]!({ type: "input", text: "/agy implement concurrent tiny edit", source: "interactive" }, ctx),
-]);
-const handledFlags = results.slice(1);
-for (const h of handledFlags) {
-	if (h?.handled) providerCalls += 0; // avoided
-	else providerCalls += 1;
-}
-// Ordinary prompt would call provider
-const ordinary = await handlers.get("input")![0]!({ type: "input", text: "normal omp question", source: "interactive" }, ctx);
-if (!ordinary?.handled) {
-	// would have called Cursor — count as not avoided
+// Front-door implement resolves worktrees from cwd — run inside the temp repo.
+const prevCwd = process.cwd();
+process.chdir(repo);
+let handledFlags: Array<{ handled?: boolean } | undefined> = [];
+let ordinary: { handled?: boolean } | undefined;
+try {
+	// Simulate an ordinary OMP turn "active" counter while AGY runs
+	const ompActive = { turns: 1 };
+	const results = await Promise.all([
+		(async () => {
+			ompActive.turns += 1;
+			await new Promise((r) => setTimeout(r, 20));
+			ompActive.turns -= 1;
+			return "omp-sim";
+		})(),
+		handlers.get("input")![0]!({ type: "input", text: "agy:r concurrent research while omp active", source: "interactive" }, ctx),
+		handlers.get("input")![0]!({ type: "input", text: "/agy implement concurrent tiny edit", source: "interactive" }, ctx),
+	]);
+	handledFlags = results.slice(1) as Array<{ handled?: boolean } | undefined>;
+	for (const h of handledFlags) {
+		if (h?.handled) providerCalls += 0; // avoided
+		else providerCalls += 1;
+	}
+	// Ordinary prompt would call provider
+	ordinary = await handlers.get("input")![0]!({ type: "input", text: "normal omp question", source: "interactive" }, ctx);
+	if (!ordinary?.handled) {
+		// would have called Cursor — count as not avoided
+	}
+} finally {
+	process.chdir(prevCwd);
 }
 
 const shadow = shadowDecision("implement fix flaky test under rate limit", "AGY_IMPLEMENT", "shadow-auto", {
