@@ -44,6 +44,7 @@
     "gen:native": "bun --cwd=../natives run gen:native",
     "gen:native:reset": "bun --cwd=../natives run gen:native:reset",
     "prepack": "bun run gen:tool-views && bun run gen:bundle",
+    "dev:live": "bun src/live-runtime/dev-live.ts",
     "bench:guard": "bun scripts/bench-guard.ts"
   },
   "dependencies": {
@@ -113,6 +114,14 @@
     "./async/*": {
       "types": "./src/async/*.ts",
       "import": "./src/async/*.ts"
+    },
+    "./live-runtime": {
+      "types": "./src/live-runtime/index.ts",
+      "import": "./src/live-runtime/index.ts"
+    },
+    "./live-runtime/*": {
+      "types": "./src/live-runtime/*.ts",
+      "import": "./src/live-runtime/*.ts"
     },
     "./autoresearch": {
       "types": "./src/autoresearch/index.ts",

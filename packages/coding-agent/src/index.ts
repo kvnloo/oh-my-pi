@@ -37,6 +37,7 @@ export * from "./modes/components";
 export * from "@oh-my-pi/pi-tui/theme";
 // SDK for programmatic usage
 export * from "./sdk";
+export * from "./live-runtime";
 export * from "./session/agent-session";
 // Auth and model registry
 export * from "./session/auth-storage";

@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ## [18.2.6] - 2026-09-18
+### Added
+
+- Added live-runtime attestation (`omp.runtime.v1`), `/runtime`-ready reload seams, same-profile reload broadcast registry, and `omp --dev-live` / `bun run dev:live` supervised warm reboot for core source changes.
 
 ### Fixed
 
