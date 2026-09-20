@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed backgrounded bash commands starting without naming themselves, so parallel async starts could not be told apart; the start notice now states the command and its working directory when that differs from the session directory ([#12607](https://github.com/can1357/oh-my-pi/issues/12607)).
+
 ## [18.6.2] - 2026-10-04
 
 ### Fixed
