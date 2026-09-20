@@ -411,7 +411,7 @@ Twenty-three backends. Pin one, or let `auto` walk the chain in order.
 | `firecrawl`  | `FIRECRAWL_API_KEY` (keyless fallback)    |
 | `brave`      | `BRAVE_API_KEY`                           |
 | `kimi`       | `/login kimi-code` or search key          |
-| `parallel`   | `PARALLEL_API_KEY`                        |
+| `parallel`   | `PARALLEL_API_KEY` (keyless fallback)     |
 | `synthetic`  | `SYNTHETIC_API_KEY`                       |
 | `searxng`    | self-hosted                               |
 | `duckduckgo` | no key                                    |
