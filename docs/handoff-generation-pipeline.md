@@ -114,6 +114,8 @@ Manual `/handoff` works regardless of the context-maintenance method order. To u
 
 Async compaction (`compaction.asyncEnabled`) may also generate the handoff document speculatively in the pre-threshold band and commit it instantly when the threshold is crossed; see `docs/compaction.md`.
 
+When `compaction.experimentalContextManagement` is enabled, notebook-backed rollover replaces the method-order summary and a notebook reminder replaces the speculative handoff; manual `/handoff` is unaffected. See [experimental notes-backed context windows](./compaction.md#experimental-notes-backed-context-windows).
+
 If auto generation returns no document, maintenance advances to the next configured method. `compaction.handoffSaveToDisk` defaults to `false`; when enabled, only auto-triggered handoffs write the extra markdown artifact.
 
 ## Controller/UI behavior
