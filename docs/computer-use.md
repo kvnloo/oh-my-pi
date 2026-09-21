@@ -26,9 +26,9 @@ tools:
 | `computer.display`   |   `all` | Composite every display, or select one native display ID. On Wayland the portal display ID is `wayland-portal-0`. |
 | `computer.maxWidth`  |  `3840` | Maximum screenshot width. Some model transports impose an effective coordinate-safe cap of 1280.                  |
 | `computer.maxHeight` |  `2400` | Maximum screenshot height. Some model transports impose an effective coordinate-safe cap of 896.                  |
-| `computer.jev`       |  `auto` | Optional Jev backend for `computer.decide()` (auto when TypeSafe is authenticated; off = rules/rerank only). |
+| `computer.jev`       |  `auto` | Optional Jev semantic backend for `computer.decide()` (auto when TypeSafe is authenticated; off = rules/rerank only). JEV does not grant permissions or establish verified truth. |
 
-There is no `computer.backend` setting: the native addon selects the platform backend. The `/computer`, `/computer on`, `/computer off`, and `/computer status` commands toggle or inspect the current session without writing config. Start a new session after changing settings files.
+`computer.decide()` is decision assistance, not an authorization boundary. JEV errors, unsupported states, or abstention fall back to the existing non-JEV path; consequential actions still obey the approval/capability rules below. Dogfood traces may later be evaluated against independent Tokenomics/verifier outcomes, but JEV agreement alone is not a success label.\n\nThere is no `computer.backend` setting: the native addon selects the platform backend. The `/computer`, `/computer on`, `/computer off`, and `/computer status` commands toggle or inspect the current session without writing config. Start a new session after changing settings files.
 
 `tools.approvalMode: write` allows inspection helpers (window listing, screenshots, AX reads, clipboard reads) and `computer.run` calls declared with `read_only: true`; it prompts for input and mutation helpers. An explicit `tools.approval.computer: allow | prompt | deny` overrides the mode.
 
