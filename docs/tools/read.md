@@ -80,7 +80,7 @@ Literal filesystem paths take precedence over selector interpretation, so an exi
    - URL reads with line selectors fetch/render into the URL cache as needed, then paginate the rendered text locally.
 3. It checks the internal URL router, including built-ins and MCP-advertised schemes.
    - `local://` resources backed by actual files are promoted into the local-file path so images, conversion, selectors, and snapshots behave like filesystem reads.
-   - `agent://` query extraction (`/path` or `?q=`) bypasses pagination and returns the extracted content directly.
+   - `agent://` slash-path JSON extraction (`/key/<index>/…`) bypasses pagination and returns the extracted content directly.
    - `artifact://` uses a bounded file-backed reader rather than loading the full artifact.
    - Other internal resources are paginated in memory by `#buildInMemoryTextResult()`.
 4. It prefers an existing literal filesystem path before treating selector-looking colons as archive, SQLite, PDF-image, or line-selector syntax.
@@ -234,7 +234,7 @@ Literal filesystem paths take precedence over selector interpretation, so an exi
    - `history://current/full` exposes the caller's complete current branch when `compaction.experimentalContextManagement` is enabled. It includes original text, tool outputs, entry IDs, and compaction boundaries. Use shared line/raw selectors such as `history://current/full:raw:1-200`; queries, fragments, extra paths, and trailing slashes are rejected. It requires a matching live session owner and never falls back to registry or disk lookup. Bare `history://current` still names an ordinary agent called `current`. See [experimental context windows](../compaction.md#experimental-notes-backed-context-windows).
 - `#handleInternalUrl()` behavior:
    - parses the URL with `parseInternalUrl()` so colons inside the host segment are legal
-   - for `agent://`, treats non-root path extraction or `?q=` extraction as a special no-pagination mode
+   - for `agent://`, treats non-root slash-path extraction as a special no-pagination mode
    - routes `artifact://` through a bounded artifact-file reader and large-output workflow hints
    - otherwise paginates the resolved text in memory
    - passes `immutable` through to `resolveFileDisplayMode()` so anchors are suppressed for immutable resources such as artifacts, skills, memory, and agent outputs
