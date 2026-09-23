@@ -12,11 +12,11 @@
    - `packages/coding-agent/src/tools/sqlite-reader.ts` — detect SQLite targets, parse selectors, render tables.
    - `packages/coding-agent/src/tools/fetch.ts` — URL parsing, fetch/render pipeline, URL cache/artifacts.
    - `packages/coding-agent/src/internal-urls/router.ts` — built-in internal-resource registry, including `ssh://` and `xd://`; MCP may advertise additional schemes.
-   - `packages/coding-agent/src/edit/notebook.ts` — convert `.ipynb` to editable `# %% [...] cell:N` text.
+   - `crates/pi-edit/src/notebook.rs` — convert `.ipynb` to editable `# %% [...] cell:N` text.
    - `packages/coding-agent/src/utils/cpuprofile.ts` / `sample-profile.ts` — summarize recognized profiler reports.
    - `packages/coding-agent/src/utils/file-display-mode.ts` — decide hashline vs line-number vs raw display.
    - `packages/coding-agent/src/workspace-tree.ts` — render directory trees.
-   - `packages/coding-agent/src/edit/file-snapshot-store.ts` — stores read lines for later hashline edit verification/recovery.
+   - `packages/coding-agent/src/edit/store.ts` — stores read lines for later hashline edit verification/recovery.
    - `packages/coding-agent/src/tools/index.ts` — registers `read: s => new ReadTool(s)`.
 
 ## Inputs
@@ -319,7 +319,7 @@ Notes: ...
    - source bytes cap `20 MiB`
    - post-resize inline output cap `300 KiB`
 - Unique suffix auto-resolution glob timeout: `5000` ms.
-- File snapshot store holds `256` paths with up to `4` versions each (`DEFAULT_MAX_PATHS` / `DEFAULT_MAX_VERSIONS_PER_PATH` in `packages/hashline/src/snapshots.ts`); files over `4 MiB` (`SNAPSHOT_MAX_BYTES`) are not snapshotted.
+- File snapshot store holds `256` paths with up to `4` versions each (`DEFAULT_MAX_PATHS` / `DEFAULT_MAX_VERSIONS_PER_PATH` in `crates/pi-edit/src/store.rs`); files over `4 MiB` (`SNAPSHOT_MAX_BYTES`) are not snapshotted.
 - An unbounded `artifact://<id>:raw` read is refused when the artifact exceeds `50 KiB`; use a bounded `:raw:N-M` range.
 
 ## Errors
