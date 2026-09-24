@@ -28,7 +28,7 @@ const MODEL = process.env.RLM_BENCH_MODEL || process.env.VLLM_MODEL || "Qwen/Qwe
 const API_KEY = process.env.RLM_BENCH_API_KEY || "";
 const SEARCH_CONTEXT = Math.max(32, Number.parseInt(process.env.RLM_BENCH_SEARCH_CONTEXT || "512", 10) || 512);
 
-type Arm = "native" | "fixed8k" | "search8k";
+type Arm = "full" | "fixed8k" | "search8k";
 
 interface Workload {
 	id: string;
@@ -190,7 +190,7 @@ function searchRanges(store: RlmStore, handle: string, body: string, patterns: s
 }
 
 function rangesForArm(store: RlmStore, handle: string, workload: Workload, arm: Arm): Range[] {
-	if (arm === "native") return [{ start: 0, end: workload.corpus.length }];
+	if (arm === "full") return [{ start: 0, end: workload.corpus.length }];
 	if (arm === "fixed8k") return [{ start: 0, end: Math.min(workload.corpus.length, QUERY_SLICE) }];
 	return searchRanges(store, handle, workload.corpus, workload.patterns);
 }
@@ -319,7 +319,7 @@ async function main(): Promise<void> {
 
 	for (let run = 1; run <= RUNS; run++) {
 		for (const workload of work) {
-			for (const arm of ["native", "fixed8k", "search8k"] as const) {
+			for (const arm of ["full", "fixed8k", "search8k"] as const) {
 				const row = await runOne(workload, arm, run);
 				fs.appendFileSync(OUT, JSON.stringify(row) + "\n");
 				console.log(
