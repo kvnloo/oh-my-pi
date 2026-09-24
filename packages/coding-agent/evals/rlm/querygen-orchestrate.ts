@@ -114,9 +114,9 @@ function workloads(): Workload[] {
 			description: "Failure cause is in the middle, outside stub head/tail preview.",
 			task: "What root cause caused the worker cleanup failure?",
 			corpus:
-				filler("cleanup-start", 14_000) +
+				filler("seg-a", 14_000) +
 				"\nworker cleanup failed root_cause=LEASE_EXPIRED_AFTER_DISPOSE phase=dispose\n" +
-				filler("cleanup-end", 14_000),
+				filler("seg-b", 14_000),
 			oraclePatterns: ["root_cause="],
 			expected: ["LEASE_EXPIRED_AFTER_DISPOSE"],
 		},
@@ -126,11 +126,11 @@ function workloads(): Workload[] {
 			description: "Expected type and runtime value are in separate regions.",
 			task: "Which type was expected, and what runtime type was actually received?",
 			corpus:
-				filler("types-a", 10_000) +
+				filler("seg-a", 10_000) +
 				"\nvalidation contract TYPE_EXPECTED=AuthConfig field=auth\n" +
-				filler("types-b", 13_000) +
+				filler("seg-b", 13_000) +
 				"\nruntime mismatch RUNTIME_ACTUAL=string field=auth\n" +
-				filler("types-c", 5_000),
+				filler("seg-c", 5_000),
 			oraclePatterns: ["TYPE_EXPECTED=", "RUNTIME_ACTUAL="],
 			expected: ["AuthConfig", "string"],
 		},
@@ -140,11 +140,11 @@ function workloads(): Workload[] {
 			description: "Configured and observed retry limits disagree.",
 			task: "Compare the configured retry limit with the retry limit actually used at runtime.",
 			corpus:
-				filler("retry-a", 9_000) +
+				filler("seg-a", 9_000) +
 				"\nsettings snapshot CONFIG_RETRY_LIMIT=5 source=user\n" +
-				filler("retry-b", 14_000) +
+				filler("seg-b", 14_000) +
 				"\nrequest trace RUNTIME_RETRY_LIMIT=2 source=effective-policy\n" +
-				filler("retry-c", 5_000),
+				filler("seg-c", 5_000),
 			oraclePatterns: ["CONFIG_RETRY_LIMIT=", "RUNTIME_RETRY_LIMIT="],
 			expected: ["CONFIG_RETRY_LIMIT=5", "RUNTIME_RETRY_LIMIT=2"],
 		},
@@ -154,9 +154,9 @@ function workloads(): Workload[] {
 			description: "Natural-language task must produce a useful ownership anchor.",
 			task: "Which component owns cleanup after cancellation?",
 			corpus:
-				filler("owner-a", 12_000) +
+				filler("seg-a", 12_000) +
 				"\ncancellation cleanup ownership dispose_owner=AgentSession lifecycle=terminal\n" +
-				filler("owner-b", 16_000),
+				filler("seg-b", 16_000),
 			oraclePatterns: ["cleanup ownership", "dispose_owner="],
 			expected: ["AgentSession"],
 		},
@@ -166,9 +166,9 @@ function workloads(): Workload[] {
 			description: "Task asks about event ordering rather than a known schema key.",
 			task: "What happens immediately before the worker abort event?",
 			corpus:
-				filler("event-a", 15_000) +
+				filler("seg-a", 15_000) +
 				"\nevent ordering before_worker_abort=lease_cancel then=worker_abort\n" +
-				filler("event-b", 13_000),
+				filler("seg-b", 13_000),
 			oraclePatterns: ["before_worker_abort=", "worker_abort"],
 			expected: ["lease_cancel"],
 		},
@@ -349,18 +349,25 @@ function parsePatterns(raw: string): string[] {
 
 async function generateWithModel(prompt: string): Promise<Generation> {
 	const t0 = performance.now();
-	const res = await fetch(BASE_URL + "/v1/chat/completions", {
-		method: "POST",
-		headers: authHeaders(),
-		body: JSON.stringify({
-			model: MODEL,
-			messages: [{ role: "user", content: prompt }],
-			max_tokens: 96,
-			temperature: 0,
-			stream: false,
-			response_format: { type: "json_object" },
-		}),
-	});
+	const request = async (structured: boolean) =>
+		fetch(BASE_URL + "/v1/chat/completions", {
+			method: "POST",
+			headers: authHeaders(),
+			body: JSON.stringify({
+				model: MODEL,
+				messages: [{ role: "user", content: prompt }],
+				max_tokens: 96,
+				temperature: 0,
+				stream: false,
+				...(structured ? { response_format: { type: "json_object" } } : {}),
+			}),
+		});
+
+	let res = await request(true);
+	if (!res.ok && [400, 404, 422].includes(res.status)) {
+		// Some OpenAI-compatible local servers do not implement response_format.
+		res = await request(false);
+	}
 	if (!res.ok) throw new Error("querygen provider " + res.status + ": " + (await res.text()).slice(0, 300));
 	const json = (await res.json()) as {
 		choices?: Array<{ message?: { content?: string } }>;
