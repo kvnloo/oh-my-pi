@@ -6,7 +6,7 @@ import { QUERY_SLICE } from "../../src/rlm";
 
 const OUT = path.join(import.meta.dir, "results", "evidence-ab.jsonl");
 
-type Arm = "native" | "fixed8k" | "search8k";
+type Arm = "full" | "fixed8k" | "search8k";
 
 interface Row {
 	run: number;
@@ -50,7 +50,7 @@ function pct(n: number): string {
 	return (n * 100).toFixed(1) + "%";
 }
 
-const arms: Arm[] = ["native", "fixed8k", "search8k"];
+const arms: Arm[] = ["full", "fixed8k", "search8k"];
 const summary = arms.map(arm => {
 	const a = rows.filter(row => row.arm === arm);
 	const withTokens = a.map(row => row.totalTokens).filter((v): v is number => v !== undefined);
@@ -100,11 +100,11 @@ for (const workload of workloads) {
 const backend = rows[0]!.backend;
 if (backend === "mechanism") {
 	let failed = 0;
-	const native = rows.filter(row => row.arm === "native");
+	const full = rows.filter(row => row.arm === "full");
 	const fixed = rows.filter(row => row.arm === "fixed8k");
 	const search = rows.filter(row => row.arm === "search8k");
 
-	const nativeAll = native.every(row => row.pass);
+	const fullAll = full.every(row => row.pass);
 	const searchAll = search.every(row => row.pass);
 	const searchCap = search.every(row => row.grantedBytes <= QUERY_SLICE + 256);
 	const exposesFixedFailure = workloads.some(workload => {
@@ -116,7 +116,7 @@ if (backend === "mechanism") {
 	const compressionGate = searchRatio <= 0.35;
 
 	const gates = [
-		["native evidence contains all expected facts", nativeAll],
+		["full-context proxy contains all expected facts", fullAll],
 		["search-selected evidence contains all expected facts", searchAll],
 		["search-selected grants stay near the 8 KiB cap", searchCap],
 		["at least one fixed-first-slice miss is recovered by search", exposesFixedFailure],
@@ -130,13 +130,13 @@ if (backend === "mechanism") {
 	}
 	if (failed) process.exit(1);
 	console.log("");
-	console.log("mechanism conclusion: fixed position is not a sufficient evidence policy; selection is load-bearing.");
+	console.log("mechanism conclusion: with a usable lexical query supplied, fixed position loses evidence that search-selected ranges recover under the same cap.");
 } else {
 	const fixed = summary.find(s => s.arm === "fixed8k")!;
 	const search = summary.find(s => s.arm === "search8k")!;
 	console.log("");
 	console.log(
-		"live delta search-vs-fixed: pass " +
+		"live delta query-specified-search-vs-fixed: pass " +
 			pct(search.passRate - fixed.passRate) +
 			", grant bytes " +
 			Math.round(search.avgGrantedBytes - fixed.avgGrantedBytes) +
@@ -145,5 +145,5 @@ if (backend === "mechanism") {
 				? (search.avgTotalTokens - fixed.avgTotalTokens).toFixed(1)
 				: "n/a"),
 	);
-	console.log("live runs are descriptive; do not promote architecture from a single model/sample.");
+	console.log("live runs are descriptive; this is not native OMP end-to-end and does not test query generation.");
 }
