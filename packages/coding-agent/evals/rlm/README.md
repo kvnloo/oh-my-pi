@@ -124,3 +124,63 @@ Decision rule:
 4. only after query generation works do we run an end-to-end native OMP vs RLM
    agent benchmark measuring root + worker tokens, latency, retries, cost, and
    task success.
+
+
+## Query-generation gate
+
+After the clean evidence-selection A/B passes, the next uncertainty is whether a
+cheap helper can form useful literal searches without seeing the hidden corpus.
+
+`querygen-orchestrate.ts` gives every non-oracle arm only:
+
+- the user task;
+- the tool-result source name;
+- the existing RLM stub preview (240 chars from the head + 240 from the tail).
+
+The hidden corpus, expected answer tokens, and oracle patterns are never passed
+to the generator.
+
+Arms:
+
+| arm | purpose |
+|-----|---------|
+| `oracle` | authored search patterns; retrieval upper bound only |
+| `lexical` | deterministic task + stub baseline; essentially zero model cost |
+| `model` | live cheap-model query generator with the same visible inputs |
+
+The experiment stops at **retrieval sufficiency**. It does not call the evidence
+answer worker, so a miss is attributable to query formation/search rather than
+answer-generation quality.
+
+Offline fixture/baseline check:
+
+```bash
+cd packages/coding-agent
+bun evals/rlm/querygen-orchestrate.ts
+bun evals/rlm/querygen-report.ts
+```
+
+Live cheap-model run:
+
+```bash
+RLM_QUERYGEN_LIVE=1 \
+RLM_QUERYGEN_RUNS=5 \
+RLM_QUERYGEN_BASE_URL=http://127.0.0.1:8000 \
+RLM_QUERYGEN_MODEL=Qwen/Qwen2.5-1.5B-Instruct \
+bun evals/rlm/querygen-orchestrate.ts
+
+bun evals/rlm/querygen-report.ts
+```
+
+Any OpenAI-compatible endpoint can be used. Set `RLM_QUERYGEN_API_KEY` when
+needed. Servers that reject `response_format` are retried without it.
+
+The provisional promotion bar is deliberately simple:
+
+1. oracle retrieval must remain 100%, otherwise the fixture/search policy is
+   invalid;
+2. the model should retain at least 80% of oracle retrieval success;
+3. the model must not trail the deterministic lexical baseline;
+4. query-generation tokens are included in the reported system-token proxy;
+5. even a pass only promotes us to a real-trace / end-to-end experiment — it
+   does **not** justify more RLM runtime architecture.
