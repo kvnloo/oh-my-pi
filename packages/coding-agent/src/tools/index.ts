@@ -648,9 +648,6 @@ export async function createTools(session: ToolSession, toolNames?: string[]): P
 			if (!requestedTools.includes("context_notes")) requestedTools.push("context_notes");
 			if (!requestedTools.includes("new_context")) requestedTools.push("new_context");
 		}
-		if (rlmEnabled(session) && !requestedTools.includes("rlm")) {
-			requestedTools.push("rlm");
-		}
 
 		if (goalModeActive && !requestedTools.includes("goal")) {
 			requestedTools.push("goal");

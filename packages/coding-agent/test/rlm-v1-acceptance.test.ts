@@ -247,8 +247,15 @@ describe("RFC v1: context.engine exclusive routing", () => {
 		expect(rlmIsExclusiveEngine(session)).toBe(true);
 	});
 
-	test("native default disables rlm", () => {
+	test("default settings enable rlm and context.engine=rlm", () => {
 		const settings = Settings.isolated({});
+		const session = { settings } as { settings: Settings };
+		expect(getContextEngine(session)).toBe("rlm");
+		expect(rlmEnabled(session)).toBe(true);
+	});
+
+	test("native context engine disables rlm when rlm.enabled is false", () => {
+		const settings = Settings.isolated({ "context.engine": "native", "rlm.enabled": false });
 		const session = { settings } as { settings: Settings };
 		expect(getContextEngine(session)).toBe("native");
 		expect(rlmEnabled(session)).toBe(false);

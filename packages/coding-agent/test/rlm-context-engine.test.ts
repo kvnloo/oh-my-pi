@@ -143,7 +143,7 @@ describe("RLM tool wrap", () => {
 
 	test("createTools includes rlm only when enabled", async () => {
 		const { createTools } = await import("../src/tools");
-		const offSettings = Settings.isolated({ "rlm.enabled": false });
+		const offSettings = Settings.isolated({ "rlm.enabled": false, "context.engine": "native" });
 		const offSession = { cwd: "/tmp/rlm-off", settings: offSettings } as ToolSession;
 		const offTools = await createTools(offSession);
 		expect(offTools.some(tool => tool.name === "rlm")).toBe(false);
@@ -157,7 +157,7 @@ describe("RLM tool wrap", () => {
 
 describe("RlmTool", () => {
 	test("createIf is null when disabled", () => {
-		const settings = Settings.isolated({ "rlm.enabled": false });
+		const settings = Settings.isolated({ "rlm.enabled": false, "context.engine": "native" });
 		expect(RlmTool.createIf({ cwd: "/tmp", settings } as ToolSession)).toBeNull();
 	});
 

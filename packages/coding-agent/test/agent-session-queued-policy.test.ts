@@ -125,7 +125,14 @@ describe("queued user delivery policy", () => {
 			sessionManager: manager,
 			modelRegistry: registry,
 			extensionRunner: runner,
-			settings: options.settings ?? Settings.isolated({ "compaction.enabled": false, "todo.enabled": false }),
+			settings:
+				options.settings ??
+				Settings.isolated({
+					"compaction.enabled": false,
+					"todo.enabled": false,
+					"rlm.enabled": false,
+					"context.engine": "native",
+				}),
 			toolRegistry: new Map(options.tools?.map(tool => [tool.name, tool])),
 			builtInToolNames: options.tools?.map(tool => tool.name),
 			rebuildSystemPrompt,
