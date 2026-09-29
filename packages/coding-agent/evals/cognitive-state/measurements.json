@@ -1,0 +1,360 @@
+{
+  "schema": "omp.cognitive_state.measure.v1",
+  "harness": "omp",
+  "donor_spill": {
+    "ref": "kvnloo/oh-my-pi#77:packages/coding-agent/src/rlm/store.ts#stubFor",
+    "spill_bytes": 20480
+  },
+  "public_evidence_locators": [
+    "kvnloo/z0intelligence:src/z0int/context_resolve.py:SCHEMA",
+    "kvnloo/oh-my-pi#77:packages/coding-agent/src/rlm/store.ts:RLM_DEFAULT_SPILL_BYTES",
+    "kvnloo/z0evals#56:harness-matrix",
+    "eval-fixture:cap@v1",
+    "eval-fixture:cap@v2",
+    "eval-fixture:jsonl@retained",
+    "eval-fixture:jsonl@deleted",
+    "eval-fixture:old@2020"
+  ],
+  "questions": [
+    {
+      "question_id": "exact-identifier",
+      "mode": "shadow",
+      "sent": "native",
+      "injected": false,
+      "answer_supported": false,
+      "abstained": false,
+      "verified": false,
+      "evidence_refs": [
+        "kvnloo/z0intelligence:src/z0int/context_resolve.py:SCHEMA"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 44,
+      "would_send_bytes": 573,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 44,
+        "rlm_spill_bytes": 44,
+        "state_packet_bytes": 573
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "exact-identifier",
+      "mode": "canary",
+      "sent": "state-packet",
+      "injected": true,
+      "answer_supported": true,
+      "abstained": false,
+      "verified": true,
+      "evidence_refs": [
+        "kvnloo/z0intelligence:src/z0int/context_resolve.py:SCHEMA"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 600,
+      "would_send_bytes": 573,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 44,
+        "rlm_spill_bytes": 44,
+        "state_packet_bytes": 573
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "latest-vs-superseded",
+      "mode": "shadow",
+      "sent": "native",
+      "injected": false,
+      "answer_supported": false,
+      "abstained": false,
+      "verified": false,
+      "evidence_refs": [
+        "eval-fixture:cap@v1",
+        "eval-fixture:cap@v2"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 48,
+      "would_send_bytes": 837,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 48,
+        "rlm_spill_bytes": 48,
+        "state_packet_bytes": 837
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "latest-vs-superseded",
+      "mode": "canary",
+      "sent": "state-packet",
+      "injected": true,
+      "answer_supported": true,
+      "abstained": false,
+      "verified": true,
+      "evidence_refs": [
+        "eval-fixture:cap@v1",
+        "eval-fixture:cap@v2"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 868,
+      "would_send_bytes": 837,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 48,
+        "rlm_spill_bytes": 48,
+        "state_packet_bytes": 837
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "cross-harness-fact",
+      "mode": "shadow",
+      "sent": "native",
+      "injected": false,
+      "answer_supported": false,
+      "abstained": false,
+      "verified": false,
+      "evidence_refs": [
+        "kvnloo/z0evals#56:harness-matrix"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 46,
+      "would_send_bytes": 753,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 46,
+        "rlm_spill_bytes": 46,
+        "state_packet_bytes": 753
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "cross-harness-fact",
+      "mode": "canary",
+      "sent": "state-packet",
+      "injected": true,
+      "answer_supported": true,
+      "abstained": false,
+      "verified": true,
+      "evidence_refs": [
+        "kvnloo/z0evals#56:harness-matrix"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 782,
+      "would_send_bytes": 753,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 46,
+        "rlm_spill_bytes": 46,
+        "state_packet_bytes": 753
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "contradiction-provenance",
+      "mode": "shadow",
+      "sent": "native",
+      "injected": false,
+      "answer_supported": false,
+      "abstained": false,
+      "verified": false,
+      "evidence_refs": [
+        "eval-fixture:jsonl@retained",
+        "eval-fixture:jsonl@deleted"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 52,
+      "would_send_bytes": 950,
+      "evidence_quality": "UNSUPPORTED",
+      "arms": {
+        "native_context_bytes": 52,
+        "rlm_spill_bytes": 52,
+        "state_packet_bytes": 950
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "contradiction-provenance",
+      "mode": "canary",
+      "sent": "state-packet",
+      "injected": true,
+      "answer_supported": false,
+      "abstained": false,
+      "verified": true,
+      "evidence_refs": [
+        "eval-fixture:jsonl@retained",
+        "eval-fixture:jsonl@deleted"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 985,
+      "would_send_bytes": 950,
+      "evidence_quality": "UNSUPPORTED",
+      "arms": {
+        "native_context_bytes": 52,
+        "rlm_spill_bytes": 52,
+        "state_packet_bytes": 950
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "missing-evidence",
+      "mode": "shadow",
+      "sent": "native",
+      "injected": false,
+      "answer_supported": false,
+      "abstained": true,
+      "verified": false,
+      "evidence_refs": [],
+      "raw_source_reads": 0,
+      "context_bytes": 44,
+      "would_send_bytes": 399,
+      "evidence_quality": "MISSED_EVIDENCE",
+      "arms": {
+        "native_context_bytes": 44,
+        "rlm_spill_bytes": 44,
+        "state_packet_bytes": 399
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "missing-evidence",
+      "mode": "canary",
+      "sent": "state-packet",
+      "injected": true,
+      "answer_supported": false,
+      "abstained": true,
+      "verified": true,
+      "evidence_refs": [],
+      "raw_source_reads": 0,
+      "context_bytes": 426,
+      "would_send_bytes": 399,
+      "evidence_quality": "MISSED_EVIDENCE",
+      "arms": {
+        "native_context_bytes": 44,
+        "rlm_spill_bytes": 44,
+        "state_packet_bytes": 399
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "minimum-sufficient",
+      "mode": "shadow",
+      "sent": "native",
+      "injected": false,
+      "answer_supported": false,
+      "abstained": false,
+      "verified": false,
+      "evidence_refs": [
+        "kvnloo/z0intelligence:src/z0int/context_resolve.py:SCHEMA",
+        "kvnloo/oh-my-pi#77:packages/coding-agent/src/rlm/store.ts:RLM_DEFAULT_SPILL_BYTES"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 46,
+      "would_send_bytes": 963,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 46,
+        "rlm_spill_bytes": 46,
+        "state_packet_bytes": 963
+      },
+      "duplicate_injection": false
+    },
+    {
+      "question_id": "minimum-sufficient",
+      "mode": "canary",
+      "sent": "state-packet",
+      "injected": true,
+      "answer_supported": true,
+      "abstained": false,
+      "verified": true,
+      "evidence_refs": [
+        "kvnloo/z0intelligence:src/z0int/context_resolve.py:SCHEMA",
+        "kvnloo/oh-my-pi#77:packages/coding-agent/src/rlm/store.ts:RLM_DEFAULT_SPILL_BYTES"
+      ],
+      "raw_source_reads": 0,
+      "context_bytes": 992,
+      "would_send_bytes": 963,
+      "evidence_quality": "SUPPORTED",
+      "arms": {
+        "native_context_bytes": 46,
+        "rlm_spill_bytes": 46,
+        "state_packet_bytes": 963
+      },
+      "duplicate_injection": false
+    }
+  ],
+  "growth": [
+    {
+      "turn": 1,
+      "arms": {
+        "native_context_bytes": 80054,
+        "rlm_spill_bytes": 747,
+        "state_packet_bytes": 963
+      },
+      "growth": {
+        "native_context_bytes": 0,
+        "rlm_spill_bytes": 0,
+        "state_packet_bytes": 0
+      }
+    },
+    {
+      "turn": 2,
+      "arms": {
+        "native_context_bytes": 160062,
+        "rlm_spill_bytes": 1448,
+        "state_packet_bytes": 963
+      },
+      "growth": {
+        "native_context_bytes": 80008,
+        "rlm_spill_bytes": 701,
+        "state_packet_bytes": 0
+      }
+    },
+    {
+      "turn": 3,
+      "arms": {
+        "native_context_bytes": 240070,
+        "rlm_spill_bytes": 2149,
+        "state_packet_bytes": 963
+      },
+      "growth": {
+        "native_context_bytes": 80008,
+        "rlm_spill_bytes": 701,
+        "state_packet_bytes": 0
+      }
+    },
+    {
+      "turn": 4,
+      "arms": {
+        "native_context_bytes": 320078,
+        "rlm_spill_bytes": 2850,
+        "state_packet_bytes": 963
+      },
+      "growth": {
+        "native_context_bytes": 80008,
+        "rlm_spill_bytes": 701,
+        "state_packet_bytes": 0
+      }
+    }
+  ],
+  "turn4_native_bytes": 320078,
+  "live": {
+    "z0int": {
+      "retrieval_capability": "z0int.context_resolve.v1",
+      "revision": "c4a4554d8a3874b456c46feef6ea937993af744a",
+      "evidence_refs": [
+        "kvnloo/z0intelligence:src/z0int/context_resolve.py"
+      ],
+      "raw_source_reads": 1,
+      "gaps": []
+    },
+    "agentsview": {
+      "retrieval_capability": "agentsview.search",
+      "evidence_refs": [],
+      "raw_source_reads": 0,
+      "gaps": [
+        "agentsview: search unavailable (1)"
+      ]
+    }
+  }
+}
