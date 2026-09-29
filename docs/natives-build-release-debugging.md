@@ -62,7 +62,7 @@ Notes:
 - `--platforms=<the addon's platform>`
 - `--compilation_mode=opt`
 - `@rules_rust//rust/settings:lto=thin`
-- extra rustc flags `-Ccodegen-units=16 -Cstrip=symbols`
+- extra rustc flags `-Ccodegen-units=16` plus `-Cstrip=symbols`, or `-Cstrip=none -Clink-arg=-Wl,-x,-S` on darwin (stripped at link time — rustc's `rust-objcopy` strip corrupts minos ≥ 12.0 dylibs; see `.bazelrc`)
 
 This mirrors the old cargo `ci` profile. Because the profile lives **in the transition**, a bare `bazel build //:natives-<t>` is always release-grade regardless of `-c`, and every addon shares one cache entry per (platform, source) pair. The rule then symlinks the produced shared library to the loader's canonical `pi_natives.<platform>-<arch>[-<variant>].node` name, scoped under the rule name (`bazel-bin/natives-<t>/…`) so gnu/musl outputs with identical basenames cannot collide at the package level.
 
