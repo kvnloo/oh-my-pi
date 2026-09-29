@@ -117,8 +117,8 @@ export const FROZEN_QUESTIONS: readonly FrozenQuestion[] = [
 		evidence_ids: ["z0int:context_resolve"],
 	},
 	{
-		id: "latest-vs-superseded",
-		family: "latest-vs-superseded",
+		id: "supersession",
+		family: "supersession",
 		prompt: "Which eval-fixture-cap is current, and which value remains inspectable as superseded?",
 		needs: [{ id: "cap", description: "current eval fixture cap", required: true }],
 		expected_action: "answer",
@@ -127,8 +127,8 @@ export const FROZEN_QUESTIONS: readonly FrozenQuestion[] = [
 		evidence_ids: ["eval-fixture:cap:v1", "eval-fixture:cap:v2"],
 	},
 	{
-		id: "cross-harness-fact",
-		family: "cross-harness-session-fact",
+		id: "cross-harness",
+		family: "cross-harness",
 		prompt: "Which fields does z0evals#56 require on every harness receipt row?",
 		needs: [{ id: "harness-fields", description: "public harness receipt fields", required: true }],
 		expected_action: "answer",
@@ -137,7 +137,7 @@ export const FROZEN_QUESTIONS: readonly FrozenQuestion[] = [
 		evidence_ids: ["z0evals:56:harness-row"],
 	},
 	{
-		id: "contradiction-provenance",
+		id: "contradiction",
 		family: "contradiction",
 		prompt: "Two eval-fixture-jsonl sources disagree. Report both with provenance. Do not pick a winner.",
 		needs: [{ id: "jsonl", description: "both jsonl fixture claims", required: true }],
@@ -157,8 +157,8 @@ export const FROZEN_QUESTIONS: readonly FrozenQuestion[] = [
 		evidence_ids: ["agentsview:standup-2024-01-01"],
 	},
 	{
-		id: "minimum-sufficient",
-		family: "minimum-sufficient",
+		id: "minimal-context",
+		family: "minimal-context",
 		prompt: "Which schema id and donor spill default are sufficient without replaying the tool transcript?",
 		needs: [
 			{ id: "schema", description: "schema id", required: true },

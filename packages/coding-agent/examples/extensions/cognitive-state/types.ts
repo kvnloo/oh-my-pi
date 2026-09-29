@@ -113,27 +113,41 @@ export interface ArmBytes {
 	state_packet_bytes: number;
 }
 
-export interface HarnessReceipt {
+export const UNIFIED_RECEIPT_SCHEMA = "z0eval.unified_memory_receipt.v0";
+
+/** Wire object. No arm, mode, or growth fields — those stay in OMP analysis. */
+export interface UnifiedEvidenceRef {
+	source_id: string;
+	source_version: string;
+	trust_class: string;
+	locator_hash?: string;
+}
+
+export interface UnifiedMemoryReceipt {
+	schema: typeof UNIFIED_RECEIPT_SCHEMA;
 	harness: "omp";
 	question_id: string;
 	session_id: string;
 	trace_id: string;
-	source_revision: string;
+	harness_revision: string;
 	retrieval_capability: string;
-	evidence_refs: string[];
+	retrieval_ok: boolean;
 	injected: boolean;
 	answer_supported: boolean;
-	abstained: boolean;
-	raw_source_reads: number;
-	context_bytes: number;
-	latency_ms: number;
-	duplicate_injection: boolean;
 	verified: boolean;
+	abstained: boolean;
+	duplicate_injection: boolean;
+	evidence_refs: UnifiedEvidenceRef[];
+	latency_ms: number;
+	context_bytes: number;
+	raw_source_reads: number;
+}
+
+export interface OmpContextAnalysis {
 	mode: "shadow" | "canary";
 	sent: "native" | "state-packet";
 	would_send_bytes: number;
 	evidence_quality: EvidenceQualityLabel;
 	arms: ArmBytes;
 	root_context_growth_per_turn: ArmBytes;
-	replayed: boolean;
 }

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "bun:test";
 import {
 	PUBLIC_EVIDENCE,
@@ -14,6 +15,7 @@ import {
 	messageText,
 	resolveFromAgentsView,
 	resolveFromZ0int,
+	validateUnifiedReceipt,
 } from "../examples/extensions/cognitive-state/index.ts";
 import type { ArmBytes, ContextMessage, EvidenceRef } from "../examples/extensions/cognitive-state/index.ts";
 import { growthFromPrevious } from "../examples/extensions/cognitive-state/index.ts";
@@ -49,10 +51,10 @@ describe("cognitive-state context seam", () => {
 		expect(result.replacement).toBeUndefined();
 		expect(result.injected).toBe(false);
 		expect(result.sent).toBe("native");
-		expect(result.receipt?.would_send_bytes).toBeGreaterThan(0);
+		expect(result.analysis?.would_send_bytes).toBeGreaterThan(0);
 		expect(result.receipt?.context_bytes).toBe(contextBytes(native));
 		expect(result.visibleText).not.toContain("z0.cognitive_state.v1");
-		expect(result.receipt?.evidence_refs).toContain("kvnloo/z0intelligence:src/z0int/context_resolve.py:SCHEMA");
+		expect(result.receipt?.evidence_refs.some(ref => ref.source_id === "z0int:context_resolve" && ref.trust_class === "code")).toBe(true);
 		expect(JSON.stringify(native)).toBe(before);
 		expect(receipt.lines).toHaveLength(1);
 	});
@@ -102,7 +104,7 @@ describe("z0evals#56 canary proofs", () => {
 		expect(result.receipt?.injected).toBe(true);
 		expect(result.receipt?.answer_supported).toBe(true);
 		expect(result.receipt?.verified).toBe(true);
-		expect(result.receipt?.evidence_quality).toBe("SUPPORTED");
+		expect(result.analysis?.evidence_quality).toBe("SUPPORTED");
 		expect(result.receipt?.abstained).toBe(false);
 	});
 
@@ -118,7 +120,7 @@ describe("z0evals#56 canary proofs", () => {
 		expect(result.receipt?.abstained).toBe(true);
 		expect(result.receipt?.answer_supported).toBe(false);
 		expect(result.receipt?.verified).toBe(false);
-		expect(result.receipt?.evidence_quality).toBe("MISSED_EVIDENCE");
+		expect(result.analysis?.evidence_quality).toBe("MISSED_EVIDENCE");
 	});
 
 	it("abstains on the frozen missing-evidence question instead of inventing a fact", async () => {
@@ -136,8 +138,8 @@ describe("z0evals#56 canary proofs", () => {
 	it("replay does not append a second receipt or a second packet", async () => {
 		const receipt = new ReceiptLog();
 		const config = { ...base, mode: "canary" as const, receipt };
-		const first = await handleCognitiveStateContext({ type: "context", messages: marked("cross-harness-fact") }, config);
-		const second = await handleCognitiveStateContext({ type: "context", messages: marked("cross-harness-fact") }, config);
+		const first = await handleCognitiveStateContext({ type: "context", messages: marked("cross-harness") }, config);
+		const second = await handleCognitiveStateContext({ type: "context", messages: marked("cross-harness") }, config);
 		expect(receipt.lines).toHaveLength(1);
 		expect(second.replayed).toBe(true);
 		expect(second.receipt?.duplicate_injection).toBe(false);
@@ -148,7 +150,7 @@ describe("z0evals#56 canary proofs", () => {
 
 	it("supersedes the current claim and keeps the older claim inspectable", async () => {
 		const result = await handleCognitiveStateContext(
-			{ type: "context", messages: marked("latest-vs-superseded") },
+			{ type: "context", messages: marked("supersession") },
 			{ ...base, mode: "canary" },
 		);
 		expect(result.visibleText).toContain("eval-fixture-cap=20480");
@@ -177,7 +179,7 @@ describe("z0evals#56 canary proofs", () => {
 
 	it("keeps both sides of a contradiction with provenance", async () => {
 		const result = await handleCognitiveStateContext(
-			{ type: "context", messages: marked("contradiction-provenance") },
+			{ type: "context", messages: marked("contradiction") },
 			{ ...base, mode: "canary" },
 		);
 		expect(result.visibleText).toContain("eval-fixture-jsonl: retained");
@@ -186,7 +188,7 @@ describe("z0evals#56 canary proofs", () => {
 		expect(result.visibleText).not.toContain("JSONL-DELETED-WINNER");
 		expect(result.receipt?.answer_supported).toBe(false);
 		expect(result.receipt?.verified).toBe(true);
-		expect(result.receipt?.evidence_quality).toBe("UNSUPPORTED");
+		expect(result.analysis?.evidence_quality).toBe("UNSUPPORTED");
 	});
 });
 
@@ -204,7 +206,7 @@ describe("arms A/B/C", () => {
 
 	it("state-packet growth stays flat while native context grows with the transcript", async () => {
 		const turns: ContextMessage[][] = [];
-		let native: ContextMessage[] = marked("minimum-sufficient");
+		let native: ContextMessage[] = marked("minimal-context");
 		const growthC: number[] = [];
 		const growthA: number[] = [];
 		let previous: ArmBytes | undefined;
@@ -285,5 +287,25 @@ describe("evidence adapters", () => {
 		const down = await resolveFromZ0int("schema", async () => ({ code: 1, stdout: "", stderr: "no module" }));
 		expect(down.evidence).toHaveLength(0);
 		expect(down.gaps[0]).toContain("z0int: resolver unavailable");
+	});
+});
+
+describe("z0eval receipt schema", () => {
+	it("canary rows match z0eval.unified_memory_receipt.v0 and omit arm fields", async () => {
+		const schema = JSON.parse(
+			readFileSync(new URL("../evals/cognitive-state/receipt.schema.json", import.meta.url), "utf8"),
+		) as { required?: string[]; properties?: Record<string, unknown> };
+		const ids = ["exact-identifier", "supersession", "cross-harness", "contradiction", "missing-evidence", "minimal-context"];
+		for (const id of ids) {
+			const result = await handleCognitiveStateContext(
+				{ type: "context", messages: marked(id) },
+				{ ...base, mode: "canary", traceId: `schema-${id}` },
+			);
+			const errors = validateUnifiedReceipt(result.receipt, schema);
+			expect(errors).toEqual([]);
+			expect(result.receipt && "arms" in result.receipt).toBe(false);
+			expect(result.receipt?.evidence_refs.every(ref => typeof ref.source_id === "string" && typeof ref.locator_hash === "string")).toBe(true);
+		}
+		expect(ids).toHaveLength(6);
 	});
 });

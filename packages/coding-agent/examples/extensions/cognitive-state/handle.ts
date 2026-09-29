@@ -1,8 +1,9 @@
-import type { ContextMessage, EvidenceQualityLabel, EvidenceRef, FrozenQuestion, HarnessReceipt } from "./types.ts";
+import type { ContextMessage, EvidenceQualityLabel, EvidenceRef, FrozenQuestion, OmpContextAnalysis, UnifiedMemoryReceipt } from "./types.ts";
 import { RLM_DONOR_SPILL_BYTES } from "./types.ts";
 import { FROZEN_QUESTIONS, PUBLIC_EVIDENCE, matchFrozenQuestion } from "./frozen.ts";
 import { growthFromPrevious, measureArms } from "./measure.ts";
 import { compileCognitiveState, renderStatePacket, verifyAnswerSupport } from "./packet.ts";
+import { assertShaRevision, toEvidenceRef } from "./receipt.ts";
 import { contextBytes, messageText } from "./spill.ts";
 
 export type CognitiveMode = "off" | "shadow" | "canary";
@@ -15,16 +16,16 @@ export interface CognitiveStateConfig {
 	evidence?: readonly EvidenceRef[];
 	receipt?: ReceiptLog;
 	sourceRevision?: string;
-	previousArms?: HarnessReceipt["arms"];
+	previousArms?: OmpContextAnalysis["arms"];
 }
 
 export class ReceiptLog {
-	readonly lines: HarnessReceipt[] = [];
+	readonly lines: UnifiedMemoryReceipt[] = [];
 	#seen = new Set<string>();
 
 	/** Append-only eval artifact. Replay of the same key is not a second injection. */
-	record(row: HarnessReceipt): boolean {
-		const key = `${row.session_id}|${row.trace_id}|${row.question_id}|${row.revision}|${row.mode}|${row.sent}`;
+	record(row: UnifiedMemoryReceipt): boolean {
+		const key = `${row.session_id}|${row.trace_id}|${row.question_id}|${row.harness_revision}`;
 		if (this.#seen.has(key)) return false;
 		this.#seen.add(key);
 		this.lines.push(row);
@@ -38,7 +39,8 @@ export interface HandleResult {
 	replacement?: ContextMessage[];
 	sent: "native" | "state-packet" | "off";
 	visibleText: string;
-	receipt?: HarnessReceipt;
+	receipt?: UnifiedMemoryReceipt;
+	analysis?: OmpContextAnalysis;
 	replayed: boolean;
 }
 
@@ -114,29 +116,35 @@ export async function handleCognitiveStateContext(
 	const arms = measureArms(native, packetText, config.spillBytes ?? RLM_DONOR_SPILL_BYTES);
 	const verdict = question ? verifyAnswerSupport(packetText, packet, question) : undefined;
 	const sent = canary ? "state-packet" : "native";
-	const receipt: HarnessReceipt = {
+	const requiredIds = question?.evidence_ids ?? [];
+	const found = new Set(selected.map(ref => ref.source_id));
+	const retrievalOk = requiredIds.length === 0 ? selected.length > 0 : requiredIds.every(id => found.has(id));
+	const receipt: UnifiedMemoryReceipt = {
+		schema: "z0eval.unified_memory_receipt.v0",
 		harness: "omp",
 		question_id: question?.id ?? "unscoped",
 		session_id: config.sessionId,
 		trace_id: config.traceId,
-		source_revision: config.sourceRevision ?? "unspecified",
+		harness_revision: assertShaRevision(config.sourceRevision ?? ""),
 		retrieval_capability: packet.retrieval_capability,
-		evidence_refs: packet.evidence.map(ref => ref.locator),
+		retrieval_ok: retrievalOk,
 		injected: canary,
 		answer_supported: canary ? (verdict?.answer_supported ?? false) : false,
-		abstained: packet.next_action === "ABSTAIN",
-		raw_source_reads: packet.raw_source_reads,
-		context_bytes: canary ? contextBytes(sentMessages) : contextBytes(native),
-		latency_ms: performance.now() - started,
-		duplicate_injection: false,
 		verified: canary ? (verdict?.verified ?? false) : false,
+		abstained: packet.next_action === "ABSTAIN",
+		duplicate_injection: false,
+		evidence_refs: packet.evidence.map(toEvidenceRef),
+		latency_ms: Math.max(0, performance.now() - started),
+		context_bytes: canary ? contextBytes(sentMessages) : contextBytes(native),
+		raw_source_reads: packet.raw_source_reads,
+	};
+	const analysis: OmpContextAnalysis = {
 		mode: canary ? "canary" : "shadow",
 		sent,
 		would_send_bytes: Buffer.byteLength(packetText, "utf8"),
 		evidence_quality: quality(verdict?.answer_supported ?? false, packet.next_action === "ABSTAIN"),
 		arms,
 		root_context_growth_per_turn: growthFromPrevious(arms, config.previousArms),
-		replayed: false,
 	};
 
 	let appended = true;
@@ -148,7 +156,8 @@ export async function handleCognitiveStateContext(
 			replacement,
 			sent,
 			visibleText: canary ? packetText : native.map(messageText).join("\n"),
-			receipt: { ...receipt, replayed: true, duplicate_injection: false },
+			receipt,
+			analysis,
 			replayed: true,
 		};
 	}
@@ -159,6 +168,7 @@ export async function handleCognitiveStateContext(
 		sent,
 		visibleText: canary ? packetText : native.map(messageText).join("\n"),
 		receipt,
+		analysis,
 		replayed: false,
 	};
 }
