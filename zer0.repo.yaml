@@ -1,0 +1,125 @@
+version: 1
+repo: kvnloo/oh-my-pi
+id: oh-my-pi
+component: oh-my-pi
+kind: component
+summary: Zer0's pinned OMP canary runtime: coding-agent execution, RLM context spill, typed Jev decisions, handsfree/computer-use staging, provider/model integration, native tooling, and auditable session surfaces.
+
+architecture:
+  subsystems:
+    - id: coding-agent-runtime
+      name: Coding agent runtime
+      kind: execution
+      summary: Owns the interactive model/tool loop, session lifecycle, built-in tools, subagent/task execution, slash commands, and runtime orchestration.
+      paths:
+        - packages/coding-agent/
+        - packages/agent/
+      depends_on: []
+
+    - id: rlm-context-spill
+      name: RLM context spill
+      kind: context
+      summary: Externalizes large working context behind addressable RLM state, subcalls, and Tokenomics-aware accounting instead of replaying all content through the active frontier window.
+      paths:
+        - packages/coding-agent/src/rlm/
+        - packages/coding-agent/evals/rlm/
+        - docs/tools/rlm.md
+      depends_on: [coding-agent-runtime]
+
+    - id: typed-decision-hotpath
+      name: Typed decision hotpath
+      kind: decision
+      summary: Hosts bounded Jev-assisted choices for explicit finite decision surfaces such as computer-use decisions without granting the decision backend execution authority.
+      paths:
+        - packages/coding-agent/src/computer/decide.ts
+        - packages/coding-agent/src/computer/decide-bridge.ts
+        - packages/ai/src/registry/jev-auth.ts
+        - python/omp-hud/src/omp_hud/jev_decide.py
+      depends_on: [coding-agent-runtime]
+
+    - id: computer-handsfree
+      name: Computer-use and handsfree stage manager
+      kind: interaction
+      summary: Coordinates window/layout intent, supervised computer actions, handsfree controls, HUD behavior, and safety policy around desktop execution.
+      paths:
+        - packages/coding-agent/src/computer/
+        - packages/coding-agent/src/tools/computer/
+        - docs/computer-use.md
+        - docs/handsfree-demo-features.md
+        - python/omp-hud/
+        - scripts/omp-handsfree
+      depends_on: [coding-agent-runtime, typed-decision-hotpath]
+
+    - id: provider-model-layer
+      name: Provider and model layer
+      kind: compute
+      summary: Normalizes model/provider catalogs, authentication, compatibility, and request transport while leaving cross-system allocation policy to Kerdoios.
+      paths:
+        - packages/ai/
+        - packages/catalog/
+      depends_on: [coding-agent-runtime]
+
+    - id: native-tooling
+      name: Native tooling and TUI
+      kind: runtime
+      summary: Provides native shell/edit/search/desktop/voice capabilities and the terminal UI used by the coding-agent runtime.
+      paths:
+        - crates/
+        - packages/natives/
+        - packages/tui/
+        - crates/pi-voice/
+      depends_on: [coding-agent-runtime]
+
+    - id: metaharness-subagents
+      name: Metaharness and subagent coordination
+      kind: orchestration
+      summary: Coordinates parallel agent execution and typed worker/subagent surfaces without moving canonical policy authority into the harness.
+      paths:
+        - packages/metaharness/
+        - packages/coding-agent/src/
+      depends_on: [coding-agent-runtime]
+
+  implements_mechanisms:
+    - rlm-context-spill
+    - jev-typed-decision
+
+  provides_interfaces:
+    - omp.session.aggregate
+    - cu.stage_intent.v0
+
+  consumes_interfaces:
+    - tokenomics.event.v0
+    - z0int.decision_receipt.v1
+    - aodl.intent.v1
+    - kerdoios.route.v1
+
+  produces_representations: []
+  consumes_representations: []
+
+  boundaries:
+    owns:
+      - coding agent execution
+      - OMP session and tool lifecycle
+      - RLM spill implementation
+      - OMP-local typed decision hotpaths
+      - handsfree and computer-use staging
+      - native tool and TUI runtime
+    not_here:
+      - Tokenomics measurement semantics
+      - z0intelligence policy authority
+      - Kerdoios allocation policy
+      - AODL ontology
+      - canonical Zer0 architecture authority
+
+  evidence:
+    docs:
+      - README.md
+      - docs/tools/rlm.md
+      - docs/computer-use.md
+      - docs/handsfree-demo-features.md
+    tests:
+      - packages/coding-agent/test/
+      - packages/agent/test/
+      - packages/ai/test/
+    schemas:
+      - packages/wire/
