@@ -1,0 +1,132 @@
+{
+  "schema": "omp.cognitive_state.measure.v1",
+  "contract": "z0eval.unified_memory_receipt.v0",
+  "contract_revision": "8341084c4967bd25236ef011e6efdbace27d03bd",
+  "receipts": "receipts.jsonl",
+  "donor_spill": {
+    "ref": "kvnloo/oh-my-pi#77:packages/coding-agent/src/rlm/store.ts#stubFor",
+    "spill_bytes": 20480
+  },
+  "public_evidence_locators": [
+    "kvnloo/z0intelligence:src/z0int/context_resolve.py:SCHEMA",
+    "kvnloo/oh-my-pi#77:packages/coding-agent/src/rlm/store.ts:RLM_DEFAULT_SPILL_BYTES",
+    "kvnloo/z0evals#56:harness-matrix",
+    "eval-fixture:cap@v1",
+    "eval-fixture:cap@v2",
+    "eval-fixture:jsonl@retained",
+    "eval-fixture:jsonl@deleted",
+    "eval-fixture:old@2020"
+  ],
+  "shadow_bytes": [
+    {
+      "question_id": "exact-identifier",
+      "context_bytes": 44,
+      "would_send_bytes": 573
+    },
+    {
+      "question_id": "supersession",
+      "context_bytes": 40,
+      "would_send_bytes": 829
+    },
+    {
+      "question_id": "cross-harness",
+      "context_bytes": 41,
+      "would_send_bytes": 748
+    },
+    {
+      "question_id": "contradiction",
+      "context_bytes": 41,
+      "would_send_bytes": 939
+    },
+    {
+      "question_id": "missing-evidence",
+      "context_bytes": 44,
+      "would_send_bytes": 399
+    },
+    {
+      "question_id": "minimal-context",
+      "context_bytes": 43,
+      "would_send_bytes": 960
+    }
+  ],
+  "growth": [
+    {
+      "turn": 1,
+      "arms": {
+        "native_context_bytes": 80051,
+        "rlm_spill_bytes": 744,
+        "state_packet_bytes": 960
+      },
+      "growth": {
+        "native_context_bytes": 0,
+        "rlm_spill_bytes": 0,
+        "state_packet_bytes": 0
+      }
+    },
+    {
+      "turn": 2,
+      "arms": {
+        "native_context_bytes": 160059,
+        "rlm_spill_bytes": 1445,
+        "state_packet_bytes": 960
+      },
+      "growth": {
+        "native_context_bytes": 80008,
+        "rlm_spill_bytes": 701,
+        "state_packet_bytes": 0
+      }
+    },
+    {
+      "turn": 3,
+      "arms": {
+        "native_context_bytes": 240067,
+        "rlm_spill_bytes": 2146,
+        "state_packet_bytes": 960
+      },
+      "growth": {
+        "native_context_bytes": 80008,
+        "rlm_spill_bytes": 701,
+        "state_packet_bytes": 0
+      }
+    },
+    {
+      "turn": 4,
+      "arms": {
+        "native_context_bytes": 320075,
+        "rlm_spill_bytes": 2847,
+        "state_packet_bytes": 960
+      },
+      "growth": {
+        "native_context_bytes": 80008,
+        "rlm_spill_bytes": 701,
+        "state_packet_bytes": 0
+      }
+    }
+  ],
+  "turn4_native_bytes": 320075,
+  "limitations": [
+    "agentsview: search unavailable because ~/.agentsview is a symlink; failed closed, no invented hit",
+    "agentsview: search unavailable (1)"
+  ],
+  "live": {
+    "z0int": {
+      "retrieval_capability": "z0int.context_resolve.v1",
+      "retrieval_ok": true,
+      "revision": "c4a4554d8a3874b456c46feef6ea937993af744a",
+      "evidence_refs": [
+        "kvnloo/z0intelligence:src/z0int/context_resolve.py"
+      ],
+      "raw_source_reads": 1,
+      "gaps": []
+    },
+    "agentsview": {
+      "retrieval_capability": "agentsview.search",
+      "retrieval_ok": false,
+      "evidence_refs": [],
+      "raw_source_reads": 0,
+      "gaps": [
+        "agentsview: search unavailable (1)"
+      ]
+    }
+  }
+}
