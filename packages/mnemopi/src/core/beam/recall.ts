@@ -17,7 +17,6 @@ type TierLabel = "working" | "episodic";
 
 type RecallOptionsInternal = RecallOptions & {
 	source?: string | null;
-	topic?: string | null;
 	veracity?: string | null;
 	memoryType?: string | null;
 	temporalWeight?: number;
@@ -453,10 +452,6 @@ function buildWhere(
 	if (options.source) {
 		clauses.push(`${prefix}source = ?`);
 		params.push(options.source);
-	}
-	if (options.topic) {
-		clauses.push(`${prefix}source = ?`);
-		params.push(options.topic);
 	}
 	if (options.veracity) {
 		clauses.push(`${prefix}veracity = ?`);
@@ -1152,7 +1147,6 @@ function matchesRecallFilters(result: OrchestratedRecallResult, options: RecallO
 	if (options.toDate && timestamp > `${options.toDate}T23:59:59`) return false;
 	const required: ReadonlyArray<readonly [unknown, string | null | undefined]> = [
 		[result.source, options.source],
-		[result.source, options.topic],
 		[result.veracity, options.veracity],
 		[result.memory_type, options.memoryType],
 		[result.author_id, options.authorId],
