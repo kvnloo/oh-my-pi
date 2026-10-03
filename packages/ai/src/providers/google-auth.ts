@@ -94,6 +94,24 @@ async function loadAdcCredentials(): Promise<{ source: string; creds: AdcFileCre
 	return undefined;
 }
 
+/**
+ * Cheaply determines the ADC source key that `resolveAccessTokenUncached` would
+ * assign on a cache miss, without performing any token exchange and without
+ * hitting the GCE metadata server. The gac/user branches are decided purely by
+ * env + a file-stat of the well-known user ADC path; the metadata fallback is
+ * the residual when no file source is active. The returned string is the same
+ * cache key used at the write site (`tokenCache.set(source, ...)`), so a keyed
+ * lookup here returns a token minted *for the currently active source* — never
+ * a still-valid token left over from a previous source.
+ */
+async function peekActiveSource(): Promise<string> {
+	const gacPath = Bun.env.GOOGLE_APPLICATION_CREDENTIALS;
+	if (gacPath) return `gac:${gacPath}`;
+	const userPath = userAdcPath();
+	if (await Bun.file(userPath).exists()) return `user:${userPath}`;
+	return "metadata";
+}
+
 function base64UrlEncode(bytes: Uint8Array | string): string {
 	const buf = typeof bytes === "string" ? Buffer.from(bytes, "utf8") : bytes;
 	return Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength).toString("base64url");
@@ -279,6 +297,16 @@ const SHARED_TOKEN_RESOLVE_TIMEOUT_MS = 30_000;
 /**
  * Returns a Bearer access token suitable for the `Authorization` header on Vertex AI calls.
  * The token is cached in module scope and refreshed `GOOGLE_VERTEX_REFRESH_SKEW_MS` ms before it expires.
+ *
+ * The cache and in-flight slot are both keyed by the *currently resolved* ADC
+ * source (`gac:<path>` / `user:<path>` / `metadata`). A cache hit therefore
+ * returns a token minted for the credential source that is active on *this*
+ * call, not a still-valid token left over from a source a long-lived process
+ * has since rotated away from (env var repoint, ADC file create/delete, or a
+ * `user:`↔`metadata` fallback shift). Source resolution (`peekActiveSource`)
+ * is cheap — an env read plus an optional stat of the well-known user ADC
+ * file — so a cache hit still avoids the token-exchange / metadata fetch
+ * entirely; it just no longer returns a token for the wrong identity.
  */
 export async function getVertexAccessToken(options?: { signal?: AbortSignal; fetch?: FetchImpl }): Promise<string> {
 	// An explicit access token (e.g. `gcloud auth print-access-token`) bypasses the cache so a
@@ -288,18 +316,26 @@ export async function getVertexAccessToken(options?: { signal?: AbortSignal; fet
 	if (explicitToken) return explicitToken;
 	const fetchImpl = options?.fetch ?? globalThis.fetch.bind(globalThis);
 	const skew = getRefreshSkewMs();
-	const now = Date.now();
 
-	// Best-effort cache key probe: we don't know the source until we resolve, but cached entries
-	// are keyed by their resolved source. Try every cached source first.
-	for (const [source, cached] of tokenCache) {
+	// Resolve the active source cheaply (no token exchange, no metadata probe) and
+	// probe the cache by that exact key. Iterating every cached entry — the old
+	// probe — returned the first unexpired token regardless of whether its source
+	// was still active, which served a token minted for the *previous* identity
+	// after an ADC source rollover. A source-keyed lookup can only return a token
+	// that was minted for the now-active source; a stale or wrong-source entry is
+	// simply absent and falls through to a fresh resolve.
+	const activeSource = await peekActiveSource();
+	const now = Date.now();
+	const cached = tokenCache.get(activeSource);
+	if (cached) {
 		if (cached.expiresAtMs - skew > now) return cached.token;
-		// expired entry — drop and re-resolve
-		tokenCache.delete(source);
+		tokenCache.delete(activeSource);
 	}
 
-	const cacheKey = "vertex-adc";
-	const existing = inflight.get(cacheKey);
+	// Dedup concurrent callers. Key the in-flight slot by source for the same
+	// reason as the cache: a source switch must not await (and receive the
+	// resolved token of) an in-flight mint started under the old source.
+	const existing = inflight.get(activeSource);
 	if (existing) return raceWithSignal(existing, options?.signal);
 
 	// Deliberately resolve without any caller's signal: the in-flight promise is shared
@@ -316,10 +352,10 @@ export async function getVertexAccessToken(options?: { signal?: AbortSignal; fet
 			logger.debug("vertex.adc acquired access token", { source, expiresInSec: token.expires_in });
 			return token.access_token;
 		} finally {
-			inflight.delete(cacheKey);
+			inflight.delete(activeSource);
 		}
 	})();
-	inflight.set(cacheKey, promise);
+	inflight.set(activeSource, promise);
 	return raceWithSignal(promise, options?.signal);
 }
 
