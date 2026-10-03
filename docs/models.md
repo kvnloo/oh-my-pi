@@ -235,7 +235,7 @@ the discovered rows, so explicit user configuration remains effective.
 
 ### Provider-model cache and static fingerprint
 
-Cached per-provider model lists are persisted in `models.db` (schema version 13) as materialized
+Cached per-provider model lists are persisted in `models.db` (current schema version) as materialized
 models. A materialization-policy stamp includes the application version, builder version, and
 compiled-rule hash; incompatible rows are invalidated. Request-header values are never persisted
 and must be restored from trusted local metadata or configuration.
