@@ -12,7 +12,8 @@ import * as taskDiscovery from "../../src/task/discovery";
 import * as structured from "../../src/task/structured-subagent";
 import type { StructuredSubagentResult } from "../../src/task/structured-subagent";
 import { WorkPoolRegistry } from "../../src/task/workpool";
-import type { AgentDefinition, SingleResult } from "../../src/task/types";
+import type { AgentDefinition } from "../../src/task/types";
+import type { SingleResult } from "@oh-my-pi/pi-tui/tools/task";
 import type { ToolSession } from "../../src/tools";
 
 const taskAgent: AgentDefinition = {
