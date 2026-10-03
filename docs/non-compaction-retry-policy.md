@@ -191,7 +191,7 @@ Defined in `packages/coding-agent/src/session/settings.ts`:
 - `retry.maxRetries`
 - `retry.baseDelayMs`
 - `retry.maxDelayMs`
-- `retry.waitForUsageReset` (default `false`)
+- `retry.waitForUsageReset` (default `false`; lets a provider-stated usage-limit reset sleep past `retry.maxDelayMs` instead of failing fast — abortable via `Esc`)
 - `retry.modelFallback` (default `true`; gates configured retry model-fallback switching)
 - `retry.fallbackChains`
 - `retry.fallbackRevertPolicy` (`"cooldown-expiry"` by default; `"never"` disables automatic restoration)
