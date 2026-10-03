@@ -780,6 +780,7 @@ export class IncomingArray implements AsyncIterable<IncomingJson> {
 	readonly #serial = new Serial();
 	#index = 0;
 	#started = false;
+	#done = false;
 
 	constructor(shared: Shared, path: readonly PullPathSegment[]) {
 		this.#shared = shared;
@@ -792,13 +793,17 @@ export class IncomingArray implements AsyncIterable<IncomingJson> {
 	}
 
 	async #advance(): Promise<IncomingJson | undefined> {
+		if (this.#done) return undefined;
 		if (!this.#started) {
 			const root = await pull(this.#shared, this.#path, "array", STARTED);
 			if (root.shape.kind !== "array") throw mismatchError(this.#path, "array", root.shape.kind);
 			this.#started = true;
 		}
 		const path = [...this.#path, this.#index];
-		if ((await this.#shared.pull(path, "value", STARTED)) === undefined) return undefined;
+		if ((await this.#shared.pull(path, "value", STARTED)) === undefined) {
+			this.#done = true;
+			return undefined;
+		}
 		this.#index++;
 		return new IncomingJson(this.#shared, path);
 	}
