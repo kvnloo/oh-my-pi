@@ -217,6 +217,7 @@
 ### Fixed
 
 - Fixed C++ language inference excluding CUDA header (`.cuh`) files ([#10782](https://github.com/can1357/oh-my-pi/pull/10782) by [@alphastorm](https://github.com/alphastorm)).
+- Fixed macOS `F22`/`F24` key injection to fail with `InvalidKey` instead of silently sending `F12`/`F15`, which reused the same virtual keycodes ([{{detail_github_issue_ref}}]({{detail_github_issue_url}})).
 
 ## [18.1.9] - 2026-09-04
 

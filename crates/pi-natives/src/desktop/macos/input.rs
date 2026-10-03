@@ -909,9 +909,12 @@ fn key_code(key: KeyName) -> CoreResult<u16> {
 		KeyName::F19 => 80,
 		KeyName::F20 => 90,
 		KeyName::F21 => 110,
-		KeyName::F22 => 111,
+		KeyName::F22 | KeyName::F24 => {
+			return Err(DesktopError::invalid_key(format!(
+				"{key:?} has no distinct macOS keycode (collides with F12/F15)"
+			)));
+		},
 		KeyName::F23 => 112,
-		KeyName::F24 => 113,
 		KeyName::Char(character) => char_key_code(character)?,
 	};
 	Ok(code)
@@ -1454,7 +1457,9 @@ fn finite_i32(value: f64, name: &str) -> CoreResult<i32> {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
+	use std::collections::HashSet;
+
+	use super::{super::super::error::ErrorCode, *};
 
 	#[test]
 	fn event_source_never_suppresses_local_input() {
@@ -1544,7 +1549,7 @@ mod tests {
 			x:       100,
 			y:       50,
 			width:   300,
-			height:  200,
+			height: 200,
 			focused: false,
 		};
 		let scroll = |x| PointerEvent::Scroll { x, y: 80.0, dx: 0.0, dy: -30.0 };
@@ -1584,6 +1589,49 @@ mod tests {
 			);
 			assert_eq!(steps.iter().map(|step| step.0).sum::<i32>(), dx);
 			assert_eq!(steps.iter().map(|step| step.1).sum::<i32>(), dy);
+		}
+	}
+
+	#[test]
+	fn f_key_keycodes_are_distinct() {
+		// No two F-key arms of key_code may resolve to the same macOS keycode.
+		let mut seen: HashSet<u16> = HashSet::new();
+		for key in [
+			KeyName::F1,
+			KeyName::F2,
+			KeyName::F3,
+			KeyName::F4,
+			KeyName::F5,
+			KeyName::F6,
+			KeyName::F7,
+			KeyName::F8,
+			KeyName::F9,
+			KeyName::F10,
+			KeyName::F11,
+			KeyName::F12,
+			KeyName::F13,
+			KeyName::F14,
+			KeyName::F15,
+			KeyName::F16,
+			KeyName::F17,
+			KeyName::F18,
+			KeyName::F19,
+			KeyName::F20,
+			KeyName::F21,
+			KeyName::F22,
+			KeyName::F23,
+			KeyName::F24,
+		] {
+			match key_code(key) {
+				Ok(code) => {
+					assert!(seen.insert(code), "{key:?} -> {code} duplicates another F-key keycode")
+				},
+				Err(error) => assert_eq!(
+					error.code,
+					ErrorCode::InvalidKey,
+					"{key:?} should be rejected with InvalidKey, not silently remapped"
+				),
+			}
 		}
 	}
 }
