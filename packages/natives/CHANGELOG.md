@@ -217,8 +217,6 @@
 ### Fixed
 
 - Fixed C++ language inference excluding CUDA header (`.cuh`) files ([#10782](https://github.com/can1357/oh-my-pi/pull/10782) by [@alphastorm](https://github.com/alphastorm)).
-### Fixed
-
 - Fixed the CoW tree-clone backends (Linux reflink, Windows block clone) aborting on sockets, fifos, and device nodes instead of skipping them, so subagent isolation and worktree cloning no longer fail on checkouts containing untracked special files.
 
 ## [18.1.9] - 2026-09-04
