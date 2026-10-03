@@ -1,7 +1,7 @@
 import { describe, it } from "bun:test";
 import { Effort } from "@oh-my-pi/pi-ai";
 import type { RpcResponse } from "@oh-my-pi/pi-coding-agent/modes/rpc/rpc-types";
-import type { ConfiguredThinkingLevel } from "@oh-my-pi/pi-coding-agent/thinking";
+import type { ConfiguredThinkingLevel } from "@oh-my-pi/pi-tui/thinking";
 
 /**
  * Compile-time regression guard for the `cycle_thinking_level` RPC response.
