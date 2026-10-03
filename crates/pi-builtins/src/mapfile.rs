@@ -105,7 +105,10 @@ impl MapFileCommand {
 		mut input_file: brush_core::openfiles::OpenFile,
 		context: &mut brush_core::ExecutionContext<'_, SE>,
 	) -> Result<Option<ExecutionResult>, brush_core::Error> {
-		let _term_mode = setup_terminal_settings(&input_file)?;
+		// Keep the guard alive across the loop (its `Drop` restores termios on a
+		// TTY); only its presence gates the Ctrl+C/Ctrl+D handling below.
+		let term_mode = setup_terminal_settings(&input_file)?;
+		let is_tty = term_mode.is_some();
 
 		let mut entry_count = 0usize;
 		let mut read_count = 0;
@@ -126,8 +129,8 @@ impl MapFileCommand {
 			loop {
 				match input_file.read(&mut buf) {
 					Ok(0) => break,                                         // End of input
-					Ok(1) if buf[0] == b'\x03' => break,                    // Ctrl+C
-					Ok(1) if buf[0] == b'\x04' && line.is_empty() => break, // Ctrl+D
+					Ok(1) if is_tty && buf[0] == b'\x03' => break,            // Ctrl+C (TTY only)
+					Ok(1) if is_tty && buf[0] == b'\x04' && line.is_empty() => break, // Ctrl+D (TTY only)
 					Ok(1) => {
 						let byte = buf[0];
 						line.push(byte);
