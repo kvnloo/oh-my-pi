@@ -116,6 +116,20 @@ describe("parseJsonWithRepair relaxed (final) parsing", () => {
 		expect(() => parseJsonWithRepair('{"a": Infinity}')).toThrow();
 	});
 
+	it("rejects overflow-exponent non-finite numbers that JSON.parse accepts as Infinity", () => {
+		expect(() => parseJsonWithRepair('{"a":1e999}')).toThrow();
+		expect(() => parseJsonWithRepair('{"a":-1e999}')).toThrow();
+		expect(() => parseJsonWithRepair("[1e999]")).toThrow();
+		expect(() => parseJsonWithRepair('{"a":{"b":1e999}}')).toThrow();
+		expect(() => parseJsonWithRepair('{"a":1,"b":1e999}')).toThrow();
+		expect(() => parseJsonWithRepair("1e999")).toThrow();
+	});
+
+	it("still accepts finite large exponents on the fast path (no regression)", () => {
+		expect(parseJsonWithRepair<{ a: number }>('{"a":1e308}')).toEqual({ a: 1e308 });
+		expect(parseJsonWithRepair<{ a: number }>('{"a":1.7e308}')).toEqual({ a: 1.7e308 });
+	});
+
 	it("throws on trailing garbage after a complete value", () => {
 		expect(() => parseJsonWithRepair('{"a":1} then prose')).toThrow();
 	});
@@ -179,6 +193,17 @@ describe("parseStreamingJson partial parsing", () => {
 		expect(parseStreamingJson<Record<string, unknown>>('{"a":1.5e')).toEqual({});
 		expect(parseStreamingJson<Record<string, unknown>>('{"a":NaN}')).toEqual({});
 		expect(parseStreamingJson<Record<string, unknown>>('{"a":Truex}')).toEqual({});
+	});
+
+	it("rolls back to the last valid prefix on overflow-exponent non-finite numbers", () => {
+		expect(parseStreamingJson<Record<string, unknown>>('{"a":1e999}')).toEqual({});
+		expect(parseStreamingJson<unknown[]>("[1e999]")).toEqual([]);
+		expect(parseStreamingJson<Record<string, unknown>>('{"a":{"b":1e999}}')).toEqual({ a: {} });
+	});
+
+	it("still surfaces finite large exponents on the fast path (no streaming regression)", () => {
+		expect(parseStreamingJson<{ a: number }>('{"a":1e308}')).toEqual({ a: 1e308 });
+		expect(parseStreamingJson<{ a: number }>('{"a":1.7e308}')).toEqual({ a: 1.7e308 });
 	});
 
 	it("rolls back a bareword at the streaming edge or mid-buffer instead of committing junk", () => {
