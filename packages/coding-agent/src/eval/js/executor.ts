@@ -107,6 +107,18 @@ function formatPackageInstallTimeoutAnnotation(installDeadlineReached: boolean):
 export async function executeJs(code: string, options: JsExecutorOptions): Promise<JsResult> {
 	const display = new DisplayOutputCollector<JsDisplayOutput>();
 	const displayOutputs = display.outputs;
+	// Agent events are progress snapshots keyed by id. Coalesce them in
+	// displayOutputs so each agent id contributes at most one entry — matching
+	// the deduplication that upsertStatusEvent provides when the eval tool
+	// persists events into cellResult.statusEvents. onStatus still streams every
+	// snapshot live so callers can render progress before the cell finishes.
+	const latestAgentEventById = new Map<string, JsStatusEvent>();
+	const flushAgentEvents = (): void => {
+		for (const event of latestAgentEventById.values()) {
+			display.push({ type: "status", event });
+		}
+		latestAgentEventById.clear();
+	};
 	const outputSink = new OutputSink({
 		artifactPath: options.artifactPath,
 		artifactId: options.artifactId,
@@ -180,6 +192,13 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 					if (output.type === "status") {
 						// Timeout-control events drive the eval watchdog only; never
 						// store or render them as cell output.
+						if (output.event.op === "agent" && typeof output.event.id === "string") {
+							// Stream the snapshot live to onStatus; coalesce the
+							// displayOutputs entry so only the latest per id is retained.
+							latestAgentEventById.set(output.event.id, output.event);
+							options.onStatus?.(output.event);
+							return;
+						}
 						options.onStatus?.(output.event);
 						if (isEvalTimeoutControlEvent(output.event)) return;
 					}
@@ -188,6 +207,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 			},
 		});
 		const summary = await outputSink.dump();
+		flushAgentEvents();
 		return {
 			output: summary.output,
 			exitCode: 0,
@@ -217,6 +237,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 				outputSink.push(annotation);
 			}
 			const summary = await outputSink.dump();
+			flushAgentEvents();
 			return {
 				output: summary.output,
 				exitCode: undefined,
@@ -235,6 +256,7 @@ export async function executeJs(code: string, options: JsExecutorOptions): Promi
 		const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
 		outputSink.push(message);
 		const summary = await outputSink.dump();
+		flushAgentEvents();
 		return {
 			output: summary.output,
 			exitCode: 1,

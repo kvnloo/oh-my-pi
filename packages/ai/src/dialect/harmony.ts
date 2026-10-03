@@ -147,6 +147,14 @@ export class HarmonyInbandScanner implements InbandScanner {
 			if (this.#mode === "tool") this.#rawBlock += next.token;
 			this.#buffer = this.#buffer.slice(next.index + next.token.length);
 		}
+		// On flush, an open body whose buffer was already drained (the common case
+		// when a tool body ends on a non-`<` char like `}` before truncation) never
+		// re-enters the loop, so the in-loop guard above cannot reach it. Finalize
+		// here to emit the pending toolEnd/thinkingEnd instead of dropping it.
+		if (final && this.#state === "body") {
+			this.#finishBody(events);
+			this.#state = "outside";
+		}
 		return events;
 	}
 
