@@ -134,3 +134,154 @@ describe("SHMR deterministic helpers", () => {
 		}
 	});
 });
+
+describe("SHMR retired-memory exclusion", () => {
+	/**
+	 * Forces every episodic candidate into a single embedding cluster, so any
+	 * retired row that leaks into the candidate set would alter clustering and
+	 * the resulting belief rather than being dropped by similarity gating.
+	 */
+	function forceSingleCluster(): void {
+		stubProvider(() => new Float32Array([1, 0, 0]));
+	}
+
+	it("excludes superseded episodic memories with contradictory content", async () => {
+		forceSingleCluster();
+		const db = new Database(":memory:");
+		try {
+			initBeam(db);
+			db.run("INSERT INTO episodic_memory (id, content, importance, created_at) VALUES (?, ?, ?, ?)", [
+				"live1",
+				"user prefers dark mode",
+				0.8,
+				"2026-01-01T00:00:00",
+			]);
+			db.run(
+				"INSERT INTO episodic_memory (id, content, importance, created_at, superseded_by, valid_until) VALUES (?, ?, ?, ?, ?, ?)",
+				["dead1", "user prefers light mode", 0.8, "2026-06-01T00:00:00", "live1", "2020-01-01T00:00:00"],
+			);
+			const stats = await harmonize({ db, session_id: "s" }, 10, 1, 0.9);
+			// Retired row excluded; only one live row remains -> below MIN_CLUSTER_SIZE.
+			expect(stats.status).toBe("insufficient_candidates");
+			expect(stats.beliefs_generated).toBe(0);
+			const beliefs = await recallBeliefs({ db }, "light mode", 5);
+			expect(beliefs).toHaveLength(0);
+			expect(getResonanceLog({ db }, 1)).toHaveLength(0);
+		} finally {
+			db.close();
+		}
+	});
+
+	it("excludes superseded episodic memories when valid_until is NULL", async () => {
+		forceSingleCluster();
+		const db = new Database(":memory:");
+		try {
+			initBeam(db);
+			db.run("INSERT INTO episodic_memory (id, content, importance, created_at) VALUES (?, ?, ?, ?)", [
+				"live1",
+				"alpha beta quartz one",
+				0.8,
+				"2026-01-01T00:00:00",
+			]);
+			db.run(
+				"INSERT INTO episodic_memory (id, content, importance, created_at, superseded_by) VALUES (?, ?, ?, ?, ?)",
+				["dead1", "alpha beta quartz one", 0.8, "2026-06-01T00:00:00", "live1"],
+			);
+			const stats = await harmonize({ db, session_id: "s" }, 10, 1, 0.9);
+			expect(stats.status).toBe("insufficient_candidates");
+			expect(stats.beliefs_generated).toBe(0);
+			const beliefs = await recallBeliefs({ db }, "alpha beta", 5);
+			expect(beliefs).toHaveLength(0);
+		} finally {
+			db.close();
+		}
+	});
+
+	it("excludes expired episodic memories when superseded_by is NULL", async () => {
+		forceSingleCluster();
+		const db = new Database(":memory:");
+		try {
+			initBeam(db);
+			db.run("INSERT INTO episodic_memory (id, content, importance, created_at) VALUES (?, ?, ?, ?)", [
+				"live1",
+				"alpha beta quartz one",
+				0.8,
+				"2026-01-01T00:00:00",
+			]);
+			db.run(
+				"INSERT INTO episodic_memory (id, content, importance, created_at, valid_until) VALUES (?, ?, ?, ?, ?)",
+				["dead1", "alpha beta quartz one", 0.8, "2026-06-01T00:00:00", "2020-01-01T00:00:00"],
+			);
+			const stats = await harmonize({ db, session_id: "s" }, 10, 1, 0.9);
+			expect(stats.status).toBe("insufficient_candidates");
+			expect(stats.beliefs_generated).toBe(0);
+			const beliefs = await recallBeliefs({ db }, "alpha beta", 5);
+			expect(beliefs).toHaveLength(0);
+		} finally {
+			db.close();
+		}
+	});
+
+	it("includes episodic memories whose valid_until is in the future", async () => {
+		forceSingleCluster();
+		const db = new Database(":memory:");
+		try {
+			initBeam(db);
+			db.run(
+				"INSERT INTO episodic_memory (id, content, importance, created_at, valid_until) VALUES (?, ?, ?, ?, ?)",
+				["live1", "alpha beta quartz one", 0.8, "2026-01-01T00:00:00", "2099-01-01T00:00:00"],
+			);
+			db.run(
+				"INSERT INTO episodic_memory (id, content, importance, created_at, valid_until) VALUES (?, ?, ?, ?, ?)",
+				["live2", "alpha beta quartz two", 0.8, "2026-01-02T00:00:00", "2099-01-01T00:00:00"],
+			);
+			const stats = await harmonize({ db, session_id: "s" }, 10, 1, 0.9);
+			expect(stats.status).toBe("harmonized");
+			expect(stats.clusters_found).toBe(1);
+			expect(stats.beliefs_generated).toBeGreaterThanOrEqual(1);
+		} finally {
+			db.close();
+		}
+	});
+
+	it("omits retired ids from belief provenance when live memories form a cluster", async () => {
+		forceSingleCluster();
+		const db = new Database(":memory:");
+		try {
+			initBeam(db);
+			for (const [id, created] of [
+				["live1", "2026-01-01T00:00:00"],
+				["live2", "2026-01-02T00:00:00"],
+				["live3", "2026-01-03T00:00:00"],
+			] as const) {
+				db.run("INSERT INTO episodic_memory (id, content, importance, created_at) VALUES (?, ?, ?, ?)", [
+					id,
+					"alpha beta quartz one",
+					0.8,
+					created,
+				]);
+			}
+			// Newer retired row with identical content: with the bug it would be first
+			// in the candidate set (ORDER BY created_at DESC) and appear in provenance.
+			db.run(
+				"INSERT INTO episodic_memory (id, content, importance, created_at, superseded_by, valid_until) VALUES (?, ?, ?, ?, ?, ?)",
+				["dead1", "alpha beta quartz one", 0.8, "2026-06-01T00:00:00", "live1", "2020-01-01T00:00:00"],
+			);
+			const stats = await harmonize({ db, session_id: "s" }, 10, 1, 0.9);
+			expect(stats.status).toBe("harmonized");
+			expect(stats.clusters_found).toBe(1);
+			const beliefs = await recallBeliefs({ db }, "alpha beta", 5);
+			expect(beliefs.length).toBeGreaterThan(0);
+			for (const belief of beliefs) {
+				const provenanceIds =
+					typeof belief.provenance === "string" ? (JSON.parse(belief.provenance) as string[]) : [];
+				expect(provenanceIds).not.toContain("ep_dead1");
+				expect(provenanceIds).toContain("ep_live1");
+				expect(provenanceIds).toContain("ep_live2");
+				expect(provenanceIds).toContain("ep_live3");
+			}
+		} finally {
+			db.close();
+		}
+	});
+});
