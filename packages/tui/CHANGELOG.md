@@ -534,6 +534,9 @@
 
 - Avoid inserting a trailing space when auto-completing directory paths with `@`, and keep autocomplete open when accepting a directory with Tab or Enter.
 - Horizontal wheel reports (the sideways drift of a two-finger trackpad scroll) no longer decode as a vertical wheel direction, so fullscreen selectors such as `/copy` and the rewind picker stop jumping up and back down at the end of a scroll gesture.
+### Added
+
+- Added `Editor.getCharBeforeCursor()` so callers (e.g. the speech-to-text controller) can inspect the character preceding the cursor and decide whether inserted text needs a leading separator.
 
 ## [18.1.9] - 2026-09-04
 
