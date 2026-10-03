@@ -1,4 +1,5 @@
 import type { SummaryResult } from "@oh-my-pi/pi-natives";
+import type { Usage } from "@oh-my-pi/pi-ai";
 import { formatNumberedLine } from "./hashline-format";
 import { LINE_RANGE_CHUNK_SOURCE, parseLineRanges } from "./line-ranges";
 import * as os from "node:os";
@@ -83,6 +84,12 @@ export interface ReadToolDetails {
 	 * delimited part has no linkable fs path. Lets the TUI hyperlink each grouped row the same way a standalone read row is.
 	 */
 	displayReadTargetLinks?: Array<string | null>;
+	/**
+	 * Delegated vision-model usage from a `read <image>?q=<question>` oneshot.
+	 * The oneshot never enters the transcript as an assistant message, so trial
+	 * accounting folds this into the trial totals to avoid under-reporting.
+	 */
+	usage?: Usage;
 }
 
 // Parsing also recognizes incomplete counts to explain their errors; path splitting
