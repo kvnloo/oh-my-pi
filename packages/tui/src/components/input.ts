@@ -348,6 +348,14 @@ export class Input implements Component, Focusable {
 		this.#replaceBeforeCursor(removable, "");
 	}
 
+	/** The single character immediately preceding the cursor, or `""` at the very start of the
+	 *  value. Used by STT to decide whether the first dictated phrase needs a leading space
+	 *  separating it from preceding non-whitespace draft text (the volatile/commit inserters
+	 *  splice text verbatim). */
+	getCharBeforeCursor(): string {
+		return this.#cursor > 0 ? this.#value.slice(this.#cursor - 1, this.#cursor) : "";
+	}
+
 	/** Show or replace a volatile speech-to-text preview at the cursor, outside undo history.
 	 *  Finalize it with {@link commitVolatileText} or drop it with {@link clearVolatileText}. */
 	setVolatileText(text: string): void {

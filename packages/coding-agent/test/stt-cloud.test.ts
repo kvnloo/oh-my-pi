@@ -28,6 +28,7 @@ function makeEditor() {
 		commitVolatileText: vi.fn(),
 		submit: vi.fn(),
 		deleteBeforeCursor: vi.fn(),
+		getCharBeforeCursor: vi.fn().mockReturnValue(""),
 	};
 }
 
