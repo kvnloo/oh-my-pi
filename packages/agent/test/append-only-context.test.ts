@@ -227,20 +227,6 @@ describe("AppendOnlyLog", () => {
 		expect(log.length).toBe(1);
 	});
 
-	it("replaceTail replaces last entry", () => {
-		const log = new AppendOnlyLog();
-		log.append({ role: "user", content: "old" });
-		log.replaceTail({ role: "user", content: "new" });
-		expect(log.toMessages()).toHaveLength(1);
-		expect(log.toMessages()[0]!.content).toBe("new");
-	});
-
-	it("replaceTail is no-op on empty log", () => {
-		const log = new AppendOnlyLog();
-		log.replaceTail({ role: "user", content: "nope" });
-		expect(log.length).toBe(0);
-	});
-
 	it("extend appends multiple messages", () => {
 		const log = new AppendOnlyLog();
 		log.extend([
@@ -269,44 +255,6 @@ describe("AppendOnlyContextManager", () => {
 
 		const result = mgr.build(makeContext({ systemPrompt: ["New"] }), BUILD_OPTS);
 		expect(result.systemPrompt).toEqual(["New"]);
-	});
-
-	it("appendMessage messages appear in every subsequent build()", () => {
-		const mgr = new AppendOnlyContextManager();
-		mgr.build(makeContext(), BUILD_OPTS);
-
-		mgr.appendMessage({ role: "user", content: "q1" });
-		const r1 = mgr.build(makeContext(), BUILD_OPTS);
-		expect(r1.messages).toHaveLength(1);
-
-		mgr.appendMessage({ role: "assistant", content: "a1" });
-		const r2 = mgr.build(makeContext(), BUILD_OPTS);
-		expect(r2.messages).toHaveLength(2);
-		expect(r2.messages[1]!.content).toBe("a1");
-	});
-
-	it("reset clears log and prefix", () => {
-		const mgr = new AppendOnlyContextManager();
-		mgr.build(makeContext({ systemPrompt: ["Original"] }), BUILD_OPTS);
-		mgr.appendMessage({ role: "user", content: "hello" });
-
-		const freshCtx = makeContext({ systemPrompt: ["Fresh start"] });
-		mgr.reset(freshCtx, BUILD_OPTS);
-
-		const result = mgr.build(freshCtx, BUILD_OPTS);
-		expect(result.systemPrompt).toEqual(["Fresh start"]);
-		expect(result.messages).toHaveLength(0);
-	});
-
-	it("replaceTailMessage updates last log entry", () => {
-		const mgr = new AppendOnlyContextManager();
-		mgr.build(makeContext(), BUILD_OPTS);
-		mgr.appendMessage({ role: "user", content: "old" });
-		mgr.replaceTailMessage({ role: "user", content: "new" });
-
-		const result = mgr.build(makeContext(), BUILD_OPTS);
-		expect(result.messages).toHaveLength(1);
-		expect(result.messages[0]!.content).toBe("new");
 	});
 
 	it("build propagates tool spec description default", () => {
@@ -854,7 +802,7 @@ describe("tool examples injection through build()", () => {
 		mgr.build(ctx1, { intentTracing: false });
 		const fpNoExamples = mgr.prefix.fingerprint;
 
-		mgr.invalidate();
+		mgr.prefix.invalidate();
 		mgr.build(ctx2, { intentTracing: false });
 		const fpWithExamples = mgr.prefix.fingerprint;
 
