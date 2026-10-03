@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { MCPConnectionTimeoutError, connectToServer, listTools } from "@oh-my-pi/pi-coding-agent/mcp/client";
 import { isRetriableConnectionError } from "@oh-my-pi/pi-coding-agent/mcp/tool-bridge";
+import { LegacySseConnectionTimeoutError, LegacySseTransport } from "@oh-my-pi/pi-coding-agent/mcp/transports/sse";
 import type { JsonRpcMessage } from "@oh-my-pi/pi-coding-agent/mcp/types";
 
 const encoder = new TextEncoder();
@@ -29,6 +30,59 @@ describe("legacy MCP HTTP+SSE transport", () => {
 		});
 		await expect(connection).rejects.toBeInstanceOf(MCPConnectionTimeoutError);
 		await expect(connection).rejects.toThrow('Connection to MCP server "legacy-sse" timed out after 50ms');
+	});
+
+	it("classifies a startup timeout as retryable when the server emits keep-alive bytes before stalling", async () => {
+		// A leading SSE comment line (`: keep-alive\n\n`) makes fetch() resolve 200 OK
+		// before the inner timer fires, so the abort surfaces inside the stream
+		// reader (which swallows it) instead of at the fetch promise. This must still
+		// classify as a startup timeout so the manager retries the connection.
+		server = Bun.serve({
+			port: 0,
+			fetch() {
+				const stream = new ReadableStream<Uint8Array>({
+					start(c) {
+						c.enqueue(encoder.encode(": keep-alive\n\n"));
+					},
+				});
+				return new Response(stream, { headers: { "Content-Type": "text/event-stream" } });
+			},
+		});
+
+		const connection = connectToServer("legacy-sse", {
+			type: "sse",
+			url: `http://127.0.0.1:${server.port}/mcp/sse`,
+			timeout: 50,
+		});
+		await expect(connection).rejects.toBeInstanceOf(MCPConnectionTimeoutError);
+		await expect(connection).rejects.toThrow('Connection to MCP server "legacy-sse" timed out after 50ms');
+	});
+
+	it("does not misclassify a caller-initiated close during connect as a startup timeout", async () => {
+		// Closing the transport mid-connect aborts the caller signal, which clears
+		// the inner timer before it fires — so timedOut() must return false and the
+		// error must NOT surface as LegacySseConnectionTimeoutError.
+		server = Bun.serve({
+			port: 0,
+			fetch() {
+				const stream = new ReadableStream<Uint8Array>({
+					start(c) {
+						c.enqueue(encoder.encode(": keep-alive\n\n"));
+					},
+				});
+				return new Response(stream, { headers: { "Content-Type": "text/event-stream" } });
+			},
+		});
+
+		const transport = new LegacySseTransport({
+			type: "sse",
+			url: `http://127.0.0.1:${server.port}/mcp/sse`,
+			timeout: 5000,
+		});
+		const connectPromise = transport.connect();
+		await Bun.sleep(50);
+		await transport.close();
+		await expect(connectPromise).rejects.not.toBeInstanceOf(LegacySseConnectionTimeoutError);
 	});
 
 	it("reads the endpoint event as a POST URL and receives JSON-RPC responses from the stream", async () => {
