@@ -1,4 +1,5 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "bun:test";
+import * as path from "node:path";
 import { type } from "@oh-my-pi/omptype";
 import { Agent, type AgentMessage, type AgentTool } from "@oh-my-pi/pi-agent-core";
 import { createMockModel, type MockModel, type MockResponse } from "@oh-my-pi/pi-ai/providers/mock";
@@ -67,6 +68,7 @@ function thinkingOnlyStop(thinking: string): MockResponse {
 async function createHarness(
 	responses: MockResponse[],
 	settingsOverrides: SettingsOverrides = {},
+	persistSession = false,
 ): Promise<Harness & { mock: MockModel }> {
 	const tempDir = TempDir.createSync("@pi-unexpected-stop-guard-");
 
@@ -87,7 +89,9 @@ async function createHarness(
 	});
 
 	const model = getBundledModel("anthropic", "claude-sonnet-4-5") ?? mock;
-	const sessionManager = SessionManager.inMemory(tempDir.path());
+	const sessionManager = persistSession
+		? SessionManager.create(tempDir.path(), path.join(tempDir.path(), "sessions"))
+		: SessionManager.inMemory(tempDir.path());
 	const tools = [recordTool as AgentTool];
 	const agent = new Agent({
 		getApiKey: () => "test-key",
@@ -360,6 +364,43 @@ describe("AgentSession unexpected stop guard", () => {
 			stopReason: "error",
 			errorMessage: retryFailures[0].finalError,
 		});
+	});
+
+	it("reopening a capped thinking-only session retains the terminal failure", async () => {
+		const { session, mock, tempDir } = await createHarness(
+			[
+				thinkingOnlyStop("Inspecting persisted recovery."),
+				thinkingOnlyStop("Checking the session journal."),
+				thinkingOnlyStop("Comparing the final branch."),
+				thinkingOnlyStop("Preparing a terminal result."),
+			],
+			{ "features.unexpectedStopDetection": "mechanical" },
+			true,
+		);
+		session.subscribe(() => {});
+		await session.prompt("finish the persisted task");
+		await session.waitForIdle();
+		expect(mock.calls).toHaveLength(4);
+		const terminal = session.getLastAssistantMessage();
+		expect(terminal?.stopReason).toBe("error");
+		const file = session.sessionManager.getSessionFile();
+		if (!file) throw new Error("Expected the capped session to have a journal");
+		await session.dispose();
+
+		const reopened = await SessionManager.open(file, path.join(tempDir.path(), "sessions"), undefined, {
+			suppressBreadcrumb: true,
+		});
+		try {
+			const lastAssistant = reopened
+				.getBranch()
+				.findLast(entry => entry.type === "message" && entry.message.role === "assistant");
+			expect(lastAssistant).toMatchObject({
+				type: "message",
+				message: { role: "assistant", stopReason: "error", errorMessage: terminal?.errorMessage },
+			});
+		} finally {
+			await reopened.close();
+		}
 	});
 
 	it("does not classify a message that contains a tool call", async () => {
