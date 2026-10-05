@@ -481,6 +481,32 @@ describe("AgentSession idle maintenance", () => {
 			expect(compaction).toHaveBeenCalledTimes(1);
 		});
 
+		it("keeps a later recap owed when idle compaction fires first", async () => {
+			const h = await startSession({
+				settings: {
+					"recap.idleSeconds": 120,
+					"compaction.idleEnabled": true,
+					"compaction.idleThresholdTokens": 1_000,
+					"compaction.idleTimeoutSeconds": 60,
+					"compaction.methodOrder": ["soft"],
+				},
+			});
+			const compaction = vi.spyOn(h.session, "runIdleCompaction");
+			h.session.enableIdleMaintenance();
+
+			await runTurn(h);
+			await elapse(60_000);
+			await until(() => compaction.mock.calls.length === 1, "the earlier idle compaction pass");
+			const pass = compaction.mock.results[0]?.value;
+			if (pass) await drive(pass);
+			await flush();
+
+			await elapse(60_000);
+			await flush();
+
+			expect(idleRecaps(h)).toHaveLength(1);
+		});
+
 		it.each([
 			["below the floor", 5, 60_000],
 			["above the ceiling", 99_999, HOUR_MS],
