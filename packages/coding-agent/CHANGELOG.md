@@ -6,12 +6,11 @@
 
 - Fixed reads and image attachments selecting a space-named sibling instead of the requested filename containing a non-breaking space ([#12805](https://github.com/can1357/oh-my-pi/issues/12805); [#12807](https://github.com/can1357/oh-my-pi/pull/12807) by [@roboomp](https://github.com/roboomp)).
 - Fixed Bash `gh issue` and `gh pr` cache invalidation so option values are not mistaken for targets and every positional issue or pull request is refreshed ([#10626](https://github.com/can1357/oh-my-pi/issues/10626)).
+- Unexpected-stop recovery now surfaces an explicit terminal error when its retry cap is exhausted instead of ending the turn silently ([#10614](https://github.com/can1357/oh-my-pi/issues/10614)).
 
 ## [18.6.2] - 2026-10-04
 
 ### Fixed
-
-- Unexpected-stop recovery now surfaces an explicit terminal error when its retry cap is exhausted instead of ending the turn silently ([#10614](https://github.com/can1357/oh-my-pi/issues/10614)).
 
 - Fixed snapcompact's short final frames preventing vision-backed sessions from continuing on backends that reject 32px-or-smaller images ([#14355](https://github.com/can1357/oh-my-pi/issues/14355)).
 - Fixed the agent's `goal` calls asking for approval under `--approval-mode write`, which paused goal-mode loops at `complete`; `always-ask` still prompts for goal changes but not `get` ([#14368](https://github.com/can1357/oh-my-pi/issues/14368))
