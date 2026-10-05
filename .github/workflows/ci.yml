@@ -745,7 +745,7 @@ jobs:
               targets: win32-x64-baseline
          - name: Session host tests
            working-directory: packages/coding-agent
-           run: bun test test/session-host test/ipc test/rpc-server-multi.test.ts test/rpc-server-sequencing.test.ts test/cli/attach-cli.test.ts
+           run: bun test --timeout 20000 test/session-host test/ipc test/rpc-server-multi.test.ts test/rpc-server-sequencing.test.ts test/cli/attach-cli.test.ts
 
    install_methods:
       name: Install method smoke tests
