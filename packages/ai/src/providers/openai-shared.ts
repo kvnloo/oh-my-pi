@@ -35,6 +35,7 @@ import {
 } from "@oh-my-pi/pi-utils";
 import { NO_AUTH_SENTINEL } from "../auth-retry";
 import * as AIError from "../error";
+import { MAX_DETAIL_CHARS } from "../utils/openai-http";
 import { parseToolCallArguments, replayableToolCallArguments } from "../utils/tool-call-arguments";
 import {
 	type Api,
@@ -1392,7 +1393,7 @@ export function readOpenRouterRawMetadata(
 	const raw = metadata.raw;
 	if (typeof raw !== "string") return undefined;
 	const trimmed = raw.trim();
-	return trimmed.length > 0 ? trimmed : undefined;
+	return trimmed.length > 0 ? trimmed.slice(0, MAX_DETAIL_CHARS) : undefined;
 }
 
 /** Decide whether an OpenAI-family request should retry once with non-strict tools. */

@@ -33,7 +33,7 @@ import type { CapturedHttpErrorResponse } from "./http-inspector";
 const DEFAULT_MAX_ATTEMPTS = 6;
 
 /** Bound the `Error.message` allocation for proxy HTML error pages and the like. */
-const MAX_DETAIL_CHARS = 4096;
+export const MAX_DETAIL_CHARS = 4096;
 
 /**
  * LiteLLM (and compatible proxies) shed over-concurrency requests *before* the

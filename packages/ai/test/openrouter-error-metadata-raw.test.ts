@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { streamOpenAICompletions } from "@oh-my-pi/pi-ai/providers/openai-completions";
 import { streamOpenAIResponses } from "@oh-my-pi/pi-ai/providers/openai-responses";
-import type { AssistantMessage, Context, FetchImpl, Model, ModelSpec } from "@oh-my-pi/pi-ai/types";
+import type { AssistantMessage, Context, FetchImpl, Model } from "@oh-my-pi/pi-ai/types";
 import type { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
 import { buildModel } from "@oh-my-pi/pi-catalog/build";
 
@@ -19,14 +19,10 @@ const UPSTREAM_RAW =
 	"Anthropic (claude-sonnet-4.5) returned 403: content flagged by the account's data-retention policy. See https://openrouter.ai/activity";
 
 function create403Fetch(body: unknown): FetchImpl {
-	const fetchMock = vi.fn(
-		async () =>
-			new Response(JSON.stringify(body), {
-				status: 403,
-				headers: { "content-type": "application/json" },
-			}),
-	) as unknown as FetchImpl;
-	return Object.assign(fetchMock, { preconnect: fetch.preconnect });
+	return Object.assign(
+		async () => new Response(JSON.stringify(body), { status: 403, headers: { "content-type": "application/json" } }),
+		{ preconnect: fetch.preconnect },
+	);
 }
 
 async function runToTerminal(stream: AssistantMessageEventStream): Promise<AssistantMessage> {
@@ -36,7 +32,7 @@ async function runToTerminal(stream: AssistantMessageEventStream): Promise<Assis
 	return stream.finalResultPromise;
 }
 
-function buildOpenRouterModel(api: "openrouter" | "openai-responses"): Model<"openrouter"> {
+function buildOpenRouterModel<TApi extends "openai-completions" | "openai-responses">(api: TApi): Model<TApi> {
 	return buildModel({
 		id: "anthropic/claude-sonnet-4.5",
 		name: "Claude Sonnet 4.5 via OpenRouter",
@@ -48,26 +44,45 @@ function buildOpenRouterModel(api: "openrouter" | "openai-responses"): Model<"op
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
 		contextWindow: 200_000,
 		maxTokens: 131_072,
-	} as ModelSpec<"openrouter">);
+	});
 }
 
 describe("OpenRouter error metadata.raw (#10906)", () => {
+	it("bounds the surfaced upstream explanation on both APIs", async () => {
+		const raw = "Upstream request detail: " + "ordinary diagnostic text ".repeat(250);
+		const body = { error: { message: "Request declined", code: 403, metadata: { raw } } };
+		const streams = [
+			streamOpenAICompletions(buildOpenRouterModel("openai-completions"), context, {
+				apiKey: "test-key",
+				fetch: create403Fetch(body),
+			}),
+			streamOpenAIResponses(buildOpenRouterModel("openai-responses"), context, {
+				apiKey: "test-key",
+				fetch: create403Fetch(body),
+			}),
+		];
+		for (const stream of streams) {
+			const message = await runToTerminal(stream);
+			expect(message.errorStatus).toBe(403);
+			expect(message.errorMessage).toContain("Request declined");
+			expect(message.errorMessage).toContain("Upstream request detail: ");
+			const appended = message.errorMessage?.split("\n").slice(1).join("\n") ?? "";
+			expect(appended.length).toBeLessThanOrEqual(4096);
+		}
+	});
+
 	it("surfaces the routed upstream's explanation alongside the generic 403 on chat completions", async () => {
 		const message = await runToTerminal(
-			streamOpenAICompletions(
-				buildOpenRouterModel("openrouter") as unknown as Model<"openai-completions">,
-				context,
-				{
-					apiKey: "test-key",
-					fetch: create403Fetch({
-						error: {
-							message: "Access denied by security policy",
-							code: 403,
-							metadata: { raw: UPSTREAM_RAW, provider_name: "Anthropic" },
-						},
-					}),
-				},
-			),
+			streamOpenAICompletions(buildOpenRouterModel("openai-completions"), context, {
+				apiKey: "test-key",
+				fetch: create403Fetch({
+					error: {
+						message: "Access denied by security policy",
+						code: 403,
+						metadata: { raw: UPSTREAM_RAW, provider_name: "Anthropic" },
+					},
+				}),
+			}),
 		);
 
 		expect(message.errorStatus).toBe(403);
@@ -79,20 +94,16 @@ describe("OpenRouter error metadata.raw (#10906)", () => {
 
 	it("surfaces the routed upstream's explanation on the responses API too", async () => {
 		const message = await runToTerminal(
-			streamOpenAIResponses(
-				buildOpenRouterModel("openai-responses") as unknown as Model<"openai-responses">,
-				context,
-				{
-					apiKey: "test-key",
-					fetch: create403Fetch({
-						error: {
-							message: "Access denied by security policy",
-							code: 403,
-							metadata: { raw: UPSTREAM_RAW, provider_name: "Anthropic" },
-						},
-					}),
-				},
-			),
+			streamOpenAIResponses(buildOpenRouterModel("openai-responses"), context, {
+				apiKey: "test-key",
+				fetch: create403Fetch({
+					error: {
+						message: "Access denied by security policy",
+						code: 403,
+						metadata: { raw: UPSTREAM_RAW, provider_name: "Anthropic" },
+					},
+				}),
+			}),
 		);
 
 		expect(message.errorStatus).toBe(403);
@@ -102,16 +113,12 @@ describe("OpenRouter error metadata.raw (#10906)", () => {
 
 	it("does not append a bare status line when the 403 carries no upstream detail", async () => {
 		const message = await runToTerminal(
-			streamOpenAICompletions(
-				buildOpenRouterModel("openrouter") as unknown as Model<"openai-completions">,
-				context,
-				{
-					apiKey: "test-key",
-					fetch: create403Fetch({
-						error: { message: "Access denied by security policy", code: 403 },
-					}),
-				},
-			),
+			streamOpenAICompletions(buildOpenRouterModel("openai-completions"), context, {
+				apiKey: "test-key",
+				fetch: create403Fetch({
+					error: { message: "Access denied by security policy", code: 403 },
+				}),
+			}),
 		);
 
 		expect(message.errorMessage).toContain("Access denied by security policy");
