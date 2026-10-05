@@ -59,6 +59,8 @@ export function mapTextBlocks(content: unknown, redact: (text: string) => string
 export function redactStructuredPayload(value: unknown, placeholder: string, seen = new WeakSet<object>()): unknown {
 	if (typeof value === "string") return regexRedact(value, placeholder);
 	if (value == null || typeof value !== "object") return value;
+	// Provider wire payloads carry binary views that must retain their representation.
+	if (ArrayBuffer.isView(value)) return value;
 	if (seen.has(value)) return value;
 	seen.add(value);
 	if (Array.isArray(value)) {

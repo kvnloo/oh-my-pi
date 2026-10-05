@@ -179,6 +179,15 @@ describe("pii-redact example extension events", () => {
 		});
 	});
 
+	it("preserves binary provider values through the request hook", async () => {
+		const runner = await loadExampleRunner();
+		const blobId = new Uint8Array([1, 2, 3]);
+		const input = { conversationState: { rootPromptMessagesJson: [blobId] }, note: "ordinary text" };
+		const payload = await runner.emitBeforeProviderRequest(input);
+		expect(payload).toEqual(input);
+		expect((payload as typeof input).conversationState.rootPromptMessagesJson[0]).toBe(blobId);
+	});
+
 	it("registers via default export factory", () => {
 		const commands: string[] = [];
 		const handlers: string[] = [];
