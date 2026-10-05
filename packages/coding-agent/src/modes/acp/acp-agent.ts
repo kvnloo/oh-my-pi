@@ -1418,6 +1418,12 @@ export class AcpAgent implements Agent {
 			return;
 		}
 
+		// Capture this event's usage before delivery can yield to a later event.
+		const usageUpdate =
+			(event.type === "message_end" && event.message.role === "assistant") || event.type === "auto_compaction_end"
+				? this.#buildUsageUpdate(record)
+				: undefined;
+
 		if (event.type === "tool_execution_start" || event.type === "tool_execution_update") {
 			record.toolArgsById.set(event.toolCallId, event.args);
 		}
@@ -1459,12 +1465,7 @@ export class AcpAgent implements Agent {
 		if (event.type === "tool_execution_end") {
 			record.toolArgsById.delete(event.toolCallId);
 		}
-		if (
-			(event.type === "message_end" && event.message.role === "assistant") ||
-			event.type === "auto_compaction_end"
-		) {
-			await this.#emitUsageUpdate(record);
-		}
+		if (usageUpdate) await this.#connection.sessionUpdate(usageUpdate);
 		this.#clearLiveAssistantMessageAfterEvent(record, event);
 
 		if (event.type === "agent_end") {
@@ -2171,7 +2172,8 @@ export class AcpAgent implements Agent {
 	}
 
 	async #emitEndOfTurnUpdates(record: ManagedSessionRecord): Promise<void> {
-		await this.#emitUsageUpdate(record);
+		const usageUpdate = this.#buildUsageUpdate(record);
+		if (usageUpdate) await this.#connection.sessionUpdate(usageUpdate);
 
 		await this.#connection.sessionUpdate({
 			sessionId: record.session.sessionId,
@@ -2184,16 +2186,16 @@ export class AcpAgent implements Agent {
 	}
 
 	/**
-	 * Send the current context figure as `usage_update` (issue #12667). Also
+	 * Snapshot the current context figure as `usage_update` (issue #12667). Also
 	 * called after each assistant message and each auto-compaction so long
 	 * prompts don't leave ACP clients meter-blind for hours; the schema allows
 	 * the notification mid-prompt and the end-of-turn send stays as-is.
 	 */
-	async #emitUsageUpdate(record: ManagedSessionRecord): Promise<void> {
+	#buildUsageUpdate(record: ManagedSessionRecord): SessionNotification | undefined {
 		const contextUsage = record.session.getContextUsage();
 		if (!contextUsage) return;
 		const usageStats = record.session.sessionManager.getUsageStatistics();
-		await this.#connection.sessionUpdate({
+		return {
 			sessionId: record.session.sessionId,
 			update: {
 				sessionUpdate: "usage_update",
@@ -2201,7 +2203,7 @@ export class AcpAgent implements Agent {
 				used: contextUsage.tokens ?? 0,
 				cost: usageStats.cost > 0 ? { amount: usageStats.cost, currency: "USD" } : undefined,
 			},
-		});
+		};
 	}
 
 	#cloneUsageStatistics(usage: UsageStatistics): UsageStatistics {

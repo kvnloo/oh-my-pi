@@ -6,7 +6,7 @@ import { AgentBusyError } from "@oh-my-pi/pi-agent-core";
 import type { Model } from "@oh-my-pi/pi-ai";
 import { buildModel } from "@oh-my-pi/pi-catalog/build";
 import { resetSettingsForTest, Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
-import type { ExtensionUIContext } from "@oh-my-pi/pi-coding-agent/extensibility/extensions";
+import type { ContextUsage, ExtensionUIContext } from "@oh-my-pi/pi-coding-agent/extensibility/extensions";
 import { resolveLocalUrlToPath } from "@oh-my-pi/pi-coding-agent/internal-urls";
 import {
 	ACP_BOOTSTRAP_RACE_GUARD_MS,
@@ -298,7 +298,7 @@ class FakeAgentSession {
 
 	async refreshMCPTools(_tools: unknown[]): Promise<void> {}
 
-	getContextUsage(): undefined {
+	getContextUsage(): ContextUsage | undefined {
 		return undefined;
 	}
 
@@ -3573,66 +3573,79 @@ describe("ACP agent MCP server configuration (late-connecting servers)", () => {
 });
 
 describe("ACP per-message usage updates (issue #12667)", () => {
-	it("emits usage_update after each assistant message and compaction", async () => {
-		const harness = await createHarness();
+	it("captures per-event usage before delayed delivery", async () => {
+		const blocked = Promise.withResolvers<void>();
+		const release = Promise.withResolvers<void>();
+		const secondUsage = Promise.withResolvers<void>();
+		const firstUsage = Promise.withResolvers<void>();
+		const compactUsage = Promise.withResolvers<void>();
+		let usageCount = 0;
+		const harness = await createHarness({
+			sessionUpdateHook: async notification => {
+				const update = notification.update;
+				if (
+					update.sessionUpdate === "agent_message_chunk" &&
+					update.content.type === "text" &&
+					update.content.text === "First answer."
+				) {
+					blocked.resolve();
+					await release.promise;
+				}
+				if (update.sessionUpdate === "usage_update") {
+					usageCount++;
+					if (usageCount === 1) secondUsage.resolve();
+					if (usageCount === 2) firstUsage.resolve();
+					if (usageCount === 3) compactUsage.resolve();
+				}
+			},
+		});
 		const created = await harness.agent.newSession({ cwd: harness.cwdA, mcpServers: [] });
 		const session = harness.findSession(created.sessionId);
 		if (!session) throw new Error("session not registered");
-
 		let usedTokens = 0;
-		spyOn(session, "getContextUsage").mockImplementation(() => ({ contextWindow: 1000, tokens: usedTokens }) as never);
+		spyOn(session, "getContextUsage").mockImplementation(() => ({
+			contextWindow: 1000,
+			tokens: usedTokens,
+			percent: usedTokens / 10,
+		}));
 		const msg1 = makeAssistantMessage("First answer.");
 		const msg2 = makeAssistantMessage("Second answer.");
 		session.prompt = async (): Promise<boolean> => {
 			session.isStreaming = true;
-			const fire = async (event: AgentSessionEvent): Promise<void> => {
-				for (const listener of session.listeners()) {
-					listener(event);
-				}
-				await Bun.sleep(0);
+			const fire = (event: AgentSessionEvent): void => {
+				for (const listener of session.listeners()) listener(event);
 			};
 			usedTokens = 100;
-			await fire({ type: "message_end", message: msg1 } as AgentSessionEvent);
+			fire({ type: "message_end", message: msg1 });
 			usedTokens = 200;
-			await fire({ type: "message_end", message: msg2 } as AgentSessionEvent);
-			await fire({
+			fire({ type: "message_end", message: msg2 });
+			await blocked.promise;
+			await secondUsage.promise;
+			usedTokens = 300;
+			release.resolve();
+			await firstUsage.promise;
+			usedTokens = 50;
+			fire({
 				type: "auto_compaction_end",
 				action: "context-full",
 				result: undefined,
 				aborted: false,
 				willRetry: false,
-			} as AgentSessionEvent);
-			usedTokens = 50;
-			await fire({ type: "agent_end", messages: [msg1, msg2] } as AgentSessionEvent);
+			});
+			await compactUsage.promise;
+			fire({ type: "agent_end", messages: [msg1, msg2] });
 			session.isStreaming = false;
 			return true;
 		};
-
-		await harness.agent.prompt({ sessionId: created.sessionId, prompt: [{ type: "text", text: "Go" }] });
-
-		const used: number[] = [];
-		const collectUsage = (): void => {
-			used.length = 0;
-			for (const update of harness.updates) {
-				if (update.sessionId !== created.sessionId) continue;
-				const inner: unknown = update.update;
-				if (
-					typeof inner === "object" &&
-					inner !== null &&
-					"sessionUpdate" in inner &&
-					inner.sessionUpdate === "usage_update" &&
-					"used" in inner &&
-					typeof inner.used === "number"
-				) {
-					used.push(inner.used);
-				}
-			}
-		};
-		collectUsage();
-		for (let i = 0; i < 500 && used.length < 4; i++) {
-			await Bun.sleep(10);
-			collectUsage();
+		try {
+			await harness.agent.prompt({ sessionId: created.sessionId, prompt: [{ type: "text", text: "Go" }] });
+			const used = harness.updates.flatMap(notification =>
+				notification.update.sessionUpdate === "usage_update" ? [notification.update.used] : [],
+			);
+			expect(used).toEqual([200, 100, 50, 50]);
+		} finally {
+			release.resolve();
+			harness.abortController.abort();
 		}
-		expect(used).toEqual([100, 200, 200, 50]);
 	});
 });

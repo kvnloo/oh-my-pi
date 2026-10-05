@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Report per-message ACP usage from event-time snapshots even when notification delivery is delayed ([#12716](https://github.com/can1357/oh-my-pi/pull/12716), thanks [@F0Rextasy](https://github.com/F0Rextasy)).
+
 ## [18.6.2] - 2026-10-04
 
 ### Fixed
