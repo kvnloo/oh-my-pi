@@ -61,7 +61,7 @@ Terminology follows `docs/natives-architecture.md`:
 
 1. Callers invoke generated native exports directly; there is no package-local TS wrapper that renames `search` to `searchContent`.
 2. Rust option structs in `grep.rs` deserialize camelCase fields including `ignoreCase`, `maxCount`, `maxCountPerFile`, `contextBefore`, `contextAfter`, `maxColumns`, and `timeoutMs`.
-3. `grep` creates `CancelToken` from `timeoutMs` + `AbortSignal` and runs inside `task::blocking("grep", ...)`. Filesystem grep does not expose or use the shared walker cache. `filesystem?: ShellFilesystem` supplies host-injected stat/walk/read operations, including absolute `scheme://` paths.
+3. `grep` creates `CancelToken` from `timeoutMs` + `AbortSignal` and runs inside `task::filesystem("grep", ...)`. Filesystem grep does not expose or use the shared walker cache. `filesystem?: ShellFilesystem` supplies host-injected stat/walk/read operations, including absolute `scheme://` paths.
 4. `search` and `hasMatch` operate on provided string/`Uint8Array` content and do not scan the filesystem.
 
 ### Execution branches
