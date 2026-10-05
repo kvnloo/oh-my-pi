@@ -1468,6 +1468,40 @@ describe("agentLoop with AgentMessage", () => {
 		expect(result?.content).toContainEqual({ type: "text", text: "bank: read" });
 	});
 
+	it("names only the active tool pool after an unrelated unknown call", async () => {
+		const schema = type({});
+		const execute = vi.fn(async () => ({ content: [{ type: "text" as const, text: "inert" }], details: {} }));
+		const tools: AgentTool<typeof schema>[] = ["read", "grep", "glob", "advise"].map(name => ({
+			name,
+			label: name,
+			description: "Inert granted tool",
+			parameters: schema,
+			execute,
+		}));
+		const context: AgentContext = { systemPrompt: [""], messages: [], tools };
+		const mock = createMockModel({
+			responses: [
+				{ content: [{ type: "toolCall", id: "unknown", name: "bash", arguments: {} }] },
+				{ content: ["done"] },
+			],
+		});
+		const config: AgentLoopConfig = {
+			model: mock.model,
+			convertToLlm: identityConverter,
+			suggestFallbackToolNames: () => ["unadvertised_device"],
+		};
+		const messages = await agentLoop([createUserMessage("go")], context, config, undefined, mock.stream).result();
+		const result = messages.find((message): message is ToolResultMessage => message.role === "toolResult");
+		expect(result?.isError).toBe(true);
+		if (!result) throw new Error("expected unknown-tool result");
+		const diagnostic = toolResultText(result);
+		expect(diagnostic).toContain("Tool bash not found");
+		for (const tool of tools) expect(diagnostic).toContain(tool.name);
+		expect(diagnostic).not.toContain("unadvertised_device");
+		expect(diagnostic).not.toContain("Did you mean");
+		expect(execute).not.toHaveBeenCalled();
+	});
+
 	it("suggests the intended tool when a miss shares its trailing segment", async () => {
 		const toolSchema = type({ path: "string" });
 		const makeTool = (name: string): AgentTool<typeof toolSchema, { path: string }> => ({

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Unknown-tool errors now list available tools when no close name matches ([#14306](https://github.com/can1357/oh-my-pi/issues/14306)).
+
 ## [18.6.1] - 2026-10-04
 
 ### Fixed

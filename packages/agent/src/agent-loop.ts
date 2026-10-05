@@ -2832,6 +2832,8 @@ function resolveToolForCall(
 const MIN_TOOL_NAME_SUGGESTION_SEGMENT = 3;
 /** Cap on names listed for an ambiguous miss, so the error stays readable. */
 const MAX_TOOL_NAME_SUGGESTIONS = 3;
+/** Bound the fallback inventory for sessions with many advertised tools. */
+const MAX_AVAILABLE_TOOL_NAMES = 20;
 
 /**
  * Tool names sharing a trailing `_`-delimited segment with `name`.
@@ -2897,7 +2899,13 @@ function formatToolNotFoundMessage(
 	fallbackNames?: Iterable<string>,
 ): string {
 	const suggestions = suggestToolNames(name, tools, fallbackNames);
-	if (suggestions.length === 0) return `Tool ${name} not found`;
+	if (suggestions.length === 0) {
+		const available = [...new Set(tools?.map(tool => tool.customWireName ?? tool.name))];
+		if (available.length === 0) return `Tool ${name} not found`;
+		const listed = available.slice(0, MAX_AVAILABLE_TOOL_NAMES).join(", ");
+		const remainder = available.length > MAX_AVAILABLE_TOOL_NAMES ? ", …" : "";
+		return `Tool ${name} not found. Available tools in this context: ${listed}${remainder}`;
+	}
 	if (suggestions.length === 1) return `Tool ${name} not found. Did you mean ${suggestions[0]}?`;
 	return `Tool ${name} not found. Closest available: ${suggestions.slice(0, MAX_TOOL_NAME_SUGGESTIONS).join(", ")}`;
 }
