@@ -615,10 +615,30 @@ function getCallPreview(
 	}
 	const cache = previewCacheAt(caches, 0);
 	if (args.previewDiff) {
-		return formatStreamingDiff(args.previewDiff, rawPath, width, uiTheme, expanded, "preview", spinnerFrame, cache, showFullDiff);
+		return formatStreamingDiff(
+			args.previewDiff,
+			rawPath,
+			width,
+			uiTheme,
+			expanded,
+			"preview",
+			spinnerFrame,
+			cache,
+			showFullDiff,
+		);
 	}
 	if (args.diff && args.op) {
-		return formatStreamingDiff(args.diff, rawPath, width, uiTheme, expanded, "streaming", spinnerFrame, cache, showFullDiff);
+		return formatStreamingDiff(
+			args.diff,
+			rawPath,
+			width,
+			uiTheme,
+			expanded,
+			"streaming",
+			spinnerFrame,
+			cache,
+			showFullDiff,
+		);
 	}
 	if (args.diff) {
 		return renderPlainTextPreview(args.diff, uiTheme, rawPath);
@@ -1135,7 +1155,7 @@ export const editToolRenderer = {
 				options.expanded,
 				options?.spinnerFrame,
 				callPreviewCaches,
-				options.argsComplete === true && renderContext?.editDiffPreviewSettled === true,
+				options.expanded && options.argsComplete === true && renderContext?.editDiffPreviewSettled === true,
 			);
 			if (applyPatchError) {
 				body += `\n${uiTheme.fg("error", truncateToWidth(replaceTabs(applyPatchError), Math.max(1, width - 2)))}`;

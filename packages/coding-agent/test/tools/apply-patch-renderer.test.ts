@@ -147,17 +147,12 @@ describe("apply_patch rendering", () => {
 		}
 	});
 
-	it("shows the complete settled diff when an approval preview is expanded", async () => {
+	it("shows the complete settled diff only while an approval preview is expanded", async () => {
 		await getUiTheme();
 		const uiStub = { requestRender() {}, requestComponentRender() {} } as unknown as TUI;
-		const input = [
-			"*** Begin Patch",
-			"*** Update File: preview.ts",
-			"@@",
-			"-before",
-			"+after",
-			"*** End Patch",
-		].join("\n");
+		const input = ["*** Begin Patch", "*** Update File: preview.ts", "@@", "-before", "+after", "*** End Patch"].join(
+			"\n",
+		);
 		const component = new ToolExecutionComponent("apply_patch", { input }, {}, undefined, uiStub);
 		const middle = Array.from({ length: 120 }, (_unused, index) => ` ${index + 2}|middle-${index}`);
 		const diff = [" 1|HEAD_APPROVAL_SENTINEL", ...middle, " 122|TAIL_APPROVAL_SENTINEL"].join("\n");
@@ -175,15 +170,26 @@ describe("apply_patch rendering", () => {
 		expect(livePreview).not.toContain("HEAD_APPROVAL_SENTINEL");
 		expect(livePreview).toContain("TAIL_APPROVAL_SENTINEL");
 
+		component.setExpanded(false);
 		component.updateStreamPreview({
 			generation: 2,
 			streaming: false,
 			files: [{ path: "preview.ts", diff, firstChangedLine: 1 }],
 		});
+		const collapsedPreview = Bun.stripANSI(component.render(160).join("\n"));
+		expect(collapsedPreview).not.toContain("HEAD_APPROVAL_SENTINEL");
+		expect(collapsedPreview).toContain("TAIL_APPROVAL_SENTINEL");
+
+		component.setExpanded(true);
 		const approvalPreview = Bun.stripANSI(component.render(160).join("\n"));
 		expect(approvalPreview).toContain("HEAD_APPROVAL_SENTINEL");
 		expect(approvalPreview).toContain("TAIL_APPROVAL_SENTINEL");
 		expect(approvalPreview).not.toContain("… (content above)");
+
+		component.setExpanded(false);
+		const recollapsedPreview = Bun.stripANSI(component.render(160).join("\n"));
+		expect(recollapsedPreview).not.toContain("HEAD_APPROVAL_SENTINEL");
+		expect(recollapsedPreview).toContain("TAIL_APPROVAL_SENTINEL");
 	});
 
 	it("refreshes streaming preview immediately on arg updates without scheduling a debounce", async () => {

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Settled edit previews reveal the full diff only while expanded and return to a bounded preview when collapsed ([#13060](https://github.com/can1357/oh-my-pi/pull/13060) by [@kvnloo](https://github.com/kvnloo)).
+
 ## [18.6.1] - 2026-10-04
 
 ### Fixed
