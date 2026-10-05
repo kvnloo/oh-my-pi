@@ -6,6 +6,7 @@ import * as path from "node:path";
 import { BtwHistoryPanel } from "@oh-my-pi/pi-tui/overlays/btw-history-panel";
 import { BtwHistoryStore } from "@oh-my-pi/pi-coding-agent/session/btw-history";
 import { SessionManager } from "@oh-my-pi/pi-coding-agent/session/session-manager";
+import { dedupeEphemeralReply } from "@oh-my-pi/pi-coding-agent/session/messages";
 import { BtwPanelComponent } from "@oh-my-pi/pi-tui/overlays/btw-panel";
 import { BtwController } from "@oh-my-pi/pi-coding-agent/modes/controllers/btw-controller";
 import { initTheme } from "@oh-my-pi/pi-tui/theme";
@@ -38,6 +39,7 @@ function createAssistantMessage(text: string): AssistantMessage {
 
 interface RunEphemeralTurnArgs {
 	promptText: string;
+	replyMaxBytes?: number;
 	onTextDelta?: (delta: string) => void;
 	signal?: AbortSignal;
 }
@@ -538,6 +540,39 @@ describe("BtwController", () => {
 		expect(await controller.handleCopy()).toBe(true);
 		expect(copySpy).toHaveBeenCalledWith(replaceTabs("Visible\tanswer\n\nfrom /btw"));
 		expect(Bun.stripANSI(ctx.btwContainer.render(100).join("\n"))).toContain("Copied");
+	});
+	it("keeps a long completed answer available to copy and branch while collapsing repeated lines", async () => {
+		const paragraphs = Array.from(
+			{ length: 200 },
+			(_, i) => `Paragraph ${i}: distinct details for the side answer.`,
+		).join("\n\n");
+		const raw = `${paragraphs}\n${"again\n".repeat(50)}UNIQUE-END-OF-ANSWER`;
+		const expected = `${paragraphs}\nagain\n[…50×]\nUNIQUE-END-OF-ANSWER`;
+		const copySpy = vi.spyOn(clipboard, "copyToClipboard").mockResolvedValue(undefined);
+		// Exercise the controller's byte-budget contract with the real sanitizer;
+		// provider execution and AgentSession itself remain outside this fixture.
+		const runEphemeralTurn = vi.fn(async (args: RunEphemeralTurnArgs) => {
+			args.onTextDelta?.(raw);
+			return {
+				replyText: dedupeEphemeralReply(raw, args.replyMaxBytes),
+				assistantMessage: createAssistantMessage(raw),
+			};
+		});
+		const ctx = makeCtx(makeFakeSession(runEphemeralTurn));
+		const controller = new BtwController(ctx);
+
+		await controller.start("Question?");
+		await drainBtwRequest();
+
+		expect(await controller.handleCopy()).toBe(true);
+		expect(copySpy).toHaveBeenCalledWith(expected);
+		expect(await controller.handleBranch()).toBe(true);
+		expect(ctx.handleBtwBranch).toHaveBeenCalledWith(
+			"Question?",
+			expect.objectContaining({ content: [{ type: "text", text: expected }] }),
+			"leaf-1",
+			"session-1",
+		);
 	});
 	it("does not confirm a superseded panel when the clipboard settles late", async () => {
 		const { promise: copyGate, resolve: releaseCopy } = Promise.withResolvers<void>();
