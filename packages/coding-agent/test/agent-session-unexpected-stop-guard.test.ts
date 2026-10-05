@@ -409,7 +409,7 @@ describe("AgentSession unexpected stop guard", () => {
 	});
 
 	it("an exhausted thinking-only cap does not request an available configured fallback", async () => {
-		const { session, mock } = await createHarness([
+		const { session } = await createHarness([
 			thinkingOnlyStop("Inspecting the bounded recovery."),
 			thinkingOnlyStop("Checking its second attempt."),
 			thinkingOnlyStop("Preparing its last retry."),
@@ -426,6 +426,12 @@ describe("AgentSession unexpected stop guard", () => {
 			[`${primary.provider}/${primary.id}`]: [`${fallback.provider}/${fallback.id}`],
 			judge: [],
 		});
+		const requestedModels: string[] = [];
+		const stream = session.agent.streamFn;
+		session.agent.streamFn = (model, context, options) => {
+			requestedModels.push(`${model.provider}/${model.id}`);
+			return stream(model, context, options);
+		};
 		const failures: Extract<AgentSessionEvent, { type: "auto_retry_end" }>[] = [];
 		session.subscribe(event => {
 			if (event.type === "auto_retry_end" && !event.success) failures.push(event);
@@ -434,7 +440,7 @@ describe("AgentSession unexpected stop guard", () => {
 		await session.prompt("finish within the unexpected-stop retry budget");
 		await session.waitForIdle();
 
-		expect(mock.calls).toHaveLength(4);
+		expect(requestedModels).toEqual(Array(4).fill(`${primary.provider}/${primary.id}`));
 		expect(session.model).toMatchObject({ provider: primary.provider, id: primary.id });
 		expect(failures).toHaveLength(1);
 		expect(session.getLastAssistantMessage()).toMatchObject({ stopReason: "error" });
