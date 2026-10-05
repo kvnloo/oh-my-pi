@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserved user-chosen permissions on an existing agent directory while continuing to harden `agent.db` to `0600` ([#10413](https://github.com/can1357/oh-my-pi/issues/10413)).
+
 ## [18.6.2] - 2026-10-04
 
 ### Fixed
