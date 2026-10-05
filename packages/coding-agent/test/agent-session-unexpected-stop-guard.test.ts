@@ -9,6 +9,11 @@ import { Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
 import { AgentSession, type AgentSessionEvent } from "@oh-my-pi/pi-coding-agent/session/agent-session";
 import { convertToLlm } from "@oh-my-pi/pi-coding-agent/session/messages";
 import { SessionManager } from "@oh-my-pi/pi-coding-agent/session/session-manager";
+import {
+	cfgRetryEnabled,
+	cfgRetryFallbackChains,
+	cfgRetryModelFallback,
+} from "@oh-my-pi/pi-coding-agent/session/settings";
 import * as unexpectedStopClassifier from "@oh-my-pi/pi-coding-agent/session/unexpected-stop-classifier";
 import { logger, TempDir } from "@oh-my-pi/pi-utils";
 import { createInMemoryAuthStorage } from "./helpers/agent-session-setup";
@@ -401,6 +406,38 @@ describe("AgentSession unexpected stop guard", () => {
 		} finally {
 			await reopened.close();
 		}
+	});
+
+	it("an exhausted thinking-only cap does not request an available configured fallback", async () => {
+		const { session, mock } = await createHarness([
+			thinkingOnlyStop("Inspecting the bounded recovery."),
+			thinkingOnlyStop("Checking its second attempt."),
+			thinkingOnlyStop("Preparing its last retry."),
+			thinkingOnlyStop("Reaching the retry cap."),
+			{ content: ["Fallback must not be requested after the terminal cap."], stopReason: "stop" },
+		]);
+		const primary = session.model;
+		if (!primary) throw new Error("Expected an active primary model");
+		const fallback = getBundledModel("anthropic", "claude-haiku-4-5");
+		if (!fallback) throw new Error("Expected the bundled fallback fixture model");
+		cfgRetryEnabled.override(session.settings, true);
+		cfgRetryModelFallback.override(session.settings, true);
+		cfgRetryFallbackChains.override(session.settings, {
+			[`${primary.provider}/${primary.id}`]: [`${fallback.provider}/${fallback.id}`],
+			judge: [],
+		});
+		const failures: Extract<AgentSessionEvent, { type: "auto_retry_end" }>[] = [];
+		session.subscribe(event => {
+			if (event.type === "auto_retry_end" && !event.success) failures.push(event);
+		});
+
+		await session.prompt("finish within the unexpected-stop retry budget");
+		await session.waitForIdle();
+
+		expect(mock.calls).toHaveLength(4);
+		expect(session.model).toMatchObject({ provider: primary.provider, id: primary.id });
+		expect(failures).toHaveLength(1);
+		expect(session.getLastAssistantMessage()).toMatchObject({ stopReason: "error" });
 	});
 
 	it("does not classify a message that contains a tool call", async () => {
