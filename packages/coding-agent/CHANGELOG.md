@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- TypeSafe Jev example skill hints now reach the agent while retaining existing system prompt parts ([#12364](https://github.com/can1357/oh-my-pi/pull/12364) by [@kvnloo](https://github.com/kvnloo)).
+
 ### Breaking Changes
 
 - Moved every terminal-UI module (theme, tool renderers, chat/overlay/status-line/composer components, setup wizard, git/ps/debug apps) to `@oh-my-pi/pi-tui`; `@oh-my-pi/pi-coding-agent/modes/theme/*`, `/modes/components/*`, `/tui/*`, `/tools/render-utils` and related subpaths no longer exist. Names re-exported from the package root (`Theme`, `theme`, hook/editor components, tool Details types) are unchanged.

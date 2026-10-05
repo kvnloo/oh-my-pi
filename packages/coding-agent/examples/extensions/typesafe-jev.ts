@@ -3,7 +3,7 @@
  *
  * Call 1: Choice over the roster + three gate Nouls. Call 2 (auto): rerank the
  * top 3 with SKILL.md excerpts + fits Nouls when the roster is large or the
- * top two choices collide. Injects `<skill_relevance>` via systemPromptAppend.
+ * top two choices collide. Appends `<skill_relevance>` to the existing system prompt parts.
  * Fail-open on missing key, timeout, or HTTP error.
  *
  * Usage:
@@ -48,7 +48,10 @@ function loadKey(): string {
 	try {
 		for (const line of readFileSync(join(homedir(), ".omp/.env"), "utf8").split("\n")) {
 			if (line.startsWith("TYPESAFE_API_KEY=")) {
-				const v = line.slice("TYPESAFE_API_KEY=".length).trim().replace(/^['"]|['"]$/g, "");
+				const v = line
+					.slice("TYPESAFE_API_KEY=".length)
+					.trim()
+					.replace(/^['"]|['"]$/g, "");
 				if (v) return v;
 			}
 		}
@@ -99,11 +102,7 @@ function stripFrontmatter(text: string): string {
 
 function skillDirs(cwd?: string): string[] {
 	const home = homedir();
-	const dirs = [
-		join(home, ".omp/skills"),
-		join(home, ".omp/agent/managed-skills"),
-		join(home, ".agents/skills"),
-	];
+	const dirs = [join(home, ".omp/skills"), join(home, ".omp/agent/managed-skills"), join(home, ".agents/skills")];
 	if (cwd) {
 		dirs.push(join(cwd, ".omp/skills"), join(cwd, ".agents/skills"));
 	}
@@ -262,12 +261,7 @@ async function rerank(
 			instructions: `Does the skill '${name}' do the specific thing the user's request asks for? It is described as: ${skill?.description ?? name}`,
 		};
 	}
-	const body = await systemone(
-		key,
-		{ request: prompt.slice(0, 4000), recent_context: "" },
-		questions,
-		budgetMs,
-	);
+	const body = await systemone(key, { request: prompt.slice(0, 4000), recent_context: "" }, questions, budgetMs);
 	const choice = String(body?.answers?.which?.choice || "");
 	if (!choice || choice === NONE_OF_THESE || !byName.has(choice)) return null;
 	const fitsEntries = Object.entries(body?.answers || {}).filter(([k]) => k.startsWith("fits::"));
@@ -283,11 +277,7 @@ async function rerank(
 	};
 }
 
-async function route(
-	prompt: string,
-	key: string,
-	skills: Skill[],
-): Promise<string | undefined> {
+async function route(prompt: string, key: string, skills: Skill[]): Promise<string | undefined> {
 	if (!prompt.trim() || prompt.trim().startsWith("/")) return;
 	if (skills.length < 2) return;
 
@@ -307,12 +297,7 @@ async function route(
 	}
 
 	const started = Date.now();
-	const body = await systemone(
-		key,
-		{ request: prompt.slice(0, 4000), recent_context: "" },
-		questions,
-		HOOK_BUDGET_MS,
-	);
+	const body = await systemone(key, { request: prompt.slice(0, 4000), recent_context: "" }, questions, HOOK_BUDGET_MS);
 	const which = body?.answers?.which;
 	const choice = String(which?.choice || "");
 	let p = Number(which?.probabilities?.[choice] ?? 0);
@@ -361,7 +346,7 @@ export default function typesafeJev(pi: ExtensionAPI) {
 			const roster = skills.length >= 2 ? skills : loadRoster(ctx.cwd);
 			const block = await route(event.prompt, key, roster);
 			if (!block) return;
-			return { systemPromptAppend: block };
+			return { systemPrompt: [...event.systemPrompt, block] };
 		} catch (error) {
 			log("error", error instanceof Error ? error.message : String(error));
 			return;
