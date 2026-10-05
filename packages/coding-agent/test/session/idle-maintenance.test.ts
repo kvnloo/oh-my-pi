@@ -497,7 +497,7 @@ describe("AgentSession idle maintenance", () => {
 			await runTurn(h);
 			await elapse(60_000);
 			await until(() => compaction.mock.calls.length === 1, "the earlier idle compaction pass");
-			const pass = compaction.mock.results[0]?.value;
+			const pass = compaction.mock.results[0]?.value as Promise<void> | undefined;
 			if (pass) await drive(pass);
 			await flush();
 
