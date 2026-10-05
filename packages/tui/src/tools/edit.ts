@@ -529,11 +529,11 @@ function formatStreamingDiff(
 	// native-scrollback commit boundary mid-stream and freeze into immutable
 	// history as a stale preview snapshot; the finalize repair then recommits
 	// the final render below it — a duplicated block on the tape. Collapsed
-	// gets a short fixed tail; expanded widens it to the viewport-sized window,
-	// never unbounded. The budget is VISUAL rows (a long wrapped line counts
-	// for more than one) at the framed block's inner width (border only —
-	// contentPaddingLeft is 0); only the visible suffix is syntax-colored, so
-	// the cheap raw-line wrap walk keeps the per-chunk cost bounded.
+	// gets a short fixed tail; expanded stays viewport-bounded while the preview
+	// mutates. Once args and the async preview settle, explicit expansion may
+	// render the complete immutable diff. The budget is VISUAL rows (a long
+	// wrapped line counts for more than one) at the framed block's inner width;
+	// only the visible suffix is syntax-colored on the live path.
 	// innerWidth/budget are in the cache salt so a resize re-slices.
 	const innerWidth = Math.max(1, width - 2);
 	const budget = expanded ? previewWindowRows() : Math.min(PREVIEW_LIMITS.EXPANDED_LINES, previewWindowRows());
