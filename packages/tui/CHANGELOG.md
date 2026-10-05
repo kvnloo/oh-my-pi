@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve command output that resembles background-notice identity lines ([#12633](https://github.com/can1357/oh-my-pi/pull/12633), thanks [@F0Rextasy](https://github.com/F0Rextasy)).
+
 ## [18.6.1] - 2026-10-04
 
 ### Fixed

@@ -4,7 +4,7 @@ import {
 	formatWallTimeNotice,
 	formatExitCodeNotice,
 } from "@oh-my-pi/pi-tui/tools/bash";
-import { formatToolWorkingDirectory, replaceTabs } from "@oh-my-pi/pi-tui/render/render-utils";
+import { formatToolWorkingDirectory } from "@oh-my-pi/pi-tui/render/render-utils";
 import * as fs from "node:fs";
 import { type } from "@oh-my-pi/omptype";
 import type {
@@ -819,7 +819,7 @@ export class BashTool implements AgentTool<BashToolSchema, BashToolDetails> {
 				? formatToolWorkingDirectory(options.commandCwd, this.session.cwd)
 				: undefined;
 		if (formattedCwd !== undefined) {
-			lines.push(`Working directory: ${replaceTabs(formattedCwd)}`);
+			lines.push(`Working directory: ${formattedCwd}`);
 		}
 		return {
 			content: [{ type: "text", text: lines.join("\n") }],

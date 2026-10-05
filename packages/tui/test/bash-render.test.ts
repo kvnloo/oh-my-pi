@@ -159,6 +159,30 @@ describe("bashToolRenderer", () => {
 		expect(rendered).not.toContain("Timeout:");
 	});
 
+	it("preserves command-like output beside a background notice or without one", () => {
+		const output = "Command: actual output\nWorking directory: actual output directory";
+		for (const suffix of [
+			"",
+			`\n\n${formatBackgroundNotice("bash-42", 300)}\nCommand: metadata-only\nWorking directory: metadata-cwd`,
+		]) {
+			const component = bashToolRenderer.renderResult(
+				{
+					content: [{ type: "text", text: output + suffix }],
+					details: { async: { state: "running", jobId: "bash-42", type: "bash" } },
+					isError: false,
+				},
+				{ expanded: true, isPartial: false },
+				uiTheme,
+				{ command: "render-only" },
+			);
+			const rendered = sanitizeText(component.render(120).join("\n"));
+			expect(rendered).toContain("Command: actual output");
+			expect(rendered).toContain("Working directory: actual output directory");
+			expect(rendered).not.toContain("metadata-only");
+			expect(rendered).not.toContain("metadata-cwd");
+		}
+	});
+
 	it("renders a backgrounded job as a static footer notice, with or without a stated deadline", async () => {
 		for (const [label, notice] of [
 			// Persisted by older versions, before the notice stated a deadline.

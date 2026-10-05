@@ -310,15 +310,11 @@ function stripBashNotices(
 	const job = details?.async;
 	let withoutBackground = rawOutput;
 	if (job?.state === "running") {
-		// The background-start notice is trailed by the `Command:` / `Working directory:`
-		// identity lines, so keep stripping while the tail still matches.
-		const isBackgroundTrailer = (line: string): boolean =>
-			isBackgroundNotice(line, job.jobId) || line.startsWith("Command: ") || line.startsWith("Working directory: ");
-		let previous = "";
-		while (previous !== withoutBackground) {
-			previous = withoutBackground;
-			withoutBackground = stripTrailingNotice(withoutBackground, isBackgroundTrailer);
-		}
+		// Identity lines belong to the notice only when immediately preceded by it.
+		const withoutCwd = stripTrailingNotice(rawOutput, line => line.startsWith("Working directory: "));
+		const withoutIdentity = stripTrailingNotice(withoutCwd, line => line.startsWith("Command: "));
+		const withoutNotice = stripTrailingNotice(withoutIdentity, line => isBackgroundNotice(line, job.jobId));
+		if (withoutNotice !== withoutIdentity) withoutBackground = withoutNotice;
 	}
 	const strippedOutput = stripOutputNotice(withoutBackground, details?.meta);
 	const withoutExit =
