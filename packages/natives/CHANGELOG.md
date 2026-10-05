@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed local native builds with `OMP_NATIVE_CARGO_PROFILE=dev` failing to install the compiled addon.
+
 ## [18.6.2] - 2026-10-04
 
 ### Fixed

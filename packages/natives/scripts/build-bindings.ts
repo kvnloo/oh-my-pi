@@ -16,6 +16,7 @@ import * as path from "node:path";
 import { $ } from "bun";
 import { detectHostAvx2Support, resolveLocalHostAddon } from "../../../scripts/host-detect";
 import { stampNativeVersion } from "../../../scripts/stamp-native-version";
+import { napiCargoProfileArgs } from "./cargo-profile";
 import { generateEnumExports } from "./gen-enums";
 
 // pcre2-sys prefers a system libpcre2 when pkg-config finds one. Keep the
@@ -212,8 +213,6 @@ const napiBin = path.join(path.dirname(napiManifestPath), napiBinEntry);
 
 // Profiles live in the root Cargo.toml; `local` trades size for iteration
 // speed, `ci` strips and drops incremental state.
-const cargoProfile = Bun.env.OMP_NATIVE_CARGO_PROFILE?.trim() || "local";
-
 const napiArgs = [
 	"build",
 	"--manifest-path",
@@ -226,8 +225,7 @@ const napiArgs = [
 	"index.d.ts",
 	"-o",
 	buildOutputDir,
-	"--profile",
-	cargoProfile,
+	...napiCargoProfileArgs(Bun.env.OMP_NATIVE_CARGO_PROFILE),
 ];
 
 // napi-rs / cargo route much failure detail to stdout (e.g. `cargo metadata`
