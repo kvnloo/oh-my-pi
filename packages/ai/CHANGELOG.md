@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed OpenRouter policy denials being surfaced without the routed upstream's own explanation. A 403 like "Access denied by security policy" now also carries the provider detail OpenRouter puts in `error.metadata.raw`, which names the upstream that rejected the request and why ([#10906](https://github.com/can1357/oh-my-pi/issues/10906)).
+
 ## [18.6.1] - 2026-10-04
 
 ### Fixed
