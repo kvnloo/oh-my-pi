@@ -330,6 +330,38 @@ describe("AgentSession unexpected stop guard", () => {
 		});
 	});
 
+	it("settles signed thinking-only retry exhaustion as one terminal failure", async () => {
+		const { session, mock } = await createHarness(
+			[
+				thinkingOnlyStop("Inspecting the first branch."),
+				thinkingOnlyStop("Comparing the terminal state."),
+				thinkingOnlyStop("Checking the recovery boundary."),
+				thinkingOnlyStop("Preparing the final explanation."),
+			],
+			{ "features.unexpectedStopDetection": "mechanical" },
+		);
+		const terminalEvents: Extract<AgentSessionEvent, { type: "agent_end" }>[] = [];
+		const retryFailures: Extract<AgentSessionEvent, { type: "auto_retry_end" }>[] = [];
+		session.subscribe(event => {
+			if (event.type === "agent_end" && event.isTerminal) terminalEvents.push(event);
+			if (event.type === "auto_retry_end" && !event.success) retryFailures.push(event);
+		});
+
+		await session.prompt("finish the synthetic task");
+		await session.waitForIdle();
+
+		expect(mock.calls).toHaveLength(4);
+		expect(terminalEvents).toHaveLength(1);
+		expect(retryFailures).toHaveLength(1);
+		expect(retryFailures[0]).toMatchObject({ attempt: 3, success: false });
+		const last = terminalEvents[0].messages.findLast(message => message.role === "assistant");
+		expect(last).toMatchObject({ stopReason: "error", errorMessage: retryFailures[0].finalError });
+		expect(session.getLastAssistantMessage()).toMatchObject({
+			stopReason: "error",
+			errorMessage: retryFailures[0].finalError,
+		});
+	});
+
 	it("does not classify a message that contains a tool call", async () => {
 		const spy = vi.spyOn(unexpectedStopClassifier, "classifyUnexpectedStop").mockResolvedValue(false);
 		const { session, mock } = await createHarness(

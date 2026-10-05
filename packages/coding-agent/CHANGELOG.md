@@ -6,14 +6,11 @@
 
 ### Fixed
 
+- Unexpected-stop recovery now surfaces an explicit terminal error when its retry cap is exhausted instead of ending the turn silently ([#10614](https://github.com/can1357/oh-my-pi/issues/10614)).
+
 - Fixed snapcompact's short final frames preventing vision-backed sessions from continuing on backends that reject 32px-or-smaller images ([#14355](https://github.com/can1357/oh-my-pi/issues/14355)).
 - Fixed the agent's `goal` calls asking for approval under `--approval-mode write`, which paused goal-mode loops at `complete`; `always-ask` still prompts for goal changes but not `get` ([#14368](https://github.com/can1357/oh-my-pi/issues/14368))
 - Fixed MCP server connection progress popping up a toast for every server that connects or fails in native terminals such as Tern; it now shows only in the classic terminal transcript
-- Unexpected-stop recovery now surfaces an explicit terminal error when its retry cap is exhausted instead of ending the turn silently ([#10614](https://github.com/can1357/oh-my-pi/issues/10614)).
-- Provider errors in the transcript and the pinned error banner now wrap to the terminal width instead of being cut at a fixed column with no way to read the rest; long bodies keep a bounded number of rows and end with the `Ctrl+O to expand` hint.
-- Gemini `MALFORMED_FUNCTION_CALL` turns where the model wrote the call as text (`call:default_api:read{…}`) no longer stop on a pinned error: the session keeps the turn, tells the model the call was rejected, and continues (bounded to three attempts per prompt).
-- Auto-compaction recovery no longer loops indefinitely when a model repeatedly returns an empty `response.incomplete` (`length`) turn: the length-stop recovery path is now bounded and surfaces an actionable error after a few failed attempts instead of scheduling `shake-retry` forever and persisting hundreds of empty assistant turns ([#10594](https://github.com/can1357/oh-my-pi/issues/10594)).
-- MCP servers now retry after transient startup handshake timeouts instead of remaining disconnected for the session ([#10478](https://github.com/can1357/oh-my-pi/issues/10478)).
 
 ## [18.6.1] - 2026-10-04
 
