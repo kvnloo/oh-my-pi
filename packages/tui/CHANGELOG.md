@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Hid unavailable stage and discard key hints when the Git viewer displays committed history ([#14347](https://github.com/can1357/oh-my-pi/issues/14347)).
+
 ## [18.6.1] - 2026-10-04
 
 ### Fixed

@@ -792,13 +792,14 @@ class GitTuiComponent implements Component {
 
 		// The empty middle carries the key hints (or a fresh status message).
 		const status = this.#visibleStatus() ? theme.fg(this.#statusTone, this.#status) : "";
+		const historyFile = file?.area === "commit";
 		const middle =
 			status ||
 			theme.fg(
 				"dim",
 				this.#focus === "diff"
-					? `${formatKeyHints(["alt+down", "alt+up"])} hunk · ${formatKeyHints(["]", "["])} file · ${formatKeyHints(["shift+up", "shift+down"])} select · ${formatKeyHints(["s", "u"])} stage · ${formatKeyHints(["x", "delete"])} discard · ${formatKeyHint("v")} view · ${formatKeyHint("c")} commit · ${formatKeyHint("?")} keys · ${formatKeyHint("q")} quit`
-					: `${formatKeyHints(["up", "down"])} move · ${formatKeyHints(["left", "right"])} fold · ${formatKeyHint("space")} stage · ${formatKeyHint("delete")} discard · ${formatKeyHint("enter")} open · ${formatKeyHints(["alt+down", "alt+up"])} hunk · ${formatKeyHint("c")} commit · ${formatKeyHint("t")} tree · ${formatKeyHint("?")} keys · ${formatKeyHint("q")} quit`,
+					? `${formatKeyHints(["alt+down", "alt+up"])} hunk · ${formatKeyHints(["]", "["])} file · ${formatKeyHints(["shift+up", "shift+down"])} select · ${historyFile ? "" : `${formatKeyHints(["s", "u"])} stage · ${formatKeyHints(["x", "delete"])} discard · `}${formatKeyHint("v")} view · ${formatKeyHint("c")} commit · ${formatKeyHint("?")} keys · ${formatKeyHint("q")} quit`
+					: `${formatKeyHints(["up", "down"])} move · ${formatKeyHints(["left", "right"])} fold · ${historyFile ? "" : `${formatKeyHint("space")} stage · ${formatKeyHint("delete")} discard · `}${formatKeyHint("enter")} open · ${formatKeyHints(["alt+down", "alt+up"])} hunk · ${formatKeyHint("c")} commit · ${formatKeyHint("t")} tree · ${formatKeyHint("?")} keys · ${formatKeyHint("q")} quit`,
 			);
 		const free = width - row.width - right.width - 1;
 		const middleText = free > visibleWidth(middle) + 4 ? middle : truncateToWidth(middle, Math.max(0, free - 4));
