@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed reads and image attachments selecting a space-named sibling instead of the requested filename containing a non-breaking space ([#12805](https://github.com/can1357/oh-my-pi/issues/12805); [#12807](https://github.com/can1357/oh-my-pi/pull/12807) by [@roboomp](https://github.com/roboomp)).
+
 ## [18.6.2] - 2026-10-04
 
 ### Fixed
