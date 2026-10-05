@@ -5,7 +5,7 @@ import { createMockModel, type MockModel, type MockResponse } from "@oh-my-pi/pi
 import { getBundledModel } from "@oh-my-pi/pi-catalog/models";
 import { ModelRegistry } from "@oh-my-pi/pi-coding-agent/config/model-registry";
 import { Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
-import { AgentSession } from "@oh-my-pi/pi-coding-agent/session/agent-session";
+import { AgentSession, type AgentSessionEvent } from "@oh-my-pi/pi-coding-agent/session/agent-session";
 import { convertToLlm } from "@oh-my-pi/pi-coding-agent/session/messages";
 import { SessionManager } from "@oh-my-pi/pi-coding-agent/session/session-manager";
 import * as unexpectedStopClassifier from "@oh-my-pi/pi-coding-agent/session/unexpected-stop-classifier";
@@ -286,20 +286,26 @@ describe("AgentSession unexpected stop guard", () => {
 		expect(reminderMessages(session.agent.state.messages)).toHaveLength(0);
 	});
 
-	it("caps unexpected stop retries at three attempts", async () => {
+	it("surfaces an error when unexpected stop recovery exhausts three retries", async () => {
 		const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
 		const spy = vi.spyOn(unexpectedStopClassifier, "classifyUnexpectedStop").mockResolvedValue(true);
 		const { session, mock } = await createHarness(
 			[
-				unexpectedStop("I should fix this next."),
-				unexpectedStop("I should fix this next."),
-				unexpectedStop("I should fix this next."),
-				unexpectedStop("I should fix this next."),
+				unexpectedStop("I should inspect the first failing branch."),
+				unexpectedStop("Next I should compare the terminal event path."),
+				unexpectedStop("Then I should verify print mode behavior."),
+				unexpectedStop("Finally I should report the completed fix."),
 			],
 			{
 				"features.unexpectedStopDetection": "smart",
 			},
 		);
+		let retryEnd: Extract<AgentSessionEvent, { type: "auto_retry_end" }> | undefined;
+		let terminalAgentEnd: Extract<AgentSessionEvent, { type: "agent_end" }> | undefined;
+		session.subscribe(event => {
+			if (event.type === "auto_retry_end") retryEnd = event;
+			if (event.type === "agent_end" && event.isTerminal) terminalAgentEnd = event;
+		});
 
 		await session.prompt("do the thing");
 		await session.waitForIdle();
@@ -308,6 +314,52 @@ describe("AgentSession unexpected stop guard", () => {
 		expect(mock.calls).toHaveLength(4);
 		expect(reminderMessages(session.agent.state.messages)).toHaveLength(3);
 		expect(warnSpy).toHaveBeenCalled();
+		expect(session.getLastAssistantMessage()).toMatchObject({
+			stopReason: "error",
+			errorMessage: expect.stringContaining("stopped unexpectedly after 3 recovery retries"),
+		});
+		expect(terminalAgentEnd?.messages.findLast(message => message.role === "assistant")).toMatchObject({
+			stopReason: "error",
+			errorMessage: expect.stringContaining("stopped unexpectedly after 3 recovery retries"),
+		});
+		expect(retryEnd).toMatchObject({
+			type: "auto_retry_end",
+			success: false,
+			attempt: 3,
+			finalError: expect.stringContaining("stopped unexpectedly after 3 recovery retries"),
+		});
+	});
+
+	it("settles signed thinking-only retry exhaustion as one terminal failure", async () => {
+		const { session, mock } = await createHarness(
+			[
+				thinkingOnlyStop("Inspecting the first branch."),
+				thinkingOnlyStop("Comparing the terminal state."),
+				thinkingOnlyStop("Checking the recovery boundary."),
+				thinkingOnlyStop("Preparing the final explanation."),
+			],
+			{ "features.unexpectedStopDetection": "mechanical" },
+		);
+		const terminalEvents: Extract<AgentSessionEvent, { type: "agent_end" }>[] = [];
+		const retryFailures: Extract<AgentSessionEvent, { type: "auto_retry_end" }>[] = [];
+		session.subscribe(event => {
+			if (event.type === "agent_end" && event.isTerminal) terminalEvents.push(event);
+			if (event.type === "auto_retry_end" && !event.success) retryFailures.push(event);
+		});
+
+		await session.prompt("finish the synthetic task");
+		await session.waitForIdle();
+
+		expect(mock.calls).toHaveLength(4);
+		expect(terminalEvents).toHaveLength(1);
+		expect(retryFailures).toHaveLength(1);
+		expect(retryFailures[0]).toMatchObject({ attempt: 3, success: false });
+		const last = terminalEvents[0].messages.findLast(message => message.role === "assistant");
+		expect(last).toMatchObject({ stopReason: "error", errorMessage: retryFailures[0].finalError });
+		expect(session.getLastAssistantMessage()).toMatchObject({
+			stopReason: "error",
+			errorMessage: retryFailures[0].finalError,
+		});
 	});
 
 	it("does not classify a message that contains a tool call", async () => {

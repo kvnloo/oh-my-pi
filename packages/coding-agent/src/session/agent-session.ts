@@ -4077,86 +4077,103 @@ export class AgentSession implements SettingsScope {
 				}
 			}
 
-			if (await this.#recovery.handleUnexpectedAssistantStop(msg)) {
+			const unexpectedStopOutcome = await this.#recovery.handleUnexpectedAssistantStop(msg);
+			if (unexpectedStopOutcome === "continue") {
 				maintenanceRoute("unexpected-stop-handled");
 				await emitAgentEndNotification({ willContinue: true });
 				return;
 			}
 
-			const resolvedInterruptedToolTurn = this.#recovery.classifyResolvedInterruptedToolTurn(msg);
-			if (this.#recovery.isRetryableReasonlessAbort(msg) || resolvedInterruptedToolTurn === "reasonless-abort") {
-				const didRetry = await this.#recovery.handleRetryableError(
-					msg,
-					resolvedInterruptedToolTurn === "reasonless-abort"
-						? { allowModelFallback: false, preserveFailedTurn: true }
-						: { allowModelFallback: false },
-				);
-				if (didRetry) {
-					await emitAgentEndNotification({ willContinue: true });
-					return;
+			if (unexpectedStopOutcome === "terminal") {
+				// agent-core finalizes `message_end` and `agent_end.messages` as
+				// separate objects. Propagate the synthetic cap failure into the
+				// public terminal event so RPC/ACP/notification consumers see it.
+				if (fallbackAssistant) {
+					fallbackAssistant.stopReason = msg.stopReason;
+					fallbackAssistant.errorMessage = msg.errorMessage;
 				}
-			}
+				// The retry cap already marked the turn as an error and emitted
+				// auto_retry_end. Skip the retry/fallback gates below so the
+				// advertised terminal cap never switches models or issues another
+				// request on this replay-safe thinking-only stop, then settle through
+				// the standard error tail (session_stop hooks, agent_end).
+				maintenanceRoute("unexpected-stop-retry-cap");
+			} else {
+				const resolvedInterruptedToolTurn = this.#recovery.classifyResolvedInterruptedToolTurn(msg);
+				if (this.#recovery.isRetryableReasonlessAbort(msg) || resolvedInterruptedToolTurn === "reasonless-abort") {
+					const didRetry = await this.#recovery.handleRetryableError(
+						msg,
+						resolvedInterruptedToolTurn === "reasonless-abort"
+							? { allowModelFallback: false, preserveFailedTurn: true }
+							: { allowModelFallback: false },
+					);
+					if (didRetry) {
+						await emitAgentEndNotification({ willContinue: true });
+						return;
+					}
+				}
 
-			// A deliberate abort should settle the current turn, not trigger queued
-			// continuations — except TTSR self-repair, which already scheduled a
-			// hidden retry while #ttsrAbortPending is still true.
-			if (msg.stopReason === "aborted") {
-				this.#recovery.resolveRetry();
-				this.#resetSessionStopContinuationState();
-				await emitAgentEndNotification(ttsrAbortPendingAtAgentEnd ? { willContinue: true } : undefined);
-				return;
-			}
-			const requestBodyTimeoutRecovery = await this.#recovery.handleResponsesRequestBodyReadTimeout(msg);
-			if (requestBodyTimeoutRecovery === "handled-retry") {
-				maintenanceRoute("responses-request-body-timeout-retry");
-				await emitAgentEndNotification({ willContinue: true });
-				return;
-			}
-			const requestBodyTimeoutTerminal = requestBodyTimeoutRecovery === "handled-terminal";
-			// Fireworks Fast variants degrade to their base model on a failed turn —
-			// including hard router errors the generic retry classifier rejects — so
-			// run this gate before the standard retryability check.
-			if (!requestBodyTimeoutTerminal && this.#recovery.isFireworksFastFallbackEligible(msg)) {
-				const didRetry = await this.#recovery.handleRetryableError(msg, { fireworksFastFallback: true });
-				if (didRetry) {
+				// A deliberate abort should settle the current turn, not trigger queued
+				// continuations — except TTSR self-repair, which already scheduled a
+				// hidden retry while #ttsrAbortPending is still true.
+				if (msg.stopReason === "aborted") {
+					this.#recovery.resolveRetry();
+					this.#resetSessionStopContinuationState();
+					await emitAgentEndNotification(ttsrAbortPendingAtAgentEnd ? { willContinue: true } : undefined);
+					return;
+				}
+				const requestBodyTimeoutRecovery = await this.#recovery.handleResponsesRequestBodyReadTimeout(msg);
+				if (requestBodyTimeoutRecovery === "handled-retry") {
+					maintenanceRoute("responses-request-body-timeout-retry");
 					await emitAgentEndNotification({ willContinue: true });
 					return;
 				}
-			}
-			const resumeResolvedStreamStall = resolvedInterruptedToolTurn === "stream-stall";
-			if (!requestBodyTimeoutTerminal && (resumeResolvedStreamStall || this.#recovery.isRetryableError(msg))) {
-				const didRetry = await this.#recovery.handleRetryableError(
-					msg,
-					resumeResolvedStreamStall ? { preserveFailedTurn: true } : undefined,
-				);
-				if (didRetry) {
-					await emitAgentEndNotification({ willContinue: true });
-					return;
+				const requestBodyTimeoutTerminal = requestBodyTimeoutRecovery === "handled-terminal";
+				// Fireworks Fast variants degrade to their base model on a failed turn —
+				// including hard router errors the generic retry classifier rejects — so
+				// run this gate before the standard retryability check.
+				if (!requestBodyTimeoutTerminal && this.#recovery.isFireworksFastFallbackEligible(msg)) {
+					const didRetry = await this.#recovery.handleRetryableError(msg, { fireworksFastFallback: true });
+					if (didRetry) {
+						await emitAgentEndNotification({ willContinue: true });
+						return;
+					}
 				}
-			} else if (!requestBodyTimeoutTerminal && this.#recovery.handleMalformedFunctionCallStop(msg)) {
-				// A malformed call with committed text cannot be replayed, but it
-				// never executed anything either: keep the turn and continue with a
-				// corrective reminder rather than stopping on a pinned error.
-				maintenanceRoute("malformed-function-call-handled");
-				await emitAgentEndNotification({ willContinue: true });
-				return;
-			} else if (!requestBodyTimeoutTerminal && this.#recovery.handleCommittedTextStreamStall(msg)) {
-				// The stream died after text rendered: replay would duplicate it and
-				// a trailing assistant prefill is rejected, so keep the partial turn
-				// and continue from where it stopped.
-				maintenanceRoute("committed-text-stream-stall-continued");
-				await emitAgentEndNotification({ willContinue: true });
-				return;
-			} else if (!requestBodyTimeoutTerminal && this.#recovery.isHardErrorFallbackEligible(msg)) {
-				// A non-retryable hard error on a model covered by a configured
-				// fallback chain: retrying the SAME model is pointless, but a
-				// DIFFERENT model is a fresh chance — consult the chain before
-				// surfacing the failure. #handleRetryableError bails out (no
-				// backoff-retry of the failing model) when no switch happens.
-				const didRetry = await this.#recovery.handleRetryableError(msg, { hardErrorFallback: true });
-				if (didRetry) {
+				const resumeResolvedStreamStall = resolvedInterruptedToolTurn === "stream-stall";
+				if (!requestBodyTimeoutTerminal && (resumeResolvedStreamStall || this.#recovery.isRetryableError(msg))) {
+					const didRetry = await this.#recovery.handleRetryableError(
+						msg,
+						resumeResolvedStreamStall ? { preserveFailedTurn: true } : undefined,
+					);
+					if (didRetry) {
+						await emitAgentEndNotification({ willContinue: true });
+						return;
+					}
+				} else if (!requestBodyTimeoutTerminal && this.#recovery.handleMalformedFunctionCallStop(msg)) {
+					// A malformed call with committed text cannot be replayed, but it
+					// never executed anything either: keep the turn and continue with a
+					// corrective reminder rather than stopping on a pinned error.
+					maintenanceRoute("malformed-function-call-handled");
 					await emitAgentEndNotification({ willContinue: true });
 					return;
+				} else if (!requestBodyTimeoutTerminal && this.#recovery.handleCommittedTextStreamStall(msg)) {
+					// The stream died after text rendered: replay would duplicate it and
+					// a trailing assistant prefill is rejected, so keep the partial turn
+					// and continue from where it stopped.
+					maintenanceRoute("committed-text-stream-stall-continued");
+					await emitAgentEndNotification({ willContinue: true });
+					return;
+				} else if (!requestBodyTimeoutTerminal && this.#recovery.isHardErrorFallbackEligible(msg)) {
+					// A non-retryable hard error on a model covered by a configured
+					// fallback chain: retrying the SAME model is pointless, but a
+					// DIFFERENT model is a fresh chance — consult the chain before
+					// surfacing the failure. #handleRetryableError bails out (no
+					// backoff-retry of the failing model) when no switch happens.
+					const didRetry = await this.#recovery.handleRetryableError(msg, { hardErrorFallback: true });
+					if (didRetry) {
+						await emitAgentEndNotification({ willContinue: true });
+						return;
+					}
 				}
 			}
 			// Classifier refusals are persisted-skipped above; also prune the trailing
