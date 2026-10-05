@@ -7,6 +7,7 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as net from "node:net";
 import * as path from "node:path";
+import { replaceFileAtomically } from "../utils/atomic-file";
 
 export function tokenMatches(expected: string, presented: unknown): boolean {
 	if (typeof presented !== "string") return false;
@@ -113,7 +114,7 @@ export async function writePrivateJson(target: string, value: unknown): Promise<
 		} finally {
 			await handle.close();
 		}
-		await fs.promises.rename(tmpPath, target);
+		await replaceFileAtomically(tmpPath, target);
 	} catch (err) {
 		fs.rmSync(tmpPath, { force: true });
 		throw err;
