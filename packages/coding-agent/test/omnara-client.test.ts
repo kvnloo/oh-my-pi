@@ -56,19 +56,19 @@ describe("Omnara bridge command", () => {
 	it("speaks request/response and stream notifications over the child protocol", async () => {
 		const childScript = [
 			'const readline = require("node:readline");',
-			'const rl = readline.createInterface({ input: process.stdin });',
+			"const rl = readline.createInterface({ input: process.stdin });",
 			'const send = value => process.stdout.write(JSON.stringify(value) + "\\n");',
 			'send({ jsonrpc: "2.0", method: "ready", params: { agent_id: "agt_test" } });',
 			'rl.on("line", line => {',
-			'  const request = JSON.parse(line);',
+			"  const request = JSON.parse(line);",
 			'  if (request.method === "agent.get") send({ jsonrpc: "2.0", id: request.id, result: { agent: { name: "remote" } } });',
 			'  if (request.method === "stream.start") {',
 			'    send({ jsonrpc: "2.0", id: request.id, result: { started: true } });',
 			'    send({ jsonrpc: "2.0", method: "stream.connection", params: { state: "connected", reconnected: false } });',
 			'    send({ jsonrpc: "2.0", method: "stream.event", params: { event: "agent_input", id: "4", data: { event_kind: "agent_input", sequence: 4, input_kind: "content" } } });',
-			'  }',
+			"  }",
 			'  if (request.method === "stream.stop") send({ jsonrpc: "2.0", id: request.id, result: { stopped: true } });',
-			'});',
+			"});",
 		].join("\n");
 		const client = new OmnaraClient({
 			command: process.execPath,
