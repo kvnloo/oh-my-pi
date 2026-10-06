@@ -44,7 +44,7 @@ section() {
 }
 
 # Create evidence directories
-mkdir -p "$EVIDENCE_BASE"/{plugin-doctor,config,print-mode,models,version-help}
+mkdir -p "$EVIDENCE_BASE"/{plugin-doctor,config,print-mode,models,version-help,license}
 
 section "Prerequisites Check"
 
@@ -97,6 +97,20 @@ if ! grep -iq "usage\|command" "$EVIDENCE_BASE/version-help/help.txt"; then
     fail "Help output missing usage information"
 fi
 log "Help output captured: $EVIDENCE_BASE/version-help/help.txt"
+
+
+section "Feature: License"
+
+if ! $OMP_CMD --license > "$EVIDENCE_BASE/license/output.txt" 2>&1; then
+    fail "omp --license failed"
+fi
+if ! grep -q "MIT License" "$EVIDENCE_BASE/license/output.txt"; then
+    fail "License output missing MIT License marker"
+fi
+if ! grep -qi "OMP License" "$EVIDENCE_BASE/license/output.txt"; then
+    fail "License output missing OMP License marker"
+fi
+log "License output captured: $EVIDENCE_BASE/license/output.txt"
 
 section "Feature: Plugin Doctor"
 

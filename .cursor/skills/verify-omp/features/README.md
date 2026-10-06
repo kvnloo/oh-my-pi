@@ -27,6 +27,7 @@ Edge cases, limitations, environment dependencies, and known issues.
 - `config-operations.md` — Configuration management (`config list`, `config get`, `config set`)
 - `models-list.md` — Model discovery and provider listing (`models`)
 - `print-mode.md` — Non-interactive print mode (`-p`)
+- `license.md` — License and third-party notices (`--license`)
 
 ## Testing Philosophy
 

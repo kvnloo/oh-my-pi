@@ -40,6 +40,7 @@ Individual feature verification guides in `features/`:
 - `models-list.md` — Model discovery and listing (`models`)
 - `config-operations.md` — Config get/set/list/path
 - `print-mode.md` — Non-interactive print mode (`-p`)
+- `license.md` — License and third-party notices (`--license`)
 
 See `features/README.md` for the standard feature map structure.
 
