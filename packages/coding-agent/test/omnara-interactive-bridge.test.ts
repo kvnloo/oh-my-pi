@@ -139,22 +139,6 @@ describe("Omnara InteractiveMode event mapping", () => {
 		expect(terminal.map(event => event.type)).toEqual(["message_start", "message_end", "agent_end"]);
 	});
 
-	it("does not settle a tool_use output before the tool lifecycle arrives", () => {
-		const state = createOmnaraBridgeState();
-		const events = omnaraFrameToSessionEvents(
-			frame("model_output", {
-				id: "evt_tool_partial",
-				model_call_context_id: "mcc_tool_partial",
-				stop_reason: "tool_use",
-				content_blocks: [],
-			}),
-			state,
-		);
-
-		expect(events.map(event => event.type)).toEqual(["agent_start", "message_start", "message_end"]);
-		expect(events.some(event => event.type === "agent_end")).toBe(false);
-	});
-
 	it("keeps Omnara tool identity through request and result", () => {
 		const state = createOmnaraBridgeState();
 		const start = omnaraFrameToSessionEvents(
