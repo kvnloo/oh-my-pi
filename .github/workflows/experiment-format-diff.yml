@@ -1,0 +1,19 @@
+name: Experiment formatter diff
+
+on:
+  pull_request:
+    paths:
+      - packages/coding-agent/src/experiments/hermes-gateway.ts
+      - .github/workflows/experiment-format-diff.yml
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/bun-install
+      - name: Print oxfmt diff
+        run: |
+          cp packages/coding-agent/src/experiments/hermes-gateway.ts /tmp/hermes-gateway.before.ts
+          ./node_modules/.bin/oxfmt packages/coding-agent/src/experiments/hermes-gateway.ts
+          diff -u /tmp/hermes-gateway.before.ts packages/coding-agent/src/experiments/hermes-gateway.ts || true
