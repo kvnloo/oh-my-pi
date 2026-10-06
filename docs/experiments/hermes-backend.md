@@ -44,13 +44,11 @@ Optional environment variables:
 
 `exp/hermes-backend` is the base. It has the proven real-screen path: one submit, one `prompt.submit`, one assistant reply. Do not add the next feature on this branch.
 
-`exp/hermes-backend-preview` starts at the same commit. Merge a feature branch here only after that branch passes alone.
+`exp/hermes-backend-preview` starts at the tool-card tip. It now contains the slices that passed alone: lsp, grep, glob, write, web-search, todo, execute-code, browser, ask, cron, approval, clarify, secret, interrupt, subagent, read, edit, bash error, tool duration, two tool ids, and the LSP mux socket.
 
-Cut each feature branch from the base. Open its pull request against the preview branch. Do not merge a feature branch into the base.
+Merge a later feature branch here only after that branch passes alone. Do not merge a feature branch into the base.
 
 The cheap check is `.github/workflows/hermes-backend-slices.yml`. It runs the bridge map test. It does not replace a live pane check.
-
-Next feature branch: `exp/hermes-tool-cards`. Map `tool.start` and `tool.complete` onto the existing tool card. Keep `tool_id` stable.
 
 ## Proven on the real screen
 

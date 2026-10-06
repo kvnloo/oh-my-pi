@@ -11,10 +11,12 @@ import {
 	MUX_PING_METHOD,
 	MUX_PING_RESULT,
 	MUX_RESTART_METHOD,
+	MUX_SERVER_FOR_FILE_METHOD,
 	type MuxConnectParams,
 	type MuxConnectResult,
 	muxServerKey,
 } from "./protocol";
+import { ompServerForExtension } from "./omp-server";
 
 const SERVER_LINGER_MS = 5 * 60 * 1_000;
 const MUX_IDLE_MS = 15 * 60 * 1_000;
@@ -312,6 +314,13 @@ export class LspMuxServer {
 		const request = hasRequestId(message);
 		if (message.method === MUX_PING_METHOD && request) {
 			this.#sendSession(session, rpcResult(message.id, MUX_PING_RESULT));
+			return;
+		}
+		if (message.method === MUX_SERVER_FOR_FILE_METHOD && request) {
+			const params = isRecord(message.params) ? message.params : {};
+			const cwd = typeof params.cwd === "string" && params.cwd ? params.cwd : process.env[LSP_MUX_PROJECT_DIR_ENV] || "";
+			const extension = typeof params.extension === "string" ? params.extension : "";
+			this.#sendSession(session, rpcResult(message.id, ompServerForExtension(cwd, extension)));
 			return;
 		}
 		if (message.method === MUX_CONNECT_METHOD && request) {

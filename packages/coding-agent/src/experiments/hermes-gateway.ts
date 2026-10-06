@@ -19,6 +19,7 @@ export interface HermesGatewayEvent {
 
 const VALUE_REQUESTS = new Set([
 	"display.install.sudo",
+	"password",
 	"preview.act",
 	"preview.read",
 	"secret",
@@ -43,6 +44,17 @@ export function safeDeclineResult(method: string): JsonObject | undefined {
 	if (method === "clarify") return {};
 	if (VALUE_REQUESTS.has(method)) return { value: "" };
 	return undefined;
+}
+
+/** JSON-RPC reply for a Hermes server-to-client request. Never grants approval. */
+export function serverRequestReply(id: number | string, method: string): JsonObject {
+	const result = safeDeclineResult(method);
+	if (result !== undefined) return { id, jsonrpc: "2.0", result };
+	return {
+		error: { code: -32601, message: "OMP Hermes experiment does not implement server request: " + method },
+		id,
+		jsonrpc: "2.0",
+	};
 }
 
 function asObject(value: unknown): JsonObject | undefined {
@@ -83,7 +95,7 @@ export class HermesGatewayClient extends EventEmitter {
 		return this.#ready;
 	}
 
-	start(): void {
+	start(extraEnv?: Record<string, string>): void {
 		if (this.#child) return;
 
 		const python = process.env.HERMES_PYTHON?.trim() || (process.platform === "win32" ? "python" : "python3");
@@ -92,7 +104,7 @@ export class HermesGatewayClient extends EventEmitter {
 			process.env.HERMES_ROOT?.trim() ||
 			process.env.HERMES_AGENT_ROOT?.trim();
 		const spawnCwd = sourceRoot || process.cwd();
-		const env = { ...process.env };
+		const env = { ...process.env, ...extraEnv };
 
 		if (sourceRoot) {
 			const current = env.PYTHONPATH?.trim();
@@ -210,21 +222,7 @@ export class HermesGatewayClient extends EventEmitter {
 	#handleServerRequest(id: number | string, method: string): void {
 		const child = this.#child;
 		if (!child?.stdin) return;
-
-		const result = safeDeclineResult(method);
-		if (result !== undefined) {
-			child.stdin.write(JSON.stringify({ id, jsonrpc: "2.0", result }) + "\n");
-			this.emit("serverRequestDeclined", method);
-			return;
-		}
-
-		child.stdin.write(
-			JSON.stringify({
-				error: { code: -32601, message: "OMP Hermes experiment does not implement server request: " + method },
-				id,
-				jsonrpc: "2.0",
-			}) + "\n",
-		);
+		child.stdin.write(JSON.stringify(serverRequestReply(id, method)) + "\n");
 		this.emit("serverRequestDeclined", method);
 	}
 

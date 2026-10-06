@@ -1,6 +1,7 @@
 import type { AssistantMessage } from "@oh-my-pi/pi-ai";
 import type { AgentSession, AgentSessionEvent } from "../session/agent-session";
 import { HermesGatewayClient, type HermesGatewayEvent } from "./hermes-gateway";
+import { sharedLspMuxEndpoint } from "../lsp/mux/daemon";
 
 type JsonObject = Record<string, unknown>;
 type StreamState = { text: string; model: string; started: boolean; tools: Map<string, string> };
@@ -40,21 +41,50 @@ function ompToolName(name: string, raw: JsonObject = {}): string {
 	if (name === "write_file") return "write";
 	if (name === "patch") return "edit";
 	if (name === "search_files") return raw.target === "files" ? "glob" : "grep";
+	if (name === "web_search") return "web_search";
+	if (name === "todo_list") return "todo";
+	if (name === "execute_code") return "eval";
+	if (name === "browser_navigate") return "browser";
+	if (name === "clarify") return "ask";
+	if (name === "cronjob_manage") return "bash";
 	return name;
 }
 
 function ompToolArgs(name: string, raw: JsonObject): JsonObject {
 	const kind = ompToolName(name, raw);
+	if (name === "cronjob_manage") {
+		const action = textField(raw, "action") ?? "";
+		const jobId = textField(raw, "job_id") ?? textField(raw, "id") ?? "";
+		return { command: ["cronjob", action, jobId].filter(Boolean).join(" ") };
+	}
 	if (kind === "bash") {
 		const command = textField(raw, "command") ?? textField(raw, "cmd") ?? "";
 		const cwd = textField(raw, "cwd");
 		return cwd ? { command, cwd } : { command };
 	}
 	if (kind === "read") return { path: raw.path, offset: raw.offset, limit: raw.limit };
-	if (kind === "write") return { path: raw.path, content: raw.content };
+	if (kind === "write") return { path: raw.path ?? raw.file_path, content: raw.content ?? raw.contents };
 	if (kind === "edit") return { path: raw.path, oldText: raw.old_string, newText: raw.new_string, patch: raw.patch };
 	if (kind === "grep") return { pattern: raw.pattern, path: raw.path };
 	if (kind === "glob") return { path: raw.pattern ?? raw.path };
+	if (kind === "web_search") return { query: textField(raw, "query") ?? "" };
+	if (kind === "todo") {
+		const todos = Array.isArray(raw.todos) ? raw.todos : [];
+		const items = todos.map((entry) => {
+			if (entry && typeof entry === "object" && "content" in entry) {
+				const content = entry.content;
+				return typeof content === "string" ? content : "";
+			}
+			return typeof entry === "string" ? entry : "";
+		});
+		return { op: "view", items };
+	}
+	if (kind === "eval") return { language: raw.language, code: raw.code };
+	if (kind === "browser") return { url: textField(raw, "url") ?? textField(raw, "target") ?? "" };
+	if (kind === "ask") {
+		const question = textField(raw, "question") ?? "";
+		return { questions: [{ id: "clarify", question, options: [] }] };
+	}
 	return raw;
 }
 
@@ -63,14 +93,27 @@ function toolResultBody(payload: JsonObject): JsonObject {
 	return result && typeof result === "object" && !Array.isArray(result) ? (result as JsonObject) : {};
 }
 
+function lspDiagnosticsText(payload: JsonObject): string | undefined {
+	return textField(toolResultBody(payload), "lsp_diagnostics") ?? textField(payload, "lsp_diagnostics");
+}
+
 function toolResultText(payload: JsonObject): string {
 	const direct =
 		textField(payload, "summary") ??
 		textField(payload, "result_text") ??
 		(typeof payload.result === "string" ? payload.result : undefined);
-	if (direct) return direct;
 	const body = toolResultBody(payload);
-	return textField(body, "output") ?? textField(body, "stdout") ?? textField(body, "error") ?? "";
+	const base = direct ?? textField(body, "output") ?? textField(body, "stdout") ?? textField(body, "error") ?? "";
+	const diagnostics = lspDiagnosticsText(payload);
+	if (diagnostics && base) return `${base}\n${diagnostics}`;
+	return diagnostics ?? base;
+}
+
+function toolDiagnostics(payload: JsonObject): { messages: string[]; summary: string; errored: boolean } | undefined {
+	const text = lspDiagnosticsText(payload);
+	if (!text) return undefined;
+	const first = text.split("\n").find((line) => line.length > 0) ?? text;
+	return { messages: [text], summary: first, errored: /error/i.test(text) };
 }
 
 export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: StreamState): AgentSessionEvent[] {
@@ -107,6 +150,7 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	if (event.type === "tool.start") {
 		const toolCallId = textField(payload, "tool_id");
 		const rawName = textField(payload, "name") ?? "tool";
+		if (rawName === "secret" || rawName === "password") return [];
 		const rawArgs = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? (payload.args as JsonObject) : {};
 		const toolName = ompToolName(rawName, rawArgs);
 		if (!toolCallId) return [];
@@ -116,11 +160,21 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	if (event.type === "tool.complete") {
 		const toolCallId = textField(payload, "tool_id");
 		if (!toolCallId) return [];
-		const toolName = ompToolName(textField(payload, "name") ?? state.tools.get(toolCallId) ?? "tool");
+		const rawName = textField(payload, "name") ?? "";
+		if (rawName === "secret" || rawName === "password") return [];
+		const stored = state.tools.get(toolCallId);
+		const toolName = stored ?? ompToolName(rawName || "tool");
 		state.tools.set(toolCallId, toolName);
 		const body = toolResultBody(payload);
 		const exitCode = typeof body.exit_code === "number" ? body.exit_code : undefined;
-		const wallTimeMs = typeof payload.duration_s === "number" ? Math.round(payload.duration_s * 1000) : undefined;
+		const durationS =
+			typeof payload.duration_s === "number"
+				? payload.duration_s
+				: typeof body.duration_s === "number"
+					? body.duration_s
+					: undefined;
+		const wallTimeMs = durationS !== undefined ? Math.round(durationS * 1000) : undefined;
+		const diagnostics = toolDiagnostics(payload);
 		return [
 			{
 				type: "tool_execution_end",
@@ -129,12 +183,41 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 				isError: exitCode !== undefined && exitCode !== 0,
 				result: {
 					content: [{ type: "text", text: toolResultText(payload) }],
-					details: { exitCode, wallTimeMs },
+					details: { exitCode, wallTimeMs, diagnostics },
+				},
+			},
+		];
+	}
+	if (event.type === "subagent.start") {
+		const toolCallId = textField(payload, "subagent_id");
+		if (!toolCallId) return [];
+		const name = textField(payload, "name") ?? toolCallId;
+		const task = textField(payload, "task") ?? textField(payload, "goal") ?? "";
+		state.tools.set(toolCallId, "task");
+		return [{ type: "tool_execution_start", toolCallId, toolName: "task", args: { name, task } }];
+	}
+	if (event.type === "subagent.complete") {
+		const toolCallId = textField(payload, "subagent_id");
+		if (!toolCallId) return [];
+		state.tools.set(toolCallId, "task");
+		return [
+			{
+				type: "tool_execution_end",
+				toolCallId,
+				toolName: "task",
+				isError: false,
+				result: {
+					content: [{ type: "text", text: toolResultText(payload) }],
+					details: {},
 				},
 			},
 		];
 	}
 	return [];
+}
+
+export function interruptRequest(sessionId: string): { session_id: string } {
+	return { session_id: sessionId };
 }
 
 export async function attachHermesBackend(session: AgentSession): Promise<void> {
@@ -145,7 +228,9 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 		started: false,
 		tools: new Map(),
 	};
-	gateway.start();
+	const cwd = process.env.HERMES_CWD?.trim() || process.cwd();
+	const mux = await sharedLspMuxEndpoint(cwd).catch(() => null);
+	gateway.start(mux ? { OMP_LSP_MUX_SOCKET: mux } : undefined);
 	gateway.on("event", (event: HermesGatewayEvent) => {
 		for (const mapped of hermesEventToSessionEvents(event, stream)) {
 			session.injectExternalEvent(mapped);
@@ -157,7 +242,6 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 	});
 	await gateway.waitReady();
 	await gateway.request("client.capabilities", { server_requests: false });
-	const cwd = process.env.HERMES_CWD?.trim() || process.cwd();
 	const created = await gateway.request<{ session_id?: string }>("session.create", {
 		close_on_disconnect: true,
 		cols: process.stdout.columns ?? 80,
@@ -181,7 +265,7 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 		return true;
 	};
 	session.abort = async options => {
-		await gateway.request("session.interrupt", { session_id: sessionId }).catch(() => undefined);
+		await gateway.request("session.interrupt", interruptRequest(sessionId)).catch(() => undefined);
 		return originalAbort(options);
 	};
 	if (process.env.PI_HERMES_REPLAY === "1") replaySessionToolCards(session);
