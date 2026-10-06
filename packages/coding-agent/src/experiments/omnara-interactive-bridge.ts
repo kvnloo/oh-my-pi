@@ -66,7 +66,11 @@ function textContent(value: unknown): string {
 		.map(block => {
 			const item = asObject(block);
 			const type = stringField(item, "type");
-			if (type === "text") return stringField(item, "text") ?? "";
+			if (type === "text") {
+				const metadata = asObject(item.metadata);
+				if (metadata.omnara_hidden === "true") return "";
+				return stringField(metadata, "omnara_display_text") ?? stringField(item, "text") ?? "";
+			}
 			if (type === "error") return "Error: " + (stringField(item, "text") ?? "unknown model error");
 			return "";
 		})
@@ -88,7 +92,11 @@ function assistantStopReason(value: unknown): AssistantMessage["stopReason"] {
 	}
 }
 
-function assistantMessage(text: string, model: string, stopReason: AssistantMessage["stopReason"] = "stop"): AssistantMessage {
+function assistantMessage(
+	text: string,
+	model: string,
+	stopReason: AssistantMessage["stopReason"] = "stop",
+): AssistantMessage {
 	return {
 		role: "assistant",
 		content: [{ type: "text", text }],
@@ -116,11 +124,7 @@ function userMessage(text: string, timestamp?: number): UserMessage {
 	};
 }
 
-function ensureAssistantStart(
-	contextID: string,
-	state: OmnaraBridgeState,
-	events: AgentSessionEvent[],
-): void {
+function ensureAssistantStart(contextID: string, state: OmnaraBridgeState, events: AgentSessionEvent[]): void {
 	if (state.startedContexts.has(contextID)) return;
 	state.startedContexts.add(contextID);
 	events.push({
@@ -142,13 +146,20 @@ function toolCallsFromModelOutput(payload: unknown): Array<{ id: string; name: s
 	return calls;
 }
 
-function terminalStopReason(stopReason: string | undefined): boolean {
-	return (
-		stopReason === "end_turn" ||
-		stopReason === "refusal" ||
-		stopReason === "content_filter" ||
-		stopReason === "error"
-	);
+function isTerminalModelOutput(stopReason: string | undefined, toolCallCount: number): boolean {
+	return stopReason !== undefined && stopReason !== "max_tokens" && toolCallCount === 0;
+}
+
+function ensureTurnStart(state: OmnaraBridgeState, events: AgentSessionEvent[]): void {
+	if (state.turnActive) return;
+	state.turnActive = true;
+	events.push({ type: "agent_start" });
+}
+
+function settleTurn(state: OmnaraBridgeState): AgentSessionEvent[] {
+	if (!state.turnActive) return [];
+	state.turnActive = false;
+	return [{ type: "agent_end", messages: [], isTerminal: true, yielded: true }];
 }
 
 function parseFrame(frame: OmnaraSseFrame): unknown {
@@ -159,29 +170,30 @@ function parseFrame(frame: OmnaraSseFrame): unknown {
 	}
 }
 
-export function omnaraFrameToSessionEvents(
-	frame: OmnaraSseFrame,
-	state: OmnaraBridgeState,
-): AgentSessionEvent[] {
+export function omnaraFrameToSessionEvents(frame: OmnaraSseFrame, state: OmnaraBridgeState): AgentSessionEvent[] {
 	const payload = parseFrame(frame);
 	if (!payload) return [];
 	const events: AgentSessionEvent[] = [];
 
 	if (frame.event === "agent_input") {
-		if (stringField(payload, "input_kind") !== "content") return [];
+		const inputKind = stringField(payload, "input_kind");
+		if (inputKind === "control" || (inputKind === "config_change" && asObject(payload).is_opening_event === true)) {
+			return settleTurn(state);
+		}
+		if (inputKind !== "content") return [];
 		const text = textContent(payload);
 		if (!text) return [];
 		const key = stringField(payload, "input_idempotency_key");
 		if (key && state.localInputKeys.delete(key)) return [];
+		ensureTurnStart(state, events);
 		const createdAt = Date.parse(stringField(payload, "created_at") ?? "");
 		const message = userMessage(text, Number.isFinite(createdAt) ? createdAt : undefined);
-		return [
-			{ type: "message_start", message },
-			{ type: "message_end", message },
-		];
+		events.push({ type: "message_start", message }, { type: "message_end", message });
+		return events;
 	}
 
 	if (frame.event === "model_output_delta") {
+		ensureTurnStart(state, events);
 		const root = asObject(payload);
 		const contextID = stringField(root, "model_call_context_id") ?? "model";
 		const deltaEvent = asObject(root.event);
@@ -201,6 +213,7 @@ export function omnaraFrameToSessionEvents(
 	}
 
 	if (frame.event === "model_output") {
+		ensureTurnStart(state, events);
 		const contextID = stringField(payload, "model_call_context_id") ?? stringField(payload, "id") ?? "model";
 		const finalText = textContent(payload);
 		if (finalText || !state.textByContext.has(contextID)) state.textByContext.set(contextID, finalText);
@@ -213,7 +226,8 @@ export function omnaraFrameToSessionEvents(
 		);
 		events.push({ type: "message_end", message });
 
-		for (const call of toolCallsFromModelOutput(payload)) {
+		const toolCalls = toolCallsFromModelOutput(payload);
+		for (const call of toolCalls) {
 			state.toolNames.set(call.id, call.name);
 			if (state.startedTools.has(call.id)) continue;
 			state.startedTools.add(call.id);
@@ -227,7 +241,7 @@ export function omnaraFrameToSessionEvents(
 
 		state.startedContexts.delete(contextID);
 		state.textByContext.delete(contextID);
-		if (terminalStopReason(stopReason)) {
+		if (isTerminalModelOutput(stopReason, toolCalls.length)) {
 			events.push({ type: "agent_end", messages: [message], isTerminal: true, yielded: true });
 			state.turnActive = false;
 		}
