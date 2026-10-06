@@ -34,6 +34,12 @@ export interface OmnaraBridgeCommand {
 	env: NodeJS.ProcessEnv;
 }
 
+export interface OmnaraInputAttachment {
+	data: string;
+	mediaType: string;
+	filename?: string;
+}
+
 interface StreamNotification {
 	event: string;
 	id?: string;
@@ -290,11 +296,17 @@ export class OmnaraClient extends EventEmitter {
 		text: string,
 		idempotencyKey: string,
 		deliveryMode: "queued" | "steering" = "queued",
+		attachments: OmnaraInputAttachment[] = [],
 	): Promise<T> {
 		return this.#request<T>("input.create", {
 			text,
 			idempotency_key: idempotencyKey,
 			delivery_mode: deliveryMode,
+			attachments: attachments.map(attachment => ({
+				data: attachment.data,
+				media_type: attachment.mediaType,
+				...(attachment.filename ? { filename: attachment.filename } : {}),
+			})),
 		});
 	}
 
