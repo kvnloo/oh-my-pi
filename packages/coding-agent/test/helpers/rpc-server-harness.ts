@@ -99,7 +99,7 @@ export async function createTestSession(
 		);
 		extensionRunner = new ExtensionRunner([extension], runtime, dir, sessionManager, modelRegistry);
 	}
-	return new AgentSession({
+	const session = new AgentSession({
 		agent,
 		sessionManager,
 		settings: Settings.isolated({ "compaction.enabled": false }),
@@ -107,6 +107,10 @@ export async function createTestSession(
 		extensionRunner,
 		passiveReplica: options.passiveReplica,
 	});
+	// This helper owns the on-disk auth store. AgentSession receives the registry
+	// but does not own its storage, so close it with the test session.
+	session.addDisposer(() => authStorage.close());
+	return session;
 }
 
 /** In-process client: writes commands into the server and collects parsed frames. */
