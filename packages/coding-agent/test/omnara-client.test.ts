@@ -77,7 +77,7 @@ describe("Omnara bridge command", () => {
 		});
 
 		try {
-			expect(await client.getAgent()).toEqual({ agent: { name: "remote" } });
+			expect(await client.getAgent<{ agent: { name: string } }>()).toEqual({ agent: { name: "remote" } });
 
 			const abort = new AbortController();
 			const states: string[] = [];
