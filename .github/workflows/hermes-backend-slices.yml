@@ -1,0 +1,38 @@
+name: Hermes backend slices
+
+on:
+  pull_request:
+    branches:
+      - exp/hermes-backend
+      - exp/hermes-backend-preview
+    paths:
+      - "packages/coding-agent/src/experiments/**"
+      - "packages/coding-agent/src/main.ts"
+      - "packages/coding-agent/src/session/agent-session.ts"
+      - "packages/coding-agent/test/hermes-interactive-bridge.test.ts"
+      - ".github/workflows/hermes-backend-slices.yml"
+  push:
+    branches:
+      - exp/hermes-backend
+      - exp/hermes-backend-preview
+      - exp/hermes-*
+    paths:
+      - "packages/coding-agent/src/experiments/**"
+      - "packages/coding-agent/src/main.ts"
+      - "packages/coding-agent/src/session/agent-session.ts"
+      - "packages/coding-agent/test/hermes-interactive-bridge.test.ts"
+      - ".github/workflows/hermes-backend-slices.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    name: Hermes bridge test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/bun-install
+      - name: Run the bridge map test
+        working-directory: packages/coding-agent
+        run: bun test test/hermes-interactive-bridge.test.ts

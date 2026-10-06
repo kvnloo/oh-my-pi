@@ -17,7 +17,7 @@ OMP Composer / Transcript / TSP / Tern
         Hermes agent runtime
 ```
 
-No OMP model/tool runtime is used by this command.
+The launch command starts the real OMP screen. `PI_HERMES_BACKEND=1` replaces only `session.prompt`.
 
 ## Run
 
@@ -40,29 +40,34 @@ Optional environment variables:
 - `HERMES_PROFILE` — Hermes profile.
 - `HERMES_CWD` — working directory for the Hermes session.
 
-## First-slice contract
+## Branch map
 
-Implemented:
+`exp/hermes-backend` is the base. It has the proven real-screen path: one submit, one `prompt.submit`, one assistant reply. Do not add the next feature on this branch.
 
-- fresh Hermes session creation
-- OMP composer → Hermes `prompt.submit`
-- Hermes assistant streaming → OMP transcript
-- stable tool rows from `tool.start` → `tool.complete`
-- stable subagent rows across the `subagent.*` lifecycle
-- Escape → Hermes `session.interrupt`
-- OMP's existing TSP/Tern renderer remains untouched
+`exp/hermes-backend-preview` starts at the same commit. Merge a feature branch here only after that branch passes alone.
 
-Not implemented yet:
+Cut each feature branch from the base. Open its pull request against the preview branch. Do not merge a feature branch into the base.
 
-- native approval / clarify / secret UI
+The cheap check is `.github/workflows/hermes-backend-slices.yml`. It runs the bridge map test. It does not replace a live pane check.
+
+Next feature branch: `exp/hermes-tool-cards`. Map `tool.start` and `tool.complete` onto the existing tool card. Keep `tool_id` stable.
+
+## Proven on the real screen
+
+- one Hermes session at startup
+- the real OMP submit call goes to Hermes `prompt.submit`
+- one assistant reply appears in the real OMP transcript
+
+Not proven on the real screen yet:
+
+- tool cards
+- subagent rows
+- Escape to `session.interrupt`
+- approval, clarify, and secret prompts
 - resumed sessions
-- full OMP tool-specific renderer mapping
-- OMP model picker backed by Hermes model APIs
-- reasoning UI parity
+- the model picker
 
-For safety, unsupported consequential server requests are declined rather than
-answered implicitly. Approval is denied, clarification is cancelled, and
-sensitive string prompts are skipped.
+The gateway client declines approval, clarify, and secret requests. That decline is not a live pane proof.
 
 ## Provenance
 
