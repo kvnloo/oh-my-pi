@@ -3,7 +3,10 @@ import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import { type RpcAgentProcess, RpcClient } from "@oh-my-pi/pi-coding-agent/modes/rpc/rpc-client";
+import { AgentStorage } from "@oh-my-pi/pi-coding-agent/session/agent-storage";
 import type { AgentSession } from "@oh-my-pi/pi-coding-agent/session/agent-session";
+import { HistoryStorage } from "@oh-my-pi/pi-coding-agent/session/history-storage";
+import { resetSessionIndexForTests } from "@oh-my-pi/pi-coding-agent/session/session-index";
 import { connectSessionHost } from "@oh-my-pi/pi-coding-agent/session-host/client";
 import { runSessionHost, type SessionHostOptions } from "@oh-my-pi/pi-coding-agent/session-host/host";
 import { listSessionHosts, newHostId, type SessionHostEntry } from "@oh-my-pi/pi-coding-agent/session-host/registry";
@@ -132,6 +135,11 @@ export class SessionHostFixture {
 			await this.waitForClients(host, 0);
 			await host.stop();
 		}
+		// InteractiveMode opens process-wide stores under the isolated agent dir.
+		// Close them before restoring the ambient directory and deleting this fixture.
+		AgentStorage.close();
+		HistoryStorage.close();
+		resetSessionIndexForTests();
 		this.#restoreAgentDir();
 		await removeWithRetries(this.dir);
 	}
