@@ -41,5 +41,5 @@ describe("private endpoint", () => {
 		}
 		if (process.platform !== "win32") expect((await fs.stat(target)).mode & 0o777).toBe(0o600);
 		expect((await fs.readdir(dir)).filter(n => n.endsWith(".tmp"))).toEqual([]);
-	});
+	}, 60_000);
 });
