@@ -384,21 +384,47 @@ export interface OmnaraInteractionClient {
 	): Promise<unknown>;
 }
 
+async function selectMultipleOptions(
+	host: OmnaraInteractiveHost,
+	title: string,
+	options: Array<{ label?: string; allows_text?: boolean }>,
+): Promise<number[] | undefined> {
+	const selected = new Set<number>();
+	for (;;) {
+		const choices = [
+			...options.map((option, index) => ({
+				label: `${selected.has(index) ? "[x]" : "[ ]"} ${option.label || "Option " + (index + 1)}`,
+				description: option.allows_text ? "May include a companion note" : undefined,
+			})),
+			{
+				label: "Done",
+				description: selected.size ? `Confirm ${selected.size} selected` : "Select at least one option",
+			},
+		];
+		const choice = await host.showHookSelector(title, choices);
+		if (choice === undefined) return undefined;
+		if (choice === "Done") {
+			if (selected.size) return [...selected].sort((a, b) => a - b);
+			host.showHookNotify("Select at least one option before continuing", "warning");
+			continue;
+		}
+		const index = choices.findIndex(item => item.label === choice);
+		if (index < 0 || index >= options.length) continue;
+		if (selected.has(index)) selected.delete(index);
+		else selected.add(index);
+	}
+}
+
 export async function answerOmnaraInteraction(
 	client: OmnaraInteractionClient,
 	host: OmnaraInteractiveHost,
 	interaction: OpenInteraction,
-): Promise<"answered" | "dismissed" | "unsupported"> {
+): Promise<"answered" | "dismissed"> {
 	const questions = interaction.request?.questions ?? [];
 	const answers: Array<{ option_indices: number[]; text?: string }> = [];
 
 	for (const question of questions) {
 		const prompt = question.prompt || interaction.request?.title || "Omnara needs input";
-		if (question.multiple) {
-			host.showHookNotify("Omnara multi-select interaction left open for this experiment", "warning");
-			return "unsupported";
-		}
-
 		const options = question.options ?? [];
 		if (!options.length) {
 			const answer = await host.showHookInput(prompt, "Type your answer");
@@ -407,24 +433,33 @@ export async function answerOmnaraInteraction(
 			continue;
 		}
 
-		const choices = options.map((option, index) => ({
-			label: option.label || "Option " + (index + 1),
-			description: option.allows_text ? "May include an optional note" : undefined,
-		}));
-		const selected = await host.showHookSelector(
-			answers.length === 0 ? interactionTitle(interaction) + "\n" + prompt : prompt,
-			choices,
-		);
-		if (selected === undefined) return "dismissed";
-		const index = choices.findIndex(choice => choice.label === selected);
-		if (index < 0) return "dismissed";
+		const title = answers.length === 0 ? interactionTitle(interaction) + "\n" + prompt : prompt;
+		let selectedIndices: number[];
+		if (question.multiple) {
+			const selected = await selectMultipleOptions(host, title, options);
+			if (selected === undefined) return "dismissed";
+			selectedIndices = selected;
+		} else {
+			const choices = options.map((option, index) => ({
+				label: option.label || "Option " + (index + 1),
+				description: option.allows_text ? "May include an optional note" : undefined,
+			}));
+			const selected = await host.showHookSelector(title, choices);
+			if (selected === undefined) return "dismissed";
+			const index = choices.findIndex(choice => choice.label === selected);
+			if (index < 0) return "dismissed";
+			selectedIndices = [index];
+		}
 
 		let text: string | undefined;
-		if (options[index]?.allows_text) {
-			text = await host.showHookInput("Optional note for " + choices[index]!.label, "Leave blank for none");
+		if (selectedIndices.some(index => options[index]?.allows_text)) {
+			const selectedLabels = selectedIndices
+				.map(index => options[index]?.label || "Option " + (index + 1))
+				.join(", ");
+			text = await host.showHookInput("Optional note for " + selectedLabels, "Leave blank for none");
 			if (text === undefined) text = "";
 		}
-		answers.push({ option_indices: [index], ...(text ? { text } : {}) });
+		answers.push({ option_indices: selectedIndices, ...(text ? { text } : {}) });
 	}
 
 	await client.resolveInteraction(interaction.agent_id, interaction.id, answers);
