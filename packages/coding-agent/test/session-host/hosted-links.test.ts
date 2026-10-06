@@ -96,6 +96,20 @@ async function fileUri(file: string): Promise<string> {
 	return url.pathToFileURL(file).href;
 }
 
+async function canonicalFileUri(uri: string): Promise<string> {
+	return url.pathToFileURL(await fs.realpath(url.fileURLToPath(uri))).href;
+}
+
+async function canonicalTargets(targets: Record<string, string>): Promise<Record<string, string>> {
+	return Object.fromEntries(
+		await Promise.all(Object.entries(targets).map(async ([href, uri]) => [href, await canonicalFileUri(uri)] as const)),
+	);
+}
+
+async function canonicalUris(uris: string[]): Promise<string[]> {
+	return (await Promise.all(uris.map(canonicalFileUri))).sort();
+}
+
 function setProcessTmpdir(dir: string): void {
 	if (process.platform === "win32") {
 		process.env.TEMP = dir;
@@ -202,11 +216,13 @@ describe("host-authored links in a hosted terminal", () => {
 			[REPORT]: await fileUri(path.join(localRootOf(host), "report.md")),
 		};
 		// Painted before the link was registered on the terminal: what the first repaint resolved.
-		expect(terminal.painted()).toEqual(expected);
-		expect(await terminal.resolve([SOURCE, REPORT])).toEqual(expected);
+		expect(await canonicalTargets(terminal.painted())).toEqual(await canonicalTargets(expected));
+		expect(await canonicalTargets(await terminal.resolve([SOURCE, REPORT]))).toEqual(await canonicalTargets(expected));
 		// The terminal's own directory is untouched, and its same-named file is not what the link means.
 		expect(terminal.mode.sessionManager.getCwd()).toBe(terminal.project);
-		expect(expected[SOURCE]).not.toBe(await fileUri(path.join(terminal.project, SOURCE)));
+		expect(await canonicalFileUri(expected[SOURCE])).not.toBe(
+			await canonicalFileUri(await fileUri(path.join(terminal.project, SOURCE))),
+		);
 	}, 20_000);
 
 	it("move to the next host on /attach, with nothing of the previous host left to resolve", async () => {
@@ -222,8 +238,10 @@ describe("host-authored links in a hosted terminal", () => {
 			[SOURCE]: await fileUri(path.join(projectOf(second), SOURCE)),
 			[REPORT]: await fileUri(path.join(localRootOf(second), "report.md")),
 		};
-		expect(terminal.painted()).toEqual(expected);
-		expect(await terminal.resolve([SOURCE, REPORT, ONLY_ON_FIRST])).toEqual(expected);
+		expect(await canonicalTargets(terminal.painted())).toEqual(await canonicalTargets(expected));
+		expect(await canonicalTargets(await terminal.resolve([SOURCE, REPORT, ONLY_ON_FIRST]))).toEqual(
+			await canonicalTargets(expected),
+		);
 		expect(terminal.mode.sessionManager.getCwd()).toBe(terminal.project);
 	}, 20_000);
 
@@ -240,7 +258,7 @@ describe("host-authored links in a hosted terminal", () => {
 		await host.session.switchSession(beforeFile);
 		const terminal = await attached(host);
 		const before = await fileUri(path.join(localRootOf(host), "report.md"));
-		expect(terminal.painted()[REPORT]).toBe(before);
+		expect(await canonicalFileUri(terminal.painted()[REPORT]!)).toBe(await canonicalFileUri(before));
 
 		await host.session.switchSession(afterFile);
 		await waitFor(() => terminal.painted()[REPORT] !== before);
@@ -250,8 +268,8 @@ describe("host-authored links in a hosted terminal", () => {
 			[REPORT]: await fileUri(path.join(localRootOf(host), "report.md")),
 		};
 		expect(expected[REPORT]).not.toBe(before);
-		expect(await terminal.resolve([SOURCE, REPORT])).toEqual(expected);
-		expect(terminal.painted()).toEqual(expected);
+		expect(await canonicalTargets(await terminal.resolve([SOURCE, REPORT]))).toEqual(await canonicalTargets(expected));
+		expect(await canonicalTargets(terminal.painted())).toEqual(await canonicalTargets(expected));
 	}, 20_000);
 
 	it("repoint the links already on screen when the host's session is relocated, without moving the terminal", async () => {
@@ -262,10 +280,11 @@ describe("host-authored links in a hosted terminal", () => {
 			[REPORT]: await fileUri(path.join(localRootOf(host), "report.md")),
 		};
 		// The first paint: the cache and the hyperlinks the transcript carries name the host's files.
-		expect(terminal.painted()).toEqual(before);
+		expect(await canonicalTargets(terminal.painted())).toEqual(await canonicalTargets(before));
 		// The host's reply is on screen (with the label the link was written with) before its hyperlinks are read.
 		expect(terminal.visibleTranscript()).toContain("src/index.ts");
-		expect(terminal.rendered()).toEqual(expect.arrayContaining(Object.values(before)));
+		const canonicalBefore = await canonicalUris(Object.values(before));
+		expect(await canonicalUris(terminal.rendered())).toEqual(expect.arrayContaining(canonicalBefore));
 		const moved = path.join(fixture.dir, "moved-project");
 		await writeFile(path.join(moved, SOURCE), 'export const owner = "moved";\n');
 
@@ -278,19 +297,25 @@ describe("host-authored links in a hosted terminal", () => {
 		};
 		expect(after[SOURCE]).not.toBe(before[SOURCE]);
 		expect(after[REPORT]).not.toBe(before[REPORT]);
-		await waitFor(() => terminal.rendered().includes(after[SOURCE]) && terminal.rendered().includes(after[REPORT]));
-		expect(terminal.painted()).toEqual(after);
-		const rendered = terminal.rendered();
-		expect(rendered).toEqual(expect.arrayContaining(Object.values(after)));
-		for (const stale of Object.values(before)) expect(rendered).not.toContain(stale);
-		expect(await terminal.resolve([SOURCE, REPORT])).toEqual(after);
+		const canonicalAfter = await canonicalUris(Object.values(after));
+		await waitFor(async () => {
+			const rendered = await canonicalUris(terminal.rendered());
+			return canonicalAfter.every(uri => rendered.includes(uri));
+		});
+		expect(await canonicalTargets(terminal.painted())).toEqual(await canonicalTargets(after));
+		const rendered = await canonicalUris(terminal.rendered());
+		expect(rendered).toEqual(expect.arrayContaining(canonicalAfter));
+		for (const stale of canonicalBefore) expect(rendered).not.toContain(stale);
+		expect(await canonicalTargets(await terminal.resolve([SOURCE, REPORT]))).toEqual(await canonicalTargets(after));
 		expect(terminal.mode.sessionManager.getCwd()).toBe(terminal.project);
 	}, 20_000);
 
 	it("resolve nothing for a host's links once the terminal has left that host", async () => {
 		const host = await seededHost("left");
 		const terminal = await attached(host);
-		expect((await terminal.resolve([SOURCE]))[SOURCE]).toBe(await fileUri(path.join(projectOf(host), SOURCE)));
+		expect(await canonicalFileUri((await terminal.resolve([SOURCE]))[SOURCE]!)).toBe(
+			await canonicalFileUri(await fileUri(path.join(projectOf(host), SOURCE))),
+		);
 
 		await terminal.mode.hostedClient?.detach();
 
@@ -313,7 +338,9 @@ describe("host-authored links in a hosted terminal", () => {
 
 		await firstLink.detach();
 
-		expect((await terminal.resolve([SOURCE]))[SOURCE]).toBe(await fileUri(path.join(projectOf(second), SOURCE)));
+		expect(await canonicalFileUri((await terminal.resolve([SOURCE]))[SOURCE]!)).toBe(
+			await canonicalFileUri(await fileUri(path.join(projectOf(second), SOURCE))),
+		);
 	}, 20_000);
 
 	it("refuse a host that cannot say where its session lives, leaving nothing of it on the terminal", async () => {
@@ -353,7 +380,7 @@ describe("host-authored links in a hosted terminal", () => {
 		expect(await fs.realpath(decoy)).not.toBe(await fs.realpath(hostFile));
 
 		const expected = { [REPORT]: await fileUri(hostFile) };
-		expect(terminal.painted()).toEqual(expected);
-		expect(await terminal.resolve([REPORT])).toEqual(expected);
+		expect(await canonicalTargets(terminal.painted())).toEqual(await canonicalTargets(expected));
+		expect(await canonicalTargets(await terminal.resolve([REPORT]))).toEqual(await canonicalTargets(expected));
 	}, 20_000);
 });
