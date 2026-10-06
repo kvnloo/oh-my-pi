@@ -180,11 +180,19 @@ function diagnosticsSummary(diagnostics: VisualDiagnostics): string {
 	return `${errorCount} page error(s), ${consoleCount} console entr${consoleCount === 1 ? "y" : "ies"}`;
 }
 
+function visualPathForId(pi: ExtensionAPI, value: string): string {
+	const id = value.replace(/\.html$/i, "");
+	if (!/^[A-Za-z0-9_-]+$/.test(id)) {
+		throw new Error("Visual id may contain only letters, numbers, underscore, and hyphen");
+	}
+	return join(pi.pi.getAgentDir(), "visual-replies", `${id}.html`);
+}
+
 async function persistVisual(pi: ExtensionAPI, document: string): Promise<{ id: string; path: string }> {
 	const id = crypto.randomUUID();
 	const dir = join(pi.pi.getAgentDir(), "visual-replies");
 	await mkdir(dir, { recursive: true });
-	const path = join(dir, `${id}.html`);
+	const path = visualPathForId(pi, id);
 	await Bun.write(path, document);
 	latestVisualPath = path;
 	return { id, path };
@@ -233,7 +241,7 @@ export default function visualReplies(pi: ExtensionAPI): void {
 			height: z.number().optional().describe("Viewport height in pixels; defaults to 650"),
 		}),
 		loadMode: "essential",
-		approval: "read",
+		approval: "exec",
 		async execute(toolCallId, params, signal, _onUpdate, ctx) {
 			const width = clampDimension(params.width, DEFAULT_WIDTH, 320, 1800);
 			const height = clampDimension(params.height, DEFAULT_HEIGHT, 240, 1400);
@@ -262,7 +270,7 @@ export default function visualReplies(pi: ExtensionAPI): void {
 			open_interactive: z.boolean().optional().describe("Open the live visual in a Tern PiP after publishing"),
 		}),
 		loadMode: "essential",
-		approval: "write",
+		approval: "exec",
 		async execute(toolCallId, params, signal, _onUpdate, ctx) {
 			const width = clampDimension(params.width, DEFAULT_WIDTH, 320, 1800);
 			const height = clampDimension(params.height, DEFAULT_HEIGHT, 240, 1400);
@@ -307,8 +315,15 @@ export default function visualReplies(pi: ExtensionAPI): void {
 				return;
 			}
 			const requested = args.trim();
-			const dir = join(pi.pi.getAgentDir(), "visual-replies");
-			const path = requested ? join(dir, `${requested.replace(/\.html$/i, "")}.html`) : latestVisualPath;
+			let path = latestVisualPath;
+			if (requested) {
+				try {
+					path = visualPathForId(pi, requested);
+				} catch (error) {
+					ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
+					return;
+				}
+			}
 			if (!path) {
 				ctx.ui.notify("No visual reply has been rendered in this process yet", "warning");
 				return;
