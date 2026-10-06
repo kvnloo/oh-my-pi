@@ -83,7 +83,7 @@ export class HermesGatewayClient extends EventEmitter {
 		return this.#ready;
 	}
 
-	start(): void {
+	start(extraEnv?: Record<string, string>): void {
 		if (this.#child) return;
 
 		const python = process.env.HERMES_PYTHON?.trim() || (process.platform === "win32" ? "python" : "python3");
@@ -92,7 +92,7 @@ export class HermesGatewayClient extends EventEmitter {
 			process.env.HERMES_ROOT?.trim() ||
 			process.env.HERMES_AGENT_ROOT?.trim();
 		const spawnCwd = sourceRoot || process.cwd();
-		const env = { ...process.env };
+		const env = { ...process.env, ...extraEnv };
 
 		if (sourceRoot) {
 			const current = env.PYTHONPATH?.trim();

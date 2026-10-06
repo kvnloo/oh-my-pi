@@ -65,6 +65,9 @@ export const MUX_PING_RESULT = "pong";
  */
 export const MUX_RESTART_METHOD = "omp/muxRestartServer";
 
+/** Lookup of the command OMP already resolved for one file extension. Does not bind a server. */
+export const MUX_SERVER_FOR_FILE_METHOD = "omp/serverForFile";
+
 /** Handshake parameters identifying a reusable server process. */
 export interface MuxConnectParams {
 	/** Executable to spawn (the client's `resolvedCommand ?? command`). */

@@ -287,6 +287,11 @@ async function ensureLspMuxDaemon(projectDir: string, signal?: AbortSignal): Pro
 	return null;
 }
 
+/** Start the shared mux and return its socket. Null when the broker cannot host it. */
+export async function sharedLspMuxEndpoint(projectDir: string): Promise<string | null> {
+	return ensureLspMuxDaemon(projectDir);
+}
+
 /**
  * Open a broker-shared transport for one language server, ensuring the mux
  * daemon first. Returns null (after a debug log) when the shared path is

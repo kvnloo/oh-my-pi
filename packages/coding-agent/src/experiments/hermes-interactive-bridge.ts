@@ -1,6 +1,7 @@
 import type { AssistantMessage } from "@oh-my-pi/pi-ai";
 import type { AgentSession, AgentSessionEvent } from "../session/agent-session";
 import { HermesGatewayClient, type HermesGatewayEvent } from "./hermes-gateway";
+import { sharedLspMuxEndpoint } from "../lsp/mux/daemon";
 
 type JsonObject = Record<string, unknown>;
 type StreamState = { text: string; model: string; started: boolean; tools: Map<string, string> };
@@ -145,7 +146,9 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 		started: false,
 		tools: new Map(),
 	};
-	gateway.start();
+	const cwd = process.env.HERMES_CWD?.trim() || process.cwd();
+	const mux = await sharedLspMuxEndpoint(cwd).catch(() => null);
+	gateway.start(mux ? { OMP_LSP_MUX_SOCKET: mux } : undefined);
 	gateway.on("event", (event: HermesGatewayEvent) => {
 		for (const mapped of hermesEventToSessionEvents(event, stream)) {
 			session.injectExternalEvent(mapped);
@@ -157,7 +160,6 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 	});
 	await gateway.waitReady();
 	await gateway.request("client.capabilities", { server_requests: false });
-	const cwd = process.env.HERMES_CWD?.trim() || process.cwd();
 	const created = await gateway.request<{ session_id?: string }>("session.create", {
 		close_on_disconnect: true,
 		cols: process.stdout.columns ?? 80,
