@@ -44,8 +44,8 @@ OMP requests:
 - `events.list`
 - `tool_calls.list` (including subagents)
 - `interactions.list` (open interactions including subagents)
-- `input.create` with an OMP-generated idempotency key and
-  `queued | steering` delivery mode
+- `input.create` with an OMP-generated idempotency key,
+  `queued | steering` delivery mode, and OMP image attachments
 - `interaction.resolve`
 - `agent.cancel`
 - `stream.start` / `stream.stop`
@@ -89,9 +89,10 @@ Omnara durable events are authoritative.
 - locally submitted inputs carry OMP-generated Omnara idempotency keys so their
   durable echo does not duplicate OMP's optimistic user row.
 
-Omnara `tool_use` and `max_tokens` outputs do **not** end the OMP run.
-Terminal stop reasons (`end_turn`, `refusal`, `content_filter`, `error`)
-emit OMP's terminal `agent_end`.
+`max_tokens` remains a continuation. A durable `model_output` ends the OMP
+run when it contains no tool calls and its stop reason is not `max_tokens`,
+matching Omnara's own chat projection. Durable control inputs and opening
+config-change inputs also settle the OMP run.
 
 ## Native human-in-the-loop UI
 
@@ -102,6 +103,12 @@ interaction's owning agent, including subagent-owned prompts.
 The first slice supports ordinary single-select questions, free-text questions,
 and optional text attached to a selected option. Multi-select remains open
 rather than silently choosing for the user.
+
+OMP image attachments are forwarded as Omnara inline media blocks through the
+bridge. The Omnara side validates them with its generated
+`InlineMediaContentBlock` schema. The bridge also follows Omnara's own chat
+convention by prepending a model-visible, transcript-hidden source hint so the
+remote agent knows it is replying to the OMP terminal surface.
 
 ## Run
 
@@ -123,7 +130,6 @@ The adapter also maps the earlier experiment aliases `OMNARA_TOKEN` →
 
 ## Deferred
 
-- image/media submission
 - full subagent transcript browsing
 - multi-select interaction UI
 - custom-tool result submission
