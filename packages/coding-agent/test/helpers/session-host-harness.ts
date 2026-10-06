@@ -3,6 +3,9 @@ import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import { type RpcAgentProcess, RpcClient } from "@oh-my-pi/pi-coding-agent/modes/rpc/rpc-client";
+import { AgentStorage } from "@oh-my-pi/pi-coding-agent/session/agent-storage";
+import { HistoryStorage } from "@oh-my-pi/pi-coding-agent/session/history-storage";
+import { resetSessionIndexForTests } from "@oh-my-pi/pi-coding-agent/session/session-index";
 import type { AgentSession } from "@oh-my-pi/pi-coding-agent/session/agent-session";
 import { connectSessionHost } from "@oh-my-pi/pi-coding-agent/session-host/client";
 import { runSessionHost, type SessionHostOptions } from "@oh-my-pi/pi-coding-agent/session-host/host";
@@ -19,25 +22,6 @@ export async function waitFor(check: () => boolean | Promise<boolean>, timeoutMs
 	}
 }
 
-async function diagnoseLockedPaths(root: string): Promise<string[]> {
-	const failures: string[] = [];
-	const visit = async (dir: string): Promise<void> => {
-		for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-			const full = path.join(dir, entry.name);
-			if (entry.isDirectory()) {
-				await visit(full);
-				continue;
-			}
-			try {
-				await fs.rm(full, { force: true });
-			} catch (error) {
-				failures.push(`${path.relative(root, full)}:${(error as NodeJS.ErrnoException).code ?? "unknown"}`);
-			}
-		}
-	};
-	await visit(root);
-	return failures;
-}
 
 export interface TestSessionHost {
 	hostId: string;
@@ -152,17 +136,13 @@ export class SessionHostFixture {
 			await this.waitForClients(host, 0);
 			await host.stop();
 		}
+		// InteractiveMode opens process-wide stores under the isolated agent dir.
+		// Close them before restoring the ambient directory and deleting this fixture.
+		AgentStorage.close();
+		HistoryStorage.close();
+		resetSessionIndexForTests();
 		this.#restoreAgentDir();
-		try {
-			await removeWithRetries(this.dir);
-		} catch (error) {
-			const code = (error as NodeJS.ErrnoException).code;
-			if (process.platform !== "win32" || !code || !["EBUSY", "EPERM", "ENOTEMPTY"].includes(code)) throw error;
-			const locked = await diagnoseLockedPaths(this.dir);
-			throw new Error(`session-host fixture cleanup failed; locked files: ${locked.join(", ") || "<directory only>"}`, {
-				cause: error,
-			});
-		}
+		await removeWithRetries(this.dir);
 	}
 
 	async #findEntry(hostId: string): Promise<SessionHostEntry | undefined> {
