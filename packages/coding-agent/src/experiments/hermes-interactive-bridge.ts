@@ -63,14 +63,27 @@ function toolResultBody(payload: JsonObject): JsonObject {
 	return result && typeof result === "object" && !Array.isArray(result) ? (result as JsonObject) : {};
 }
 
+function lspDiagnosticsText(payload: JsonObject): string | undefined {
+	return textField(toolResultBody(payload), "lsp_diagnostics") ?? textField(payload, "lsp_diagnostics");
+}
+
 function toolResultText(payload: JsonObject): string {
 	const direct =
 		textField(payload, "summary") ??
 		textField(payload, "result_text") ??
 		(typeof payload.result === "string" ? payload.result : undefined);
-	if (direct) return direct;
 	const body = toolResultBody(payload);
-	return textField(body, "output") ?? textField(body, "stdout") ?? textField(body, "error") ?? "";
+	const base = direct ?? textField(body, "output") ?? textField(body, "stdout") ?? textField(body, "error") ?? "";
+	const diagnostics = lspDiagnosticsText(payload);
+	if (diagnostics && base) return `${base}\n${diagnostics}`;
+	return diagnostics ?? base;
+}
+
+function toolDiagnostics(payload: JsonObject): { messages: string[]; summary: string; errored: boolean } | undefined {
+	const text = lspDiagnosticsText(payload);
+	if (!text) return undefined;
+	const first = text.split("\n").find((line) => line.length > 0) ?? text;
+	return { messages: [text], summary: first, errored: /error/i.test(text) };
 }
 
 export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: StreamState): AgentSessionEvent[] {
@@ -121,6 +134,7 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 		const body = toolResultBody(payload);
 		const exitCode = typeof body.exit_code === "number" ? body.exit_code : undefined;
 		const wallTimeMs = typeof payload.duration_s === "number" ? Math.round(payload.duration_s * 1000) : undefined;
+		const diagnostics = toolDiagnostics(payload);
 		return [
 			{
 				type: "tool_execution_end",
@@ -129,7 +143,7 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 				isError: exitCode !== undefined && exitCode !== 0,
 				result: {
 					content: [{ type: "text", text: toolResultText(payload) }],
-					details: { exitCode, wallTimeMs },
+					details: { exitCode, wallTimeMs, diagnostics },
 				},
 			},
 		];
