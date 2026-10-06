@@ -161,7 +161,7 @@ export const stateDefs = {
 		"preserveData?": JSON_OBJECT,
 	},
 	ModelCycleResult: { model: "ModelInfo", "thinkingLevel?": "ThinkingLevel", isScoped: "boolean" },
-	ThinkingLevelCycleResult: { level: "Effort" },
+	ThinkingLevelCycleResult: { level: "ConfiguredThinkingLevel" },
 	CancellationResult: { cancelled: "boolean" },
 	OpenSessionResult: doc(
 		{ cancelled: "boolean", resumed: "boolean", sessionId: "string", "sessionFile?": "string" },

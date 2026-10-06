@@ -2694,7 +2694,7 @@ func (v *ModelCycleResult) decodeFrom(raw map[string]json.RawMessage) error {
 }
 
 type ThinkingLevelCycleResult struct {
-	Level Effort `json:"level"`
+	Level ConfiguredThinkingLevel `json:"level"`
 }
 
 func (v *ThinkingLevelCycleResult) UnmarshalJSON(data []byte) error {

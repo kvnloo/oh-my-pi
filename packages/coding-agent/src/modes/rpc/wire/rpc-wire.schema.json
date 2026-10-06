@@ -2771,7 +2771,7 @@
 			"type": "object",
 			"properties": {
 				"level": {
-					"$ref": "#/$defs/Effort"
+					"$ref": "#/$defs/ConfiguredThinkingLevel"
 				}
 			},
 			"required": [

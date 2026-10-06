@@ -554,7 +554,7 @@ export interface ModelCycleResult {
 }
 
 export interface ThinkingLevelCycleResult {
-	level: Effort;
+	level: ConfiguredThinkingLevel;
 }
 
 export interface CancellationResult {

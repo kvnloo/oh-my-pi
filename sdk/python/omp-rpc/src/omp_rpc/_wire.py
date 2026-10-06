@@ -716,7 +716,7 @@ class ModelCycleResult:
 
 @dataclass(slots=True, frozen=True, kw_only=True)
 class ThinkingLevelCycleResult:
-    level: Effort
+    level: ConfiguredThinkingLevel
 
 
 @dataclass(slots=True, frozen=True, kw_only=True)
@@ -1979,7 +1979,7 @@ def parse_model_cycle_result(value: object, path: str = "ModelCycleResult") -> M
 def parse_thinking_level_cycle_result(value: object, path: str = "ThinkingLevelCycleResult") -> ThinkingLevelCycleResult:
     payload = expect_object(value, path)
     return ThinkingLevelCycleResult(
-        level=required(payload, "level", _decode_effort, path),
+        level=required(payload, "level", _decode_configured_thinking_level, path),
     )
 
 

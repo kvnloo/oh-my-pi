@@ -3163,7 +3163,7 @@ pub struct ModelCycleResult {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ThinkingLevelCycleResult {
-	pub level: Effort,
+	pub level: ConfiguredThinkingLevel,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
