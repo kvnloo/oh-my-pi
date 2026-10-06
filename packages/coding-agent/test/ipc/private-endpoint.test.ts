@@ -35,8 +35,10 @@ describe("private endpoint", () => {
 	it("writes owner-only JSON atomically", async () => {
 		dir = await fs.mkdtemp(path.join(os.tmpdir(), "omp-ipc-"));
 		const target = path.join(dir, "e.json");
-		await Promise.all([writePrivateJson(target, { n: 1 }), writePrivateJson(target, { n: 2 })]);
-		expect([1, 2]).toContain((await Bun.file(target).json()).n);
+		for (let round = 0; round < 10; round++) {
+			await Promise.all(Array.from({ length: 32 }, (_, n) => writePrivateJson(target, { n })));
+			expect(Array.from({ length: 32 }, (_, n) => n)).toContain((await Bun.file(target).json()).n);
+		}
 		if (process.platform !== "win32") expect((await fs.stat(target)).mode & 0o777).toBe(0o600);
 		expect((await fs.readdir(dir)).filter(n => n.endsWith(".tmp"))).toEqual([]);
 	});
