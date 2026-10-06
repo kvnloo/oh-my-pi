@@ -1,7 +1,7 @@
 {
   "schema": "omp-native-visual/v1",
-  "id": "8a8f423767124bbb5ad0e70d6942859eb9feaffb2da66823a9a067a755b978bb",
-  "rendererHash": "aca4cf382f74d9e83244c12c3ef0bf2d12dec1e87ccfb50d2a7d7aadd2f2bce4",
+  "id": "475c7a1e9d2dd63039870f3eb068ec9ec5bac2d51a581ee23fde99c49e98fcd7",
+  "rendererHash": "5562dd82e3137f66aa3da19ca28ce19e7ee4767014bfe59e473f6804bc40b794",
   "document": {
     "version": 1,
     "title": "Synthetic repository — code/churn units (not real measurements)",

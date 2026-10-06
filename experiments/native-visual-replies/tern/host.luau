@@ -35,7 +35,26 @@ local function load(path)
     return artifact
 end
 
-local function project(state)
+-- A snapshot is immutable. Cache only eight node/mode projections per block;
+-- keys are node identities, not ids that another snapshot could reuse.
+local function selectItems(state, items, selectedId)
+    state.items, state.selected, state.cached = items, 1, nil
+    for i, item in ipairs(items) do
+        if item.id == selectedId then state.selected = i; break end
+    end
+end
+
+local function project(state, selectedId)
+    local selected = state.items[state.selected]
+    selectedId = selectedId or (selected and selected.id)
+    for i, entry in ipairs(state.projections) do
+        if entry.node == state.current and entry.mode == state.mode then
+            table.remove(state.projections, i)
+            table.insert(state.projections, entry)
+            selectItems(state, entry.items, selectedId)
+            return
+        end
+    end
     local items = {}
     for _, child in ipairs(state.current.children) do table.insert(items, child) end
     table.sort(items, function(a, b)
@@ -54,13 +73,15 @@ local function project(state)
         table.insert(bounded, other)
         items = bounded
     end
-    state.items, state.selected, state.cached = items, 1, nil
+    table.insert(state.projections, { node = state.current, mode = state.mode, items = items })
+    if #state.projections > 8 then table.remove(state.projections, 1) end
+    selectItems(state, items, selectedId)
 end
 
 local function drill(state, index)
     local item = state.items[index]
     if not item or #item.children == 0 then return false end
-    table.insert(state.stack, state.current)
+    table.insert(state.stack, { node = state.current, selectedId = item.id })
     state.current = item
     project(state)
     return true
@@ -68,8 +89,9 @@ end
 
 local function back(state)
     if #state.stack == 0 then return false end
-    state.current = table.remove(state.stack)
-    project(state)
+    local parent = table.remove(state.stack)
+    state.current = parent.node
+    project(state, parent.selectedId)
     return true
 end
 
@@ -83,7 +105,7 @@ local function tiles(state, first, last, depth)
     if first == last then
         local item = state.items[first]
         return ui.el("div", {
-            key = item.id, class = if first == state.selected then "nv-cell nv-selected" else "nv-cell",
+            key = item.id, class = (first == state.selected and "nv-cell nv-selected" or "nv-cell"),
             text = item.label, aria = item.label, title = string.format("%s: %d code units, %d churn units", item.label, item.code, item.churn),
             grow = math.max(item[state.mode], 1), basis = 0,
             actions = { click = "drill=" .. item.id },
@@ -101,14 +123,14 @@ local function tiles(state, first, last, depth)
     left.p = left.p or {}; right.p = right.p or {}
     left.p.grow, left.p.basis = accumulated, 0
     right.p.grow, right.p.basis = total - accumulated, 0
-    return ui.el("div", { key = "split-" .. first .. "-" .. last, class = if depth % 2 == 0 then "nv-split nv-row" else "nv-split nv-col" }, { left, right })
+    return ui.el("div", { key = "split-" .. first .. "-" .. last, class = (depth % 2 == 0 and "nv-split nv-row" or "nv-split nv-col") }, { left, right })
 end
 
 tern.block.define("reply", {
     init = function(_cx, args, saved)
-        local path = if saved and type(saved.path) == "string" then saved.path else args[1] or "demo.visual.json"
+        local path = (saved and type(saved.path) == "string" and saved.path) or args[1] or "demo.visual.json"
         local artifact = load(path)
-        local state = { path = path, artifact = artifact, current = artifact.document.root, stack = {}, mode = "code", selected = 1, items = {}, cached = nil }
+        local state = { path = path, artifact = artifact, current = artifact.document.root, stack = {}, mode = "code", selected = 1, items = {}, projections = {}, cached = nil }
         if saved and saved.mode == "churn" then state.mode = "churn" end
         project(state)
         return state
@@ -134,14 +156,15 @@ tern.block.define("reply", {
         return state.cached
     end,
     key = function(state, key, _cx)
+        if key.ctrl or key.alt or key.meta then return false end
         if key.name == "1" or key.name == "2" then
-            local mode = if key.name == "1" then "code" else "churn"
+            local mode = (key.name == "1" and "code" or "churn")
             if state.mode == mode then return false end
             state.mode = mode; project(state); return true
         elseif key.name == "left" or key.name == "backspace" then return back(state)
         elseif key.name == "enter" then return drill(state, state.selected)
         elseif key.name == "down" or key.name == "up" then
-            local selected = math.max(1, math.min(#state.items, state.selected + (if key.name == "down" then 1 else -1)))
+            local selected = math.max(1, math.min(#state.items, state.selected + (key.name == "down" and 1 or -1)))
             if selected == state.selected then return false end
             state.selected, state.cached = selected, nil
             return true
@@ -156,7 +179,7 @@ tern.block.define("reply", {
         elseif ev.act == "drill" then
             for i, item in ipairs(state.items) do
                 if item.id == ev.value then
-                    if not drill(state, i) then state.selected, state.cached = i, nil end
+                    if not drill(state, i) and state.selected ~= i then state.selected, state.cached = i, nil end
                     break
                 end
             end

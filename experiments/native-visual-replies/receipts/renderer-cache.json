@@ -1,0 +1,31 @@
+{
+  "schema": "native-visual-slice-checks/v1",
+  "base": "f008c5a7afe7f99c4be4705b537a579235e89d30",
+  "slice": "renderer-cache",
+  "checks": {
+    "node": {
+      "passed": 16,
+      "failed": 0
+    },
+    "rendererLogic": {
+      "passed": 15,
+      "failed": 0,
+      "engine": "system Lua 5.4",
+      "ternBoundary": "stubbed",
+      "sourceTranspiled": false
+    },
+    "baselineLogicFailuresAfterSyntaxLowering": 8,
+    "luauRuntime": false,
+    "pixelsVerified": false,
+    "paintLatencyMeasured": false
+  },
+  "sourceSha256": {
+    "experiments/native-visual-replies/notes/renderer-cache.md": "ef75b2c731a56ee90324386028169b125836f8590ba6cf8a714257351b6a2f33",
+    "experiments/native-visual-replies/renderer-test.mjs": "dacd4174751635520f2ca2d9d6485e2af447aa02f1e5842766d2a332b8f62ffb",
+    "experiments/native-visual-replies/tern/demo.visual.json": "db80d66ef34a3ff2252598ee84c998e330d24deeba686e605acae1ebf9c86b79",
+    "experiments/native-visual-replies/tern/host.luau": "900460e92b6c2c600cc5c5e16e22eee93e0858a9bcf0fc3e7bdc79ff42654916",
+    "experiments/native-visual-replies/tests/renderer-cases.luau": "6b68dbc2840e557e7cf091f5ba97dd94931ef97fa8121785c500367daa38935e",
+    "experiments/native-visual-replies/tests/renderer-prelude.luau": "d645d3ec4115db77fe9c69b24c1eb156dd178ed189f7c0daeb16ffccd7ff2bf6"
+  },
+  "status": "logic-tested; real OMP/Tern gate remains open"
+}
