@@ -120,7 +120,13 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 		state.tools.set(toolCallId, toolName);
 		const body = toolResultBody(payload);
 		const exitCode = typeof body.exit_code === "number" ? body.exit_code : undefined;
-		const wallTimeMs = typeof payload.duration_s === "number" ? Math.round(payload.duration_s * 1000) : undefined;
+		const durationS =
+			typeof payload.duration_s === "number"
+				? payload.duration_s
+				: typeof body.duration_s === "number"
+					? body.duration_s
+					: undefined;
+		const wallTimeMs = durationS !== undefined ? Math.round(durationS * 1000) : undefined;
 		return [
 			{
 				type: "tool_execution_end",
@@ -218,7 +224,13 @@ function replaySessionToolCards(session: AgentSession): void {
 		const start = { type: "tool.start", payload: { tool_id: toolId, name: call.name, args: call.args } };
 		const done = {
 			type: "tool.complete",
-			payload: { tool_id: toolId, name: call.name, args: call.args, result: { output: call.output, exit_code: 0 } },
+			payload: {
+				tool_id: toolId,
+				name: call.name,
+				args: call.args,
+				duration_s: index === 0 ? 1.5 : undefined,
+				result: { output: call.output, exit_code: 0 },
+			},
 		};
 		for (const event of [start, done]) {
 			for (const mapped of hermesEventToSessionEvents(event, state)) session.injectExternalEvent(mapped);
