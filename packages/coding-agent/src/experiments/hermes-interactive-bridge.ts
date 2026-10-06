@@ -40,6 +40,7 @@ function ompToolName(name: string, raw: JsonObject = {}): string {
 	if (name === "write_file") return "write";
 	if (name === "patch") return "edit";
 	if (name === "search_files") return raw.target === "files" ? "glob" : "grep";
+	if (name === "todo_list") return "todo";
 	return name;
 }
 
@@ -55,6 +56,17 @@ function ompToolArgs(name: string, raw: JsonObject): JsonObject {
 	if (kind === "edit") return { path: raw.path, oldText: raw.old_string, newText: raw.new_string, patch: raw.patch };
 	if (kind === "grep") return { pattern: raw.pattern, path: raw.path };
 	if (kind === "glob") return { path: raw.pattern ?? raw.path };
+	if (kind === "todo") {
+		const todos = Array.isArray(raw.todos) ? raw.todos : [];
+		const items = todos.map((entry) => {
+			if (entry && typeof entry === "object" && "content" in entry) {
+				const content = entry.content;
+				return typeof content === "string" ? content : "";
+			}
+			return typeof entry === "string" ? entry : "";
+		});
+		return { op: "view", items };
+	}
 	return raw;
 }
 
