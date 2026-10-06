@@ -7,8 +7,22 @@ describe("Hermes experiment safety fallback", () => {
 		expect(safeDeclineResult("approval")).toEqual({ choice: "deny" });
 	});
 
-	it("cancels clarify and skips sensitive string prompts", () => {
-		expect(safeDeclineResult("clarify")).toEqual({});
+	it("returns an empty clarify result, not a selected option, and emits no tool card", () => {
+		const result = safeDeclineResult("clarify");
+		expect(result).toEqual({});
+		expect(result).not.toHaveProperty("selected");
+		expect(result).not.toHaveProperty("choice");
+		expect(result).not.toHaveProperty("option");
+		expect(result).not.toHaveProperty("index");
+		expect(result).not.toHaveProperty("name");
+		expect(result).not.toHaveProperty("target");
+		expect(result).not.toHaveProperty("targetKind");
+		expect(result).not.toHaveProperty("status");
+		const toolCardKeys = ["k", "name", "title", "target", "targetKind", "status"];
+		expect(toolCardKeys.every((key) => !(key in (result ?? {})))).toBe(true);
+	});
+
+	it("skips sensitive string prompts", () => {
 		expect(safeDeclineResult("secret")).toEqual({ value: "" });
 		expect(safeDeclineResult("vault.unlock_prompt")).toEqual({ value: "" });
 	});
