@@ -88,7 +88,7 @@ describe("Omnara bridge command", () => {
 			});
 			const first = await frames.next();
 			abort.abort();
-			await frames.return(undefined);
+			expect((await frames.next()).done).toBe(true);
 
 			expect(states).toEqual(["connected"]);
 			expect(first.value).toEqual({
