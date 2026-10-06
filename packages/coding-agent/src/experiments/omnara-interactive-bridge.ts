@@ -361,7 +361,10 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 	let refreshScheduled = false;
 	let submissionCounter = 0;
 
-	session.addDisposer(() => abort.abort());
+	session.addDisposer(() => {
+		abort.abort();
+		client.close();
+	});
 
 	const agentResponse = await client.getAgent<JsonObject>();
 	const agent = asObject(agentResponse.agent);
