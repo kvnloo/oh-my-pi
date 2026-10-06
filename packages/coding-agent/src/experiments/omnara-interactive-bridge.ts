@@ -376,7 +376,13 @@ function interactionTitle(interaction: OpenInteraction): string {
 	return [agent ? title + " · " + agent : title, context].filter(Boolean).join("\n");
 }
 
-type OmnaraInteractionClient = Pick<OmnaraClient, "resolveInteraction">;
+export interface OmnaraInteractionClient {
+	resolveInteraction(
+		interactionAgentID: string,
+		interactionID: string,
+		answers: Array<{ option_indices: number[]; text?: string }>,
+	): Promise<unknown>;
+}
 
 export async function answerOmnaraInteraction(
 	client: OmnaraInteractionClient,
