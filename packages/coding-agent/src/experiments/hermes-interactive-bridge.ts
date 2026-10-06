@@ -137,9 +137,10 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	if (event.type === "subagent.start") {
 		const toolCallId = textField(payload, "subagent_id");
 		if (!toolCallId) return [];
-		const goal = textField(payload, "goal") ?? "";
+		const name = textField(payload, "name") ?? toolCallId;
+		const task = textField(payload, "task") ?? textField(payload, "goal") ?? "";
 		state.tools.set(toolCallId, "task");
-		return [{ type: "tool_execution_start", toolCallId, toolName: "task", args: { name: toolCallId, task: goal } }];
+		return [{ type: "tool_execution_start", toolCallId, toolName: "task", args: { name, task } }];
 	}
 	if (event.type === "subagent.complete") {
 		const toolCallId = textField(payload, "subagent_id");
@@ -211,41 +212,20 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 	if (process.env.PI_HERMES_REPLAY === "1") replaySessionToolCards(session);
 }
 
-const REPLAY_CALLS: Array<{ name: string; args: JsonObject; output: string }> = [
-	{ name: "terminal", args: { command: "git status -sb" }, output: "## exp/hermes-tool-cards" },
-	{ name: "terminal", args: { command: "bun test test/hermes-interactive-bridge.test.ts" }, output: "1 pass" },
-	{ name: "read_file", args: { path: "packages/coding-agent/src/experiments/hermes-interactive-bridge.ts" }, output: "function ompToolName" },
-	{ name: "read_file", args: { path: "packages/coding-agent/src/modes/controllers/event-controller.ts", offset: 1806, limit: 40 }, output: "handleToolExecutionStart" },
-	{ name: "search_files", args: { pattern: "tool_execution_start", path: "event-controller.ts", target: "content" }, output: "tool_execution_start" },
-	{ name: "search_files", args: { pattern: "describeCall", path: "packages/tui/src/tools", target: "content" }, output: "describeCall" },
-	{ name: "patch", args: { path: "hermes-interactive-bridge.ts", old_string: "return name;", new_string: "return \"bash\";" }, output: "patched" },
-	{ name: "write_file", args: { path: "test/hermes-tool-card-replay.test.ts", content: "replay" }, output: "wrote" },
-	{ name: "search_files", args: { pattern: "*.yml", path: ".github/workflows", target: "files" }, output: "ci.yml" },
-	{ name: "terminal", args: { command: "ls packages/natives/native" }, output: "loader-state.js" },
-	{ name: "read_file", args: { path: "packages/tui/src/tools/bash.ts", offset: 664, limit: 8 }, output: "bashToolRenderer" },
-	{ name: "search_files", args: { pattern: "GITNEXUS_LBUG_BUFFER_POOL_SIZE", path: "lbug-config.js", target: "content" }, output: "buffer pool" },
-	{ name: "terminal", args: { command: "echo tool-card-ok" }, output: "tool-card-ok" },
-	{ name: "read_file", args: { path: "packages/tui/src/theme/theme.ts", offset: 90, limit: 5 }, output: "export var theme" },
-	{ name: "search_files", args: { pattern: "renderCall", path: "packages/tui/src/tools/read.ts", target: "content" }, output: "renderCall" },
-	{ name: "search_files", args: { pattern: "package.json", target: "files" }, output: "package.json" },
-	{ name: "terminal", args: { command: "git log -1 --oneline" }, output: "a9136aef96" },
-	{ name: "read_file", args: { path: "packages/tui/src/chat/tool-execution.ts", offset: 974, limit: 20 }, output: "describeTool" },
-	{ name: "search_files", args: { pattern: "hasBuiltInTool", path: "session-tools.ts", target: "content" }, output: "hasBuiltInTool" },
-	{ name: "shell", args: { command: "gitnexus doctor", cwd: "/tmp" }, output: "VECTOR extension: available" },
-	{ name: "terminal", args: { command: "pwd" }, output: "/mnt/zer0models/hermes-wt/omp-hermes-backend" },
-];
-
 function replaySessionToolCards(session: AgentSession): void {
 	const state: StreamState = { text: "", model: "hermes", started: false, tools: new Map() };
-	REPLAY_CALLS.forEach((call, index) => {
-		const toolId = `replay-${index + 1}`;
-		const start = { type: "tool.start", payload: { tool_id: toolId, name: call.name, args: call.args } };
-		const done = {
-			type: "tool.complete",
-			payload: { tool_id: toolId, name: call.name, args: call.args, result: { output: call.output, exit_code: 0 } },
-		};
-		for (const event of [start, done]) {
-			for (const mapped of hermesEventToSessionEvents(event, state)) session.injectExternalEvent(mapped);
-		}
-	});
+	const start = {
+		type: "subagent.start",
+		payload: { subagent_id: "child-1", name: "Review", task: "Check the empty-title edge case" },
+	};
+	const done = {
+		type: "subagent.complete",
+		payload: {
+			subagent_id: "child-1",
+			result: { output: "Fixture worker: verify whitespace-only and non-empty titles." },
+		},
+	};
+	for (const event of [start, done]) {
+		for (const mapped of hermesEventToSessionEvents(event, state)) session.injectExternalEvent(mapped);
+	}
 }

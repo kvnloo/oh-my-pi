@@ -33,7 +33,10 @@ describe("hermes event mapping", () => {
 	it("maps subagent start and complete onto one task card id", () => {
 		const state = { text: "", model: "hermes", started: false, tools: new Map<string, string>() };
 		const start = hermesEventToSessionEvents(
-			{ type: "subagent.start", payload: { subagent_id: "child-1", goal: "inspect the repo" } },
+			{
+				type: "subagent.start",
+				payload: { subagent_id: "child-1", name: "Review", task: "Check the empty-title edge case" },
+			},
 			state,
 		);
 		const done = hermesEventToSessionEvents(
@@ -44,7 +47,7 @@ describe("hermes event mapping", () => {
 			type: "tool_execution_start",
 			toolCallId: "child-1",
 			toolName: "task",
-			args: { name: "child-1", task: "inspect the repo" },
+			args: { name: "Review", task: "Check the empty-title edge case" },
 		});
 		expect(done[0]).toMatchObject({
 			type: "tool_execution_end",
