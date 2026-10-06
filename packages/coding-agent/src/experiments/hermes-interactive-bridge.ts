@@ -137,6 +137,10 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	return [];
 }
 
+export function interruptRequest(sessionId: string): { session_id: string } {
+	return { session_id: sessionId };
+}
+
 export async function attachHermesBackend(session: AgentSession): Promise<void> {
 	const gateway = new HermesGatewayClient();
 	const stream: StreamState = {
@@ -181,7 +185,7 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 		return true;
 	};
 	session.abort = async options => {
-		await gateway.request("session.interrupt", { session_id: sessionId }).catch(() => undefined);
+		await gateway.request("session.interrupt", interruptRequest(sessionId)).catch(() => undefined);
 		return originalAbort(options);
 	};
 	if (process.env.PI_HERMES_REPLAY === "1") replaySessionToolCards(session);

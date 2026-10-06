@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { hermesEventToSessionEvents } from "../src/experiments/hermes-interactive-bridge";
+import { hermesEventToSessionEvents, interruptRequest } from "../src/experiments/hermes-interactive-bridge";
 
 describe("hermes event mapping", () => {
 	it("keeps one tool id and reads terminal output", () => {
@@ -28,5 +28,10 @@ describe("hermes event mapping", () => {
 			result: { content: [{ type: "text", text: "tool-card-ok" }], details: { exitCode: 0 } },
 		});
 		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
+	});
+
+	it("interruptRequest is session_id only", () => {
+		expect(interruptRequest("sess-1")).toEqual({ session_id: "sess-1" });
+		expect(interruptRequest("sess-1")).not.toHaveProperty("approve");
 	});
 });
