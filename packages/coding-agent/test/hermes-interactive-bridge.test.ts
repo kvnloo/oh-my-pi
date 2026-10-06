@@ -29,4 +29,32 @@ describe("hermes event mapping", () => {
 		});
 		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
 	});
+
+	it("maps web_search onto the OMP query renderer with one id", () => {
+		const state = { text: "", model: "hermes", started: false, tools: new Map<string, string>() };
+		const start = hermesEventToSessionEvents(
+			{ type: "tool.start", payload: { tool_id: "search-1", name: "web_search", args: { query: "bun vs node" } } },
+			state,
+		);
+		const done = hermesEventToSessionEvents(
+			{
+				type: "tool.complete",
+				payload: { tool_id: "search-1", result: { output: "cached-results" } },
+			},
+			state,
+		);
+		expect(start[0]).toMatchObject({
+			type: "tool_execution_start",
+			toolCallId: "search-1",
+			toolName: "web_search",
+			args: { query: "bun vs node" },
+		});
+		expect(done[0]).toMatchObject({
+			type: "tool_execution_end",
+			toolCallId: "search-1",
+			toolName: "web_search",
+			result: { content: [{ type: "text", text: "cached-results" }] },
+		});
+		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
+	});
 });

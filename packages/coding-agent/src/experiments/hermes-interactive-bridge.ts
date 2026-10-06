@@ -40,6 +40,7 @@ function ompToolName(name: string, raw: JsonObject = {}): string {
 	if (name === "write_file") return "write";
 	if (name === "patch") return "edit";
 	if (name === "search_files") return raw.target === "files" ? "glob" : "grep";
+	if (name === "web_search") return "web_search";
 	return name;
 }
 
@@ -55,6 +56,7 @@ function ompToolArgs(name: string, raw: JsonObject): JsonObject {
 	if (kind === "edit") return { path: raw.path, oldText: raw.old_string, newText: raw.new_string, patch: raw.patch };
 	if (kind === "grep") return { pattern: raw.pattern, path: raw.path };
 	if (kind === "glob") return { path: raw.pattern ?? raw.path };
+	if (kind === "web_search") return { query: textField(raw, "query") ?? "" };
 	return raw;
 }
 
