@@ -29,4 +29,38 @@ describe("hermes event mapping", () => {
 		});
 		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
 	});
+
+	it("maps search_files content onto grep with pattern and one tool id", () => {
+		const state = { text: "", model: "hermes", started: false, tools: new Map<string, string>() };
+		const start = hermesEventToSessionEvents(
+			{
+				type: "tool.start",
+				payload: {
+					tool_id: "tool-grep-1",
+					name: "search_files",
+					args: { pattern: "tool_execution_start", path: "event-controller.ts", target: "content" },
+				},
+			},
+			state,
+		);
+		const done = hermesEventToSessionEvents(
+			{
+				type: "tool.complete",
+				payload: { tool_id: "tool-grep-1", result: { output: "tool_execution_start", exit_code: 0 } },
+			},
+			state,
+		);
+		expect(start[0]).toMatchObject({
+			type: "tool_execution_start",
+			toolCallId: "tool-grep-1",
+			toolName: "grep",
+			args: { pattern: "tool_execution_start", path: "event-controller.ts" },
+		});
+		expect(done[0]).toMatchObject({
+			type: "tool_execution_end",
+			toolCallId: "tool-grep-1",
+			toolName: "grep",
+		});
+		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
+	});
 });
