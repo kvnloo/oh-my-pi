@@ -1,9 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-	answerOmnaraInteraction,
-	type OmnaraInteractiveHost,
-} from "../src/experiments/omnara-interactive-bridge";
+import { answerOmnaraInteraction, type OmnaraInteractiveHost } from "../src/experiments/omnara-interactive-bridge";
 
 type Resolution = {
 	agentID: string;
