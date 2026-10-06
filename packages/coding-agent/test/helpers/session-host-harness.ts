@@ -19,6 +19,26 @@ export async function waitFor(check: () => boolean | Promise<boolean>, timeoutMs
 	}
 }
 
+async function diagnoseLockedPaths(root: string): Promise<string[]> {
+	const failures: string[] = [];
+	const visit = async (dir: string): Promise<void> => {
+		for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+			const full = path.join(dir, entry.name);
+			if (entry.isDirectory()) {
+				await visit(full);
+				continue;
+			}
+			try {
+				await fs.rm(full, { force: true });
+			} catch (error) {
+				failures.push(`${path.relative(root, full)}:${(error as NodeJS.ErrnoException).code ?? "unknown"}`);
+			}
+		}
+	};
+	await visit(root);
+	return failures;
+}
+
 export interface TestSessionHost {
 	hostId: string;
 	session: AgentSession;
@@ -138,10 +158,10 @@ export class SessionHostFixture {
 		} catch (error) {
 			const code = (error as NodeJS.ErrnoException).code;
 			if (process.platform !== "win32" || !code || !["EBUSY", "EPERM", "ENOTEMPTY"].includes(code)) throw error;
-			// The Windows runner can retain just-closed session-host handles beyond the
-			// shared 2s cleanup window. Give only this heavyweight fixture one more bounded window.
-			await Bun.sleep(2_000);
-			await removeWithRetries(this.dir);
+			const locked = await diagnoseLockedPaths(this.dir);
+			throw new Error(`session-host fixture cleanup failed; locked files: ${locked.join(", ") || "<directory only>"}`, {
+				cause: error,
+			});
 		}
 	}
 
