@@ -134,10 +134,7 @@ function structuredToolText(value: unknown): string {
 function toolResultText(value: unknown): string {
 	const direct = textContent(value);
 	if (direct) return direct;
-	return arrayField(value, "content_blocks")
-		.map(structuredToolText)
-		.filter(Boolean)
-		.join("\n");
+	return arrayField(value, "content_blocks").map(structuredToolText).filter(Boolean).join("\n");
 }
 
 function textContent(value: unknown): string {
