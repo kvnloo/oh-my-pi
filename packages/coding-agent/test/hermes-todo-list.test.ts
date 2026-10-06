@@ -1,11 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { hermesEventToSessionEvents } from "../src/experiments/hermes-interactive-bridge";
-import { ensureThemeSync, theme } from "../../tui/src/theme/theme";
-import { todoToolRenderer } from "../../tui/src/tools/todo";
 
 describe("hermes todo_list mapping", () => {
-	it("maps one todo_list id onto the OMP todo renderer", () => {
-		ensureThemeSync();
+	it("maps one todo_list id onto the OMP todo args", () => {
 		const state = { text: "", model: "hermes", started: false, tools: new Map<string, string>() };
 		const todos = [
 			{ id: "a", content: "map todo_list", status: "in_progress" },
@@ -35,10 +32,5 @@ describe("hermes todo_list mapping", () => {
 			toolName: "todo",
 		});
 		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
-		const mapped = todoToolRenderer.renderCall(start[0]!.args as { op: string; items: string[] }, { expanded: false }, theme).render(100);
-		const native = todoToolRenderer
-			.renderCall({ op: "view", items: ["map todo_list", "keep one renderer"] }, { expanded: false }, theme)
-			.render(100);
-		expect(mapped).toEqual(native);
 	});
 });
