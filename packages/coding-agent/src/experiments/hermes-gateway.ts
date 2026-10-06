@@ -19,11 +19,16 @@ export interface HermesGatewayEvent {
 
 const VALUE_REQUESTS = new Set([
 	"display.install.sudo",
+	"preview.act",
+	"preview.read",
 	"secret",
 	"sudo",
+	"terminal.read",
+	"tour",
 	"vault.code",
 	"vault.save_login",
-	"vault.unlock",
+	"vault.unlock_prompt",
+	"window.read",
 ]);
 
 /**
@@ -199,12 +204,12 @@ export class HermesGatewayClient extends EventEmitter {
 			return;
 		}
 
-		if (typeof frame.id === "number" && typeof frame.method === "string") {
+		if ((typeof frame.id === "number" || typeof frame.id === "string") && typeof frame.method === "string") {
 			this.#handleServerRequest(frame.id, frame.method);
 		}
 	}
 
-	#handleServerRequest(id: number, method: string): void {
+	#handleServerRequest(id: number | string, method: string): void {
 		const child = this.#child;
 		if (!child?.stdin) return;
 
