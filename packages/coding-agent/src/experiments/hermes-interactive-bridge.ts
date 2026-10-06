@@ -40,11 +40,17 @@ function ompToolName(name: string, raw: JsonObject = {}): string {
 	if (name === "write_file") return "write";
 	if (name === "patch") return "edit";
 	if (name === "search_files") return raw.target === "files" ? "glob" : "grep";
+	if (name === "cronjob_manage") return "bash";
 	return name;
 }
 
 function ompToolArgs(name: string, raw: JsonObject): JsonObject {
 	const kind = ompToolName(name, raw);
+	if (name === "cronjob_manage") {
+		const action = textField(raw, "action") ?? "";
+		const jobId = textField(raw, "job_id") ?? textField(raw, "id") ?? "";
+		return { command: ["cronjob", action, jobId].filter(Boolean).join(" ") };
+	}
 	if (kind === "bash") {
 		const command = textField(raw, "command") ?? textField(raw, "cmd") ?? "";
 		const cwd = textField(raw, "cwd");
