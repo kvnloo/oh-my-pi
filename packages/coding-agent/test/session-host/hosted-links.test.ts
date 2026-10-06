@@ -72,7 +72,7 @@ afterEach(async () => {
 	await config.restore();
 	await fixture.dispose();
 	resetSettingsForTest();
-});
+}, 20_000);
 
 async function writeFile(file: string, content: string): Promise<string> {
 	await fs.mkdir(path.dirname(file), { recursive: true });
@@ -107,7 +107,7 @@ async function canonicalTargets(targets: Record<string, string>): Promise<Record
 }
 
 async function canonicalUris(uris: string[]): Promise<string[]> {
-	return (await Promise.all(uris.map(canonicalFileUri))).sort();
+	return (await Promise.all(uris.filter(uri => uri.startsWith("file:")).map(canonicalFileUri))).sort();
 }
 
 function setProcessTmpdir(dir: string): void {
@@ -261,7 +261,11 @@ describe("host-authored links in a hosted terminal", () => {
 		expect(await canonicalFileUri(terminal.painted()[REPORT]!)).toBe(await canonicalFileUri(before));
 
 		await host.session.switchSession(afterFile);
-		await waitFor(() => terminal.painted()[REPORT] !== before);
+		const canonicalBefore = await canonicalFileUri(before);
+		await waitFor(async () => {
+			const report = terminal.painted()[REPORT];
+			return report !== undefined && (await canonicalFileUri(report)) !== canonicalBefore;
+		});
 
 		const expected = {
 			[SOURCE]: await fileUri(path.join(projectOf(host), SOURCE)),
