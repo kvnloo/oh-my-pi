@@ -147,7 +147,13 @@ function toolCallsFromModelOutput(payload: unknown): Array<{ id: string; name: s
 }
 
 function isTerminalModelOutput(stopReason: string | undefined, toolCallCount: number): boolean {
-	return stopReason !== undefined && stopReason !== "max_tokens" && toolCallCount === 0;
+	if (toolCallCount > 0) return false;
+	return (
+		stopReason === "end_turn" ||
+		stopReason === "refusal" ||
+		stopReason === "content_filter" ||
+		stopReason === "error"
+	);
 }
 
 function ensureTurnStart(state: OmnaraBridgeState, events: AgentSessionEvent[]): void {
