@@ -76,7 +76,7 @@ describe("Omnara REST contract", () => {
 			return Response.json({ agent_input: { id: "inp_1", state: "queued" } });
 		}) as typeof fetch;
 
-		await client().createInput("hello", "omp-key", "steering");
+		await client().createInput("hello", "omp-key", "steering", [{ data: "cG5n", mediaType: "image/png" }]);
 
 		expect(request?.url).toBe(
 			"https://omnara.test/v1/orgs/org_test/projects/proj_test/agents/agt_main/inputs",
@@ -87,9 +87,23 @@ describe("Omnara REST contract", () => {
 		expect(headers.get("Idempotency-Key")).toBe("omp-key");
 		expect(headers.get("Content-Type")).toBe("application/json");
 		expect(JSON.parse(String(request?.init?.body))).toEqual({
-			content_blocks: [{ type: "text", text: "hello" }],
+			content_blocks: [
+				{
+					type: "text",
+					text: "This message came from an OMP terminal frontend connected through Omnara. Respond normally unless the user explicitly asks you to use a messaging integration.",
+					metadata: { omnara_hidden: "true" },
+				},
+				{ type: "text", text: "hello" },
+				{ type: "media", media_type: "image/png", data: "cG5n" },
+			],
 			delivery_mode: "steering",
 		});
+	});
+
+	it("rejects image types Omnara cannot accept", async () => {
+		await expect(
+			client().createInput("look", "omp-key", "queued", [{ data: "PHN2Zz4=", mediaType: "image/svg+xml" }]),
+		).rejects.toThrow("does not support image type image/svg+xml");
 	});
 
 	it("resolves an interaction on the interaction's owning subagent", async () => {
