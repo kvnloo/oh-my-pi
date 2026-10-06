@@ -19,6 +19,7 @@ export interface HermesGatewayEvent {
 
 const VALUE_REQUESTS = new Set([
 	"display.install.sudo",
+	"password",
 	"preview.act",
 	"preview.read",
 	"secret",

@@ -42,7 +42,6 @@ function ompToolName(name: string, raw: JsonObject = {}): string {
 	if (name === "search_files") return raw.target === "files" ? "glob" : "grep";
 	return name;
 }
-
 function ompToolArgs(name: string, raw: JsonObject): JsonObject {
 	const kind = ompToolName(name, raw);
 	if (kind === "bash") {
@@ -107,6 +106,7 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	if (event.type === "tool.start") {
 		const toolCallId = textField(payload, "tool_id");
 		const rawName = textField(payload, "name") ?? "tool";
+		if (rawName === "secret" || rawName === "password") return [];
 		const rawArgs = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? (payload.args as JsonObject) : {};
 		const toolName = ompToolName(rawName, rawArgs);
 		if (!toolCallId) return [];
@@ -116,7 +116,9 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	if (event.type === "tool.complete") {
 		const toolCallId = textField(payload, "tool_id");
 		if (!toolCallId) return [];
-		const toolName = ompToolName(textField(payload, "name") ?? state.tools.get(toolCallId) ?? "tool");
+		const rawName = textField(payload, "name") ?? state.tools.get(toolCallId) ?? "tool";
+		if (rawName === "secret" || rawName === "password") return [];
+		const toolName = ompToolName(rawName);
 		state.tools.set(toolCallId, toolName);
 		const body = toolResultBody(payload);
 		const exitCode = typeof body.exit_code === "number" ? body.exit_code : undefined;
