@@ -62,6 +62,7 @@ describe("Omnara bridge command", () => {
 			'rl.on("line", line => {',
 			"  const request = JSON.parse(line);",
 			'  if (request.method === "agent.get") send({ jsonrpc: "2.0", id: request.id, result: { agent: { name: "remote" } } });',
+			'  if (request.method === "input.create") send({ jsonrpc: "2.0", id: request.id, result: { params: request.params } });',
 			'  if (request.method === "stream.start") {',
 			'    send({ jsonrpc: "2.0", id: request.id, result: { started: true } });',
 			'    send({ jsonrpc: "2.0", method: "stream.connection", params: { state: "connected", reconnected: false } });',
@@ -78,6 +79,18 @@ describe("Omnara bridge command", () => {
 
 		try {
 			expect(await client.getAgent<{ agent: { name: string } }>()).toEqual({ agent: { name: "remote" } });
+			expect(
+				await client.createInput<{ params: Record<string, unknown> }>("look", "omp-media", "steering", [
+					{ data: "cG5n", filename: "shot.png", mediaType: "image/png" },
+				]),
+			).toEqual({
+				params: {
+					text: "look",
+					idempotency_key: "omp-media",
+					delivery_mode: "steering",
+					attachments: [{ data: "cG5n", filename: "shot.png", media_type: "image/png" }],
+				},
+			});
 
 			const abort = new AbortController();
 			const states: string[] = [];
