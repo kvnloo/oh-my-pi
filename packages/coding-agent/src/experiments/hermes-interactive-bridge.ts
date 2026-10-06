@@ -51,7 +51,7 @@ function ompToolArgs(name: string, raw: JsonObject): JsonObject {
 		return cwd ? { command, cwd } : { command };
 	}
 	if (kind === "read") return { path: raw.path, offset: raw.offset, limit: raw.limit };
-	if (kind === "write") return { path: raw.path, content: raw.content };
+	if (kind === "write") return { path: raw.path ?? raw.file_path, content: raw.content ?? raw.contents };
 	if (kind === "edit") return { path: raw.path, oldText: raw.old_string, newText: raw.new_string, patch: raw.patch };
 	if (kind === "grep") return { pattern: raw.pattern, path: raw.path };
 	if (kind === "glob") return { path: raw.pattern ?? raw.path };
