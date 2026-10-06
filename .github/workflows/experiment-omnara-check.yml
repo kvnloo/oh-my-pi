@@ -1,9 +1,21 @@
 name: Omnara experiment check
 
 on:
+  pull_request:
+    branches:
+      - exp/omnara-backend
+      - exp/omnara-backend-preview
+    paths:
+      - "packages/coding-agent/src/experiments/omnara-*.ts"
+      - "packages/coding-agent/src/main.ts"
+      - "packages/coding-agent/src/session/agent-session.ts"
+      - "packages/coding-agent/test/omnara-*.test.ts"
+      - ".github/workflows/experiment-omnara-check.yml"
   push:
     branches:
       - exp/omnara-backend
+      - exp/omnara-backend-preview
+      - exp/omnara-*
 
 jobs:
   check:
@@ -14,10 +26,8 @@ jobs:
       - name: Format experiment files
         run: |
           files=(
-            packages/coding-agent/src/experiments/omnara-client.ts
-            packages/coding-agent/src/experiments/omnara-interactive-bridge.ts
-            packages/coding-agent/test/omnara-client.test.ts
-            packages/coding-agent/test/omnara-interactive-bridge.test.ts
+            packages/coding-agent/src/experiments/omnara-*.ts
+            packages/coding-agent/test/omnara-*.test.ts
             packages/coding-agent/src/main.ts
           )
           ./node_modules/.bin/oxfmt "${files[@]}"
@@ -27,5 +37,11 @@ jobs:
         run: bun --cwd=packages/coding-agent run check:types
       - name: Test Omnara bridge
         run: |
-          bun test packages/coding-agent/test/omnara-client.test.ts \
-            packages/coding-agent/test/omnara-interactive-bridge.test.ts
+          tests=(packages/coding-agent/test/omnara-*.test.ts)
+          selected=()
+          for test in "${tests[@]}"; do
+            [[ "$test" == *omnara-tool-card-replay.test.ts ]] || selected+=("$test")
+          done
+          bun test "${selected[@]}"
+      - name: Note native renderer proof
+        run: echo "omnara-tool-card-replay.test.ts is exercised with native addons/full dogfood, matching the Hermes slice workflow."

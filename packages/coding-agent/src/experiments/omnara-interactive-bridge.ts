@@ -61,6 +61,82 @@ function arrayField(value: unknown, key: string): unknown[] {
 	return Array.isArray(candidate) ? candidate : [];
 }
 
+function searchPatterns(raw: JsonObject): string[] {
+	const args = Array.isArray(raw.args) ? raw.args : [];
+	const patterns: string[] = [];
+	for (let index = 0; index < args.length - 1; index++) {
+		if (args[index] !== "-e") continue;
+		const pattern = args[index + 1];
+		if (typeof pattern === "string" && pattern) patterns.push(pattern);
+		index++;
+	}
+	return patterns;
+}
+
+/**
+ * Presentation-only tool normalization.
+ *
+ * Omnara remains authoritative for execution. These names/args only select the
+ * existing OMP renderer that most closely matches the remote tool call.
+ */
+export function omnaraOmpToolName(name: string, raw: JsonObject = {}): string {
+	if (name === "run_command") return "bash";
+	if (name === "read_file") return "read";
+	if (name === "write_file" && typeof raw.content === "string") return "write";
+	if (name === "list_files") return "glob";
+	if (name === "search_files") return "grep";
+	if (name === "spawn_agent") return "task";
+	return name;
+}
+
+export function omnaraOmpToolArgs(name: string, raw: JsonObject): JsonObject {
+	const kind = omnaraOmpToolName(name, raw);
+	if (kind === "bash") {
+		const command = stringField(raw, "command") ?? "";
+		const cwd = stringField(raw, "cwd");
+		return cwd ? { command, cwd } : { command };
+	}
+	if (kind === "read") {
+		return {
+			path: raw.path,
+			offset: raw.offset_line,
+			limit: raw.limit_lines,
+		};
+	}
+	if (kind === "write") return { path: raw.path, content: raw.content };
+	if (kind === "glob") return { path: raw.pattern, limit: raw.limit };
+	if (kind === "grep") {
+		return {
+			pattern: searchPatterns(raw).join(" | "),
+			path: raw.path,
+		};
+	}
+	if (kind === "task") {
+		return {
+			name: raw.name,
+			agent: raw.agent,
+			task: raw.task,
+		};
+	}
+	return raw;
+}
+
+function structuredToolText(value: unknown): string {
+	const item = asObject(value);
+	if (stringField(item, "type") !== "structured_data") return "";
+	try {
+		return JSON.stringify(item.value);
+	} catch {
+		return "";
+	}
+}
+
+function toolResultText(value: unknown): string {
+	const direct = textContent(value);
+	if (direct) return direct;
+	return arrayField(value, "content_blocks").map(structuredToolText).filter(Boolean).join("\n");
+}
+
 function textContent(value: unknown): string {
 	return arrayField(value, "content_blocks")
 		.map(block => {
@@ -139,9 +215,14 @@ function toolCallsFromModelOutput(payload: unknown): Array<{ id: string; name: s
 		const item = asObject(block);
 		if (stringField(item, "type") !== "tool_call") continue;
 		const id = stringField(item, "tool_call_id");
-		const name = stringField(item, "name");
-		if (!id || !name) continue;
-		calls.push({ id, name, args: asObject(item.input) });
+		const rawName = stringField(item, "name");
+		if (!id || !rawName) continue;
+		const rawArgs = asObject(item.input);
+		calls.push({
+			id,
+			name: omnaraOmpToolName(rawName, rawArgs),
+			args: omnaraOmpToolArgs(rawName, rawArgs),
+		});
 	}
 	return calls;
 }
@@ -253,7 +334,7 @@ export function omnaraFrameToSessionEvents(frame: OmnaraSseFrame, state: OmnaraB
 		if (!toolCallId || state.endedTools.has(toolCallId)) return [];
 		state.endedTools.add(toolCallId);
 		const outcome = stringField(payload, "outcome");
-		const text = textContent(payload) || outcome || "completed";
+		const text = toolResultText(payload) || outcome || "completed";
 		return [
 			{
 				type: "tool_execution_end",
@@ -398,9 +479,12 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 		for (const raw of arrayField(response, "data")) {
 			const tool = asObject(raw);
 			const id = stringField(tool, "id");
-			const name = stringField(tool, "name");
+			const rawName = stringField(tool, "name");
 			const toolState = stringField(tool, "state");
-			if (!id || !name || !toolState) continue;
+			if (!id || !rawName || !toolState) continue;
+			const rawArgs = asObject(tool.input);
+			const name = omnaraOmpToolName(rawName, rawArgs);
+			const args = omnaraOmpToolArgs(rawName, rawArgs);
 			state.toolNames.set(id, name);
 
 			if (!state.startedTools.has(id)) {
@@ -409,7 +493,7 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 					type: "tool_execution_start",
 					toolCallId: id,
 					toolName: name,
-					args: asObject(tool.input),
+					args,
 				});
 			}
 
@@ -418,7 +502,7 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 					type: "tool_execution_update",
 					toolCallId: id,
 					toolName: name,
-					args: asObject(tool.input),
+					args,
 					partialResult: { content: [{ type: "text", text: toolSummary(tool) }] },
 				});
 			}
