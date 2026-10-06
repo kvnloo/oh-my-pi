@@ -133,7 +133,16 @@ export class SessionHostFixture {
 			await host.stop();
 		}
 		this.#restoreAgentDir();
-		await removeWithRetries(this.dir);
+		try {
+			await removeWithRetries(this.dir);
+		} catch (error) {
+			const code = (error as NodeJS.ErrnoException).code;
+			if (process.platform !== "win32" || !code || !["EBUSY", "EPERM", "ENOTEMPTY"].includes(code)) throw error;
+			// The Windows runner can retain just-closed session-host handles beyond the
+			// shared 2s cleanup window. Give only this heavyweight fixture one more bounded window.
+			await Bun.sleep(2_000);
+			await removeWithRetries(this.dir);
+		}
 	}
 
 	async #findEntry(hostId: string): Promise<SessionHostEntry | undefined> {
