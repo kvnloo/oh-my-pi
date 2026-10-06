@@ -116,8 +116,8 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	if (event.type === "tool.complete") {
 		const toolCallId = textField(payload, "tool_id");
 		if (!toolCallId) return [];
-		const toolName = ompToolName(textField(payload, "name") ?? state.tools.get(toolCallId) ?? "tool");
-		state.tools.set(toolCallId, toolName);
+		const stored = state.tools.get(toolCallId);
+		const toolName = stored ?? ompToolName(textField(payload, "name") ?? "tool");
 		const body = toolResultBody(payload);
 		const exitCode = typeof body.exit_code === "number" ? body.exit_code : undefined;
 		const wallTimeMs = typeof payload.duration_s === "number" ? Math.round(payload.duration_s * 1000) : undefined;
