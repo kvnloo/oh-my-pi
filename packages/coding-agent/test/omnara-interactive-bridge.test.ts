@@ -1,9 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-	createOmnaraBridgeState,
-	omnaraFrameToSessionEvents,
-} from "../src/experiments/omnara-interactive-bridge";
+import { createOmnaraBridgeState, omnaraFrameToSessionEvents } from "../src/experiments/omnara-interactive-bridge";
 
 function frame(event: string, payload: unknown, id?: string) {
 	return { event, id, data: JSON.stringify(payload) };
@@ -39,8 +36,62 @@ describe("Omnara InteractiveMode event mapping", () => {
 			state,
 		);
 
-		expect(events.map(event => event.type)).toEqual(["message_start", "message_end"]);
-		expect(events[0]).toMatchObject({ message: { role: "user", content: "from dashboard" } });
+		expect(events.map(event => event.type)).toEqual(["agent_start", "message_start", "message_end"]);
+		expect(events[1]).toMatchObject({ message: { role: "user", content: "from dashboard" } });
+		expect(state.turnActive).toBe(true);
+	});
+
+
+	it("honors Omnara hidden/display metadata in user content", () => {
+		const state = createOmnaraBridgeState();
+		const events = omnaraFrameToSessionEvents(
+			frame("agent_input", {
+				event_kind: "agent_input",
+				input_kind: "content",
+				content_blocks: [
+					{ type: "text", text: "source hint", metadata: { omnara_hidden: "true" } },
+					{ type: "text", text: "wire text", metadata: { omnara_display_text: "visible text" } },
+				],
+			}),
+			state,
+		);
+
+		expect(events[1]).toMatchObject({ message: { role: "user", content: "visible text" } });
+	});
+
+	it("settles a remote Omnara control event", () => {
+		const state = createOmnaraBridgeState();
+		state.turnActive = true;
+
+		const events = omnaraFrameToSessionEvents(
+			frame("agent_input", {
+				event_kind: "agent_input",
+				input_kind: "control",
+				control_type: "cancel",
+			}),
+			state,
+		);
+
+		expect(events).toEqual([{ type: "agent_end", messages: [], isTerminal: true, yielded: true }]);
+		expect(state.turnActive).toBe(false);
+	});
+
+	it("uses Omnara's no-more-work rule for model outputs", () => {
+		const state = createOmnaraBridgeState();
+		state.turnActive = true;
+
+		const events = omnaraFrameToSessionEvents(
+			frame("model_output", {
+				id: "evt_unusual",
+				model_call_context_id: "mcc_unusual",
+				stop_reason: "tool_use",
+				content_blocks: [{ type: "text", text: "No tool was actually requested." }],
+			}),
+			state,
+		);
+
+		expect(events.at(-1)?.type).toBe("agent_end");
+		expect(state.turnActive).toBe(false);
 	});
 
 	it("accumulates model deltas and terminates only on terminal Omnara stops", () => {
@@ -61,7 +112,7 @@ describe("Omnara InteractiveMode event mapping", () => {
 			state,
 		);
 
-		expect(first.map(event => event.type)).toEqual(["message_start", "message_update"]);
+		expect(first.map(event => event.type)).toEqual(["agent_start", "message_start", "message_update"]);
 		expect(second.map(event => event.type)).toEqual(["message_update"]);
 		expect(second[0]).toMatchObject({ message: { content: [{ type: "text", text: "Hello" }] } });
 
