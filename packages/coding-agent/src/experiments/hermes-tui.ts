@@ -122,6 +122,12 @@ function repaint(): void {
 	composer.ui.requestRender();
 }
 
+function setRunning(next: boolean): void {
+	running = next;
+	editor.disableSubmit = next || !sessionId;
+	repaint();
+}
+
 function setStatus(text: string): void {
 	status.setText(text);
 	repaint();
@@ -194,7 +200,7 @@ function onEvent(event: HermesGatewayEvent): void {
 
 	switch (event.type) {
 		case "message.start":
-			running = true;
+			setRunning(true);
 			ensureAssistant();
 			setStatus("Hermes backend · running");
 			return;
@@ -215,7 +221,7 @@ function onEvent(event: HermesGatewayEvent): void {
 		case "message.complete": {
 			const finalText = textField(payload, "text");
 			finishAssistant(finalText);
-			running = false;
+			setRunning(false);
 			const turnStatus = textField(payload, "status") ?? "complete";
 			setStatus("Hermes backend · " + (turnStatus === "complete" ? "ready" : turnStatus));
 			const warning = textField(payload, "warning");
@@ -273,7 +279,7 @@ function onEvent(event: HermesGatewayEvent): void {
 		}
 		case "session.info": {
 			sessionInfo = { ...sessionInfo, ...payload } as SessionInfo;
-			if (typeof sessionInfo.running === "boolean") running = sessionInfo.running;
+			if (typeof sessionInfo.running === "boolean") setRunning(sessionInfo.running);
 			repaint();
 			return;
 		}
@@ -284,7 +290,7 @@ function onEvent(event: HermesGatewayEvent): void {
 		}
 		case "error": {
 			const message = textField(payload, "message") ?? "unknown gateway error";
-			running = false;
+			setRunning(false);
 			if (activeAssistant && !activeAssistant.text) {
 				activeAssistant.complete();
 				activeAssistant = undefined;
@@ -300,9 +306,8 @@ async function submit(text: string): Promise<void> {
 	const prompt = text.trim();
 	if (!prompt || !sessionId || running) return;
 
-	editor.clearDraft(text);
 	transcript.addChild(new UserMessageComponent(text, { timestamp: Date.now() }));
-	running = true;
+	setRunning(true);
 	setStatus("Hermes backend · submitting…");
 
 	try {
@@ -312,7 +317,7 @@ async function submit(text: string): Promise<void> {
 			text,
 		});
 	} catch (error) {
-		running = false;
+		setRunning(false);
 		appendStatic("Hermes submit failed · " + (error instanceof Error ? error.message : String(error)));
 		setStatus("Hermes backend · ready");
 	}
@@ -380,7 +385,7 @@ try {
 	sessionId = created.session_id;
 	storedSessionId = created.stored_session_id;
 	sessionInfo = created.info ?? {};
-	editor.disableSubmit = false;
+	setRunning(false);
 	setStatus(
 		"Hermes backend · ready" +
 			(sessionInfo.model ? " · " + sessionInfo.model : "") +
