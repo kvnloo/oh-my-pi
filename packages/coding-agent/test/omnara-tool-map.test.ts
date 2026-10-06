@@ -35,7 +35,9 @@ describe("Omnara → OMP tool presentation map", () => {
 		expect(omnaraOmpToolName("search_files", { path: "/memory/*", args: ["-i", "-e", "alpha", "-e", "beta"] })).toBe(
 			"grep",
 		);
-		expect(omnaraOmpToolArgs("search_files", { path: "/memory/*", args: ["-i", "-e", "alpha", "-e", "beta"] })).toEqual({
+		expect(
+			omnaraOmpToolArgs("search_files", { path: "/memory/*", args: ["-i", "-e", "alpha", "-e", "beta"] }),
+		).toEqual({
 			pattern: "alpha | beta",
 			path: "/memory/*",
 		});
