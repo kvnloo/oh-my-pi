@@ -172,7 +172,7 @@ export function omnaraFrameToSessionEvents(
 		const text = textContent(payload);
 		if (!text) return [];
 		const key = stringField(payload, "input_idempotency_key");
-		if (key) state.localInputKeys.delete(key);
+		if (key && state.localInputKeys.delete(key)) return [];
 		const createdAt = Date.parse(stringField(payload, "created_at") ?? "");
 		const message = userMessage(text, Number.isFinite(createdAt) ? createdAt : undefined);
 		return [
@@ -386,7 +386,7 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 			if (!id || !name || !toolState) continue;
 			state.toolNames.set(id, name);
 
-			if (!state.startedTools.has(id) && toolState !== "completed") {
+			if (!state.startedTools.has(id)) {
 				state.startedTools.add(id);
 				session.injectExternalEvent({
 					type: "tool_execution_start",
