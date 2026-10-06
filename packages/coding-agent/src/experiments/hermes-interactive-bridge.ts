@@ -134,6 +134,30 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 			},
 		];
 	}
+	if (event.type === "subagent.start") {
+		const toolCallId = textField(payload, "subagent_id");
+		if (!toolCallId) return [];
+		const goal = textField(payload, "goal") ?? "";
+		state.tools.set(toolCallId, "task");
+		return [{ type: "tool_execution_start", toolCallId, toolName: "task", args: { name: toolCallId, task: goal } }];
+	}
+	if (event.type === "subagent.complete") {
+		const toolCallId = textField(payload, "subagent_id");
+		if (!toolCallId) return [];
+		state.tools.set(toolCallId, "task");
+		return [
+			{
+				type: "tool_execution_end",
+				toolCallId,
+				toolName: "task",
+				isError: false,
+				result: {
+					content: [{ type: "text", text: toolResultText(payload) }],
+					details: {},
+				},
+			},
+		];
+	}
 	return [];
 }
 
