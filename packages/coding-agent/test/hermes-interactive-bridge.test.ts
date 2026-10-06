@@ -2,19 +2,23 @@ import { describe, expect, it } from "bun:test";
 import { hermesEventToSessionEvents } from "../src/experiments/hermes-interactive-bridge";
 
 describe("hermes event mapping", () => {
-	it("opens an assistant block before text and keeps the tool id", () => {
-		const state = { text: "", model: "hermes", started: false };
-		const delta = hermesEventToSessionEvents(
-			{ type: "message.delta", payload: { text: "Hello" } },
+	it("keeps one tool id from start through complete", () => {
+		const state = { text: "", model: "hermes", started: false, tools: new Map<string, string>() };
+		const start = hermesEventToSessionEvents(
+			{ type: "tool.start", payload: { tool_id: "tool-9", name: "terminal", args: { command: "echo ok" } } },
 			state,
 		);
-		expect(delta.map(event => event.type)).toEqual(["agent_start", "message_start", "message_update"]);
-		expect(state.text).toBe("Hello");
-
-		const tool = hermesEventToSessionEvents(
-			{ type: "tool.start", payload: { tool_id: "tool-1", name: "read" } },
+		const done = hermesEventToSessionEvents(
+			{ type: "tool.complete", payload: { tool_id: "tool-9", result_text: "ok" } },
 			state,
 		);
-		expect(tool[0]).toMatchObject({ type: "tool_execution_start", toolCallId: "tool-1", toolName: "read" });
+		expect(start[0]).toMatchObject({ type: "tool_execution_start", toolCallId: "tool-9", toolName: "terminal" });
+		expect(done[0]).toMatchObject({
+			type: "tool_execution_end",
+			toolCallId: "tool-9",
+			toolName: "terminal",
+			result: { content: [{ type: "text", text: "ok" }] },
+		});
+		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
 	});
 });

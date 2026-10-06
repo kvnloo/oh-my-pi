@@ -3,6 +3,7 @@ import type { AgentSession, AgentSessionEvent } from "../session/agent-session";
 import { HermesGatewayClient, type HermesGatewayEvent } from "./hermes-gateway";
 
 type JsonObject = Record<string, unknown>;
+type StreamState = { text: string; model: string; started: boolean; tools: Map<string, string> };
 
 export function hermesBackendEnabled(): boolean {
 	return process.env.PI_HERMES_BACKEND === "1";
@@ -34,10 +35,16 @@ function assistantMessage(text: string, model: string): AssistantMessage {
 	} as AssistantMessage;
 }
 
-export function hermesEventToSessionEvents(
-	event: HermesGatewayEvent,
-	state: { text: string; model: string; started: boolean },
-): AgentSessionEvent[] {
+function toolResultText(payload: JsonObject): string {
+	return (
+		textField(payload, "summary") ??
+		textField(payload, "result_text") ??
+		(typeof payload.result === "string" ? payload.result : undefined) ??
+		""
+	);
+}
+
+export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: StreamState): AgentSessionEvent[] {
 	const payload = event.payload ?? {};
 	if (event.type === "message.delta") {
 		const delta = textField(payload, "text") ?? textField(payload, "delta") ?? "";
@@ -69,24 +76,25 @@ export function hermesEventToSessionEvents(
 		return events;
 	}
 	if (event.type === "tool.start") {
-		const toolCallId = textField(payload, "tool_id") ?? textField(payload, "id");
-		const toolName = textField(payload, "name") ?? textField(payload, "tool") ?? "tool";
+		const toolCallId = textField(payload, "tool_id");
+		const toolName = textField(payload, "name") ?? "tool";
 		if (!toolCallId) return [];
-		return [{ type: "tool_execution_start", toolCallId, toolName, args: payload.args ?? {} }];
+		state.tools.set(toolCallId, toolName);
+		const args = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? payload.args : {};
+		return [{ type: "tool_execution_start", toolCallId, toolName, args }];
 	}
 	if (event.type === "tool.complete") {
-		const toolCallId = textField(payload, "tool_id") ?? textField(payload, "id");
-		const toolName = textField(payload, "name") ?? textField(payload, "tool") ?? "tool";
+		const toolCallId = textField(payload, "tool_id");
 		if (!toolCallId) return [];
-		const text = textField(payload, "summary") ?? textField(payload, "output") ?? textField(payload, "error") ?? "";
-		const isError = payload.status === "error" || payload.ok === false || Boolean(textField(payload, "error"));
+		const toolName = textField(payload, "name") ?? state.tools.get(toolCallId) ?? "tool";
+		state.tools.set(toolCallId, toolName);
 		return [
 			{
 				type: "tool_execution_end",
 				toolCallId,
 				toolName,
-				isError,
-				result: { content: [{ type: "text", text }] },
+				isError: false,
+				result: { content: [{ type: "text", text: toolResultText(payload) }] },
 			},
 		];
 	}
@@ -95,7 +103,12 @@ export function hermesEventToSessionEvents(
 
 export async function attachHermesBackend(session: AgentSession): Promise<void> {
 	const gateway = new HermesGatewayClient();
-	const stream = { text: "", model: process.env.HERMES_MODEL?.trim() || "hermes", started: false };
+	const stream: StreamState = {
+		text: "",
+		model: process.env.HERMES_MODEL?.trim() || "hermes",
+		started: false,
+		tools: new Map(),
+	};
 	gateway.start();
 	gateway.on("event", (event: HermesGatewayEvent) => {
 		for (const mapped of hermesEventToSessionEvents(event, stream)) {
