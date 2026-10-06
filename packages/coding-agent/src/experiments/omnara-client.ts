@@ -40,18 +40,6 @@ export interface OmnaraBridgeCommand {
 	env: NodeJS.ProcessEnv;
 }
 
-export interface OmnaraInputAttachment {
-	data: string;
-	mediaType: string;
-	filename?: string;
-}
-
-interface StreamNotification {
-	event: string;
-	id?: string;
-	data: unknown;
-}
-
 function requireAgentID(env: NodeJS.ProcessEnv): string {
 	const value = env.OMNARA_AGENT_ID?.trim();
 	if (!value) throw new Error("Set OMNARA_AGENT_ID");
