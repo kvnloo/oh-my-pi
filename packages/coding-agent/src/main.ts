@@ -39,6 +39,7 @@ import { buildInitialMessage } from "./cli/initial-message";
 import { formatKeyHint } from "@oh-my-pi/pi-tui/app-keybindings";
 import type { SessionPickerOptions } from "@oh-my-pi/pi-tui/apps/session-picker";
 import { applyStartupCwd } from "./cli/startup-cwd";
+import { attachHermesBackend, hermesBackendEnabled } from "./experiments/hermes-interactive-bridge";
 import { getLatestRelease } from "./cli/update-cli";
 import { findConfigFile } from "./config";
 import { ModelRegistry } from "./config/model-registry";
@@ -672,6 +673,9 @@ async function runInteractiveMode(
 				autoStartCollab: joinLink === undefined,
 			}),
 		);
+		if (hermesBackendEnabled()) {
+			await attachHermesBackend(session);
+		}
 		startDeferredStartupWork?.();
 
 		if (setupWizard && playStartupSplash) {

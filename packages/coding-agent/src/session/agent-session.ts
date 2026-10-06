@@ -4847,6 +4847,11 @@ export class AgentSession implements SettingsScope {
 		};
 	}
 
+	/** Replay one external turn event into the existing TUI subscribers. */
+	injectExternalEvent(event: AgentSessionEvent): void {
+		this.#emit(event);
+	}
+
 	/**
 	 * Snapshot the latest unpersisted display result for each active tool or
 	 * returned background call. Focus rebuilds replay these after reconstructing
