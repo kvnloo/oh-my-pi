@@ -2,14 +2,17 @@ import { describe, expect, it } from "bun:test";
 import { hermesEventToSessionEvents } from "../src/experiments/hermes-interactive-bridge";
 
 describe("hermes event mapping", () => {
-	it("keeps one tool id from start through complete", () => {
+	it("keeps one tool id and reads terminal output", () => {
 		const state = { text: "", model: "hermes", started: false, tools: new Map<string, string>() };
 		const start = hermesEventToSessionEvents(
 			{ type: "tool.start", payload: { tool_id: "tool-9", name: "terminal", args: { command: "echo ok" } } },
 			state,
 		);
 		const done = hermesEventToSessionEvents(
-			{ type: "tool.complete", payload: { tool_id: "tool-9", result_text: "ok" } },
+			{
+				type: "tool.complete",
+				payload: { tool_id: "tool-9", result: { output: "tool-card-ok", exit_code: 0 } },
+			},
 			state,
 		);
 		expect(start[0]).toMatchObject({ type: "tool_execution_start", toolCallId: "tool-9", toolName: "terminal" });
@@ -17,7 +20,7 @@ describe("hermes event mapping", () => {
 			type: "tool_execution_end",
 			toolCallId: "tool-9",
 			toolName: "terminal",
-			result: { content: [{ type: "text", text: "ok" }] },
+			result: { content: [{ type: "text", text: "tool-card-ok" }] },
 		});
 		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
 	});

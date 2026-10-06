@@ -34,14 +34,16 @@ function assistantMessage(text: string, model: string): AssistantMessage {
 		timestamp: Date.now(),
 	} as AssistantMessage;
 }
-
 function toolResultText(payload: JsonObject): string {
-	return (
+	const direct =
 		textField(payload, "summary") ??
 		textField(payload, "result_text") ??
-		(typeof payload.result === "string" ? payload.result : undefined) ??
-		""
-	);
+		(typeof payload.result === "string" ? payload.result : undefined);
+	if (direct) return direct;
+	const result = payload.result;
+	if (!result || typeof result !== "object" || Array.isArray(result)) return "";
+	const body = result as JsonObject;
+	return textField(body, "output") ?? textField(body, "stdout") ?? textField(body, "error") ?? "";
 }
 
 export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: StreamState): AgentSessionEvent[] {
