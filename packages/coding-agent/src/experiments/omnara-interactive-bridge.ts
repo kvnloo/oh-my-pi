@@ -479,7 +479,6 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 
 	session.prompt = async (text, options) => {
 		if (text.trimStart().startsWith("/")) return originalPrompt(text, options);
-		if (options?.images?.length) throw new Error("Omnara backend experiment does not support image input yet");
 
 		const wasActive = state.turnActive;
 		if (!state.turnActive) {
@@ -494,6 +493,7 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 				text,
 				key,
 				wasActive || options?.streamingBehavior === "steer" ? "steering" : "queued",
+				(options?.images ?? []).map(image => ({ data: image.data, mediaType: image.mimeType })),
 			);
 			return true;
 		} catch (error) {
