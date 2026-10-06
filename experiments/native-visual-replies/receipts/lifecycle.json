@@ -1,0 +1,23 @@
+{
+  "schema": "native-visual-slice-checks/v1",
+  "base": "f008c5a7afe7f99c4be4705b537a579235e89d30",
+  "slice": "lifecycle",
+  "checks": {
+    "node": {
+      "passed": 38,
+      "failed": 0
+    },
+    "newRegressionTests": 22,
+    "baselineRegressionFailures": 7,
+    "ompRuntime": false,
+    "pixelsVerified": false
+  },
+  "sourceSha256": {
+    "experiments/native-visual-replies/extension.test.mjs": "d8df45ca83f52a4ef888ddf4ec176f35941cc0cf9b4cffdbb2c6b93bbb5ad14d",
+    "experiments/native-visual-replies/extension.ts": "cc54764d19ea4e1078a0cc5080612459995676c671ebc57491216699f1a1e726",
+    "experiments/native-visual-replies/notes/lifecycle.md": "73d3d9151dfa2394fa493aaadbbfe2ae704e2b854faad18a725985892197bb97",
+    "experiments/native-visual-replies/tests/extension-io.mjs": "c4fc3d3784610bf2e25f58e5823980fe2f838e90ec0be4e14a43895c260f6deb",
+    "experiments/native-visual-replies/tests/extension-loader.mjs": "6f716f0f5d5028f7f294e0d2cd8490de0fd0d0740d88704cf99045139080b380"
+  },
+  "status": "logic-tested; real OMP/Tern gate remains open"
+}

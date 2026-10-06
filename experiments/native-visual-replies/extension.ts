@@ -47,19 +47,26 @@ export default function nativeVisualReplies(pi: ExtensionAPI): void {
     async execute(_id, params, signal, _update, ctx) {
       signal?.throwIfAborted();
       const generation = epoch;
-      const artifact: PreparedArtifact = prepare(params.json, await rendererHash());
       const owner = scope(ctx);
+      const current = () => {
+        signal?.throwIfAborted();
+        if (scope(ctx) !== owner || epoch !== generation) throw new Error('Session changed during preview');
+      };
+      const artifact: PreparedArtifact = prepare(params.json, await rendererHash());
+      current();
       const dir = path.join(pi.pi.getAgentDir(), 'native-visual-replies', digest(owner));
       await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+      current();
       const file = path.join(dir, `${artifact.id}.visual.json`);
       const bytes = JSON.stringify(artifact);
       try { await fs.writeFile(file, bytes, { flag: 'wx', mode: 0o600 }); }
       catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST' || (await fs.stat(file)).size > MAX_BYTES || await fs.readFile(file, 'utf8') !== bytes) throw error;
       }
-      signal?.throwIfAborted();
-      if (scope(ctx) !== owner || epoch !== generation) throw new Error('Session changed during preview');
-      previews.set(artifact.id, { artifact, file, scope: owner });
+      current();
+      // Retrying the same immutable revision must not discard its human inspection.
+      const existing = previews.get(artifact.id);
+      if (!existing || existing.scope !== owner) previews.set(artifact.id, { artifact, file, scope: owner });
       return { content: [{ type: 'text' as const, text: `STRUCTURAL CHECK ONLY. Open with Native Visual Reply in Tern: ${file}\nInspect Code/Churn, drill/back, keyboard and resize; then run /visual-approve ${artifact.id}.` }],
         details: { id: artifact.id, file, title: artifact.document.title, code: artifact.document.root.code, churn: artifact.document.root.churn } };
     },
@@ -77,9 +84,12 @@ export default function nativeVisualReplies(pi: ExtensionAPI): void {
       if (ctx.mode !== 'tui') throw new Error('Human approval requires the interactive TUI');
       const item = lookup(args.trim(), ctx);
       const hash = await unchanged(item);
+      if (lookup(item.artifact.id, ctx) !== item) throw new Error('Session changed during approval');
       const approved = await ctx.ui.confirm('Approve inspected Luau preview?', `Only confirm after opening ${item.file} and exercising Code/Churn, drill/back, keyboard and resize. This records a human check, not automated visual evidence.`);
       if (!approved) return;
-      if (lookup(item.artifact.id, ctx) !== item || await unchanged(item) !== hash) throw new Error('Preview changed during approval');
+      const checked = await unchanged(item);
+      // Recheck ownership AFTER the last await, not before starting the file read.
+      if (lookup(item.artifact.id, ctx) !== item || checked !== hash) throw new Error('Preview changed during approval');
       item.receipt = { method: 'human-inspected', id: item.artifact.id, rendererHash: hash, scope: item.scope };
       ctx.ui.notify('Human inspection recorded for this revision.', 'info');
     },
