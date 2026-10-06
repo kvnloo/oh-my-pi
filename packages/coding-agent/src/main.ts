@@ -40,6 +40,7 @@ import { formatKeyHint } from "@oh-my-pi/pi-tui/app-keybindings";
 import type { SessionPickerOptions } from "@oh-my-pi/pi-tui/apps/session-picker";
 import { applyStartupCwd } from "./cli/startup-cwd";
 import { attachHermesBackend, hermesBackendEnabled } from "./experiments/hermes-interactive-bridge";
+import { attachOmnaraBackend, omnaraBackendEnabled } from "./experiments/omnara-interactive-bridge";
 import { getLatestRelease } from "./cli/update-cli";
 import { findConfigFile } from "./config";
 import { ModelRegistry } from "./config/model-registry";
@@ -673,8 +674,13 @@ async function runInteractiveMode(
 				autoStartCollab: joinLink === undefined,
 			}),
 		);
+		if (hermesBackendEnabled() && omnaraBackendEnabled()) {
+			throw new Error("Choose only one experimental backend: Hermes or Omnara");
+		}
 		if (hermesBackendEnabled()) {
 			await attachHermesBackend(session);
+		} else if (omnaraBackendEnabled()) {
+			await attachOmnaraBackend(session, mode);
 		}
 		startDeferredStartupWork?.();
 
