@@ -376,8 +376,16 @@ function interactionTitle(interaction: OpenInteraction): string {
 	return [agent ? title + " · " + agent : title, context].filter(Boolean).join("\n");
 }
 
-async function answerInteraction(
-	client: OmnaraClient,
+export interface OmnaraInteractionClient {
+	resolveInteraction(
+		interactionAgentID: string,
+		interactionID: string,
+		answers: Array<{ option_indices: number[]; text?: string }>,
+	): Promise<unknown>;
+}
+
+export async function answerOmnaraInteraction(
+	client: OmnaraInteractionClient,
 	host: OmnaraInteractiveHost,
 	interaction: OpenInteraction,
 ): Promise<"answered" | "dismissed" | "unsupported"> {
@@ -531,7 +539,7 @@ export async function attachOmnaraBackend(session: AgentSession, host: OmnaraInt
 
 		interactionActive = true;
 		try {
-			const result = await answerInteraction(client, host, interaction);
+			const result = await answerOmnaraInteraction(client, host, interaction);
 			if (result === "answered") {
 				host.showHookNotify("Omnara interaction resolved", "info");
 			} else {
