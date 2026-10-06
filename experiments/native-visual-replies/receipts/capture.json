@@ -1,0 +1,23 @@
+{
+  "schema": "native-visual-slice-checks/v1",
+  "base": "f008c5a7afe7f99c4be4705b537a579235e89d30",
+  "slice": "capture",
+  "checks": {
+    "node": {
+      "passed": 26,
+      "failed": 0
+    },
+    "runnerResponses": "synthetic",
+    "actualCliAttempt": "failed: spawnSync tern ENOENT; exit 1",
+    "ternRuntime": false,
+    "pixelsVerified": false,
+    "publicationAuthorized": false
+  },
+  "sourceSha256": {
+    "experiments/native-visual-replies/capture.mjs": "753a933c05b2868917bbab69dc177de805f4d7928c18d58df2c08c5914b8fbb1",
+    "experiments/native-visual-replies/capture.test.mjs": "b89df1cd6196678d523a65c53b441b4bddb4b07cdd56e179118d8671c3478439",
+    "experiments/native-visual-replies/notes/capture.md": "c09224454dd354eac9a986d4b36b8b8b9ad76b94213bbcac2b2d6499a2eb6bb5",
+    "experiments/native-visual-replies/tern-smoke.sh": "48ee68a9662119869800ab3f19d36b3d516141f3799f80bc562ef7950bd33d7e"
+  },
+  "status": "logic-tested; real OMP/Tern gate remains open"
+}
