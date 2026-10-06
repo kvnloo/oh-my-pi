@@ -34,4 +34,15 @@ describe("hermes event mapping", () => {
 		expect(interruptRequest("sess-1")).toEqual({ session_id: "sess-1" });
 		expect(interruptRequest("sess-1")).not.toHaveProperty("approve");
 	});
+
+	it("second abort still sends session_id and not an approval choice", () => {
+		const first = interruptRequest("sess-1");
+		const second = interruptRequest("sess-1");
+		expect(first).toEqual({ session_id: "sess-1" });
+		expect(second).toEqual({ session_id: "sess-1" });
+		expect(second).not.toHaveProperty("choice");
+		expect(second).not.toHaveProperty("approve");
+		expect(second).not.toHaveProperty("approval");
+		expect(Object.keys(second)).toEqual(["session_id"]);
+	});
 });
