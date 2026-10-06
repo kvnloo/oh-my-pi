@@ -207,7 +207,7 @@ Choose the setting by the desired outcome:
   - Invalidates `github-cache` rows before execution when the command contains a mutating `gh issue`/`gh pr` subcommand, so later `issue://`/`pr://` reads see post-mutation state (`invalidateGithubCacheForBashCommand`).
 - User-visible prompts / interactive UI
   - PTY mode opens a TUI overlay titled `Console` and forwards input to the PTY.
-  - Background start messages note that the result is delivered automatically; use `wait` only when there is no other work.
+  - Background start messages note that output is injected as a follow-up when the job finishes; do not poll for it — do other work, or end the reply and wait to be woken.
 - Background work / cancellation
   - Async and auto-background jobs continue after the initial tool return, until completion, cancellation, or their deadline (unless `timeout: 0` disabled it).
   - Cancellation aborts the native run; PTY overlay dismissal also kills the PTY.
