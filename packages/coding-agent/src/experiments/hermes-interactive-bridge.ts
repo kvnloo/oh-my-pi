@@ -34,15 +34,30 @@ function assistantMessage(text: string, model: string): AssistantMessage {
 		timestamp: Date.now(),
 	} as AssistantMessage;
 }
+function ompToolName(name: string): string {
+	if (name === "terminal" || name === "shell") return "bash";
+	return name;
+}
+
+function ompToolArgs(name: string, raw: JsonObject): JsonObject {
+	if (ompToolName(name) !== "bash") return raw;
+	const command = textField(raw, "command") ?? textField(raw, "cmd") ?? "";
+	const cwd = textField(raw, "cwd");
+	return cwd ? { command, cwd } : { command };
+}
+
+function toolResultBody(payload: JsonObject): JsonObject {
+	const result = payload.result;
+	return result && typeof result === "object" && !Array.isArray(result) ? (result as JsonObject) : {};
+}
+
 function toolResultText(payload: JsonObject): string {
 	const direct =
 		textField(payload, "summary") ??
 		textField(payload, "result_text") ??
 		(typeof payload.result === "string" ? payload.result : undefined);
 	if (direct) return direct;
-	const result = payload.result;
-	if (!result || typeof result !== "object" || Array.isArray(result)) return "";
-	const body = result as JsonObject;
+	const body = toolResultBody(payload);
 	return textField(body, "output") ?? textField(body, "stdout") ?? textField(body, "error") ?? "";
 }
 
@@ -79,24 +94,31 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	}
 	if (event.type === "tool.start") {
 		const toolCallId = textField(payload, "tool_id");
-		const toolName = textField(payload, "name") ?? "tool";
+		const rawName = textField(payload, "name") ?? "tool";
+		const toolName = ompToolName(rawName);
 		if (!toolCallId) return [];
 		state.tools.set(toolCallId, toolName);
-		const args = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? payload.args : {};
-		return [{ type: "tool_execution_start", toolCallId, toolName, args }];
+		const rawArgs = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? (payload.args as JsonObject) : {};
+		return [{ type: "tool_execution_start", toolCallId, toolName, args: ompToolArgs(rawName, rawArgs) }];
 	}
 	if (event.type === "tool.complete") {
 		const toolCallId = textField(payload, "tool_id");
 		if (!toolCallId) return [];
-		const toolName = textField(payload, "name") ?? state.tools.get(toolCallId) ?? "tool";
+		const toolName = ompToolName(textField(payload, "name") ?? state.tools.get(toolCallId) ?? "tool");
 		state.tools.set(toolCallId, toolName);
+		const body = toolResultBody(payload);
+		const exitCode = typeof body.exit_code === "number" ? body.exit_code : undefined;
+		const wallTimeMs = typeof payload.duration_s === "number" ? Math.round(payload.duration_s * 1000) : undefined;
 		return [
 			{
 				type: "tool_execution_end",
 				toolCallId,
 				toolName,
-				isError: false,
-				result: { content: [{ type: "text", text: toolResultText(payload) }] },
+				isError: exitCode !== undefined && exitCode !== 0,
+				result: {
+					content: [{ type: "text", text: toolResultText(payload) }],
+					details: { exitCode, wallTimeMs },
+				},
 			},
 		];
 	}

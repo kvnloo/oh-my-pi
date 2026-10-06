@@ -15,12 +15,17 @@ describe("hermes event mapping", () => {
 			},
 			state,
 		);
-		expect(start[0]).toMatchObject({ type: "tool_execution_start", toolCallId: "tool-9", toolName: "terminal" });
+		expect(start[0]).toMatchObject({
+			type: "tool_execution_start",
+			toolCallId: "tool-9",
+			toolName: "bash",
+			args: { command: "echo ok" },
+		});
 		expect(done[0]).toMatchObject({
 			type: "tool_execution_end",
 			toolCallId: "tool-9",
-			toolName: "terminal",
-			result: { content: [{ type: "text", text: "tool-card-ok" }] },
+			toolName: "bash",
+			result: { content: [{ type: "text", text: "tool-card-ok" }], details: { exitCode: 0 } },
 		});
 		expect(start[0]?.toolCallId).toBe(done[0]?.toolCallId);
 	});
