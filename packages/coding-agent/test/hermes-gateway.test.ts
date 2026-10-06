@@ -10,7 +10,7 @@ describe("Hermes experiment safety fallback", () => {
 	it("cancels clarify and skips sensitive string prompts", () => {
 		expect(safeDeclineResult("clarify")).toEqual({});
 		expect(safeDeclineResult("secret")).toEqual({ value: "" });
-		expect(safeDeclineResult("vault.unlock")).toEqual({ value: "" });
+		expect(safeDeclineResult("vault.unlock_prompt")).toEqual({ value: "" });
 	});
 
 	it("does not fabricate answers for unknown server requests", () => {
