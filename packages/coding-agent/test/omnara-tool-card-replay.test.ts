@@ -15,7 +15,11 @@ import { writeToolRenderer } from "../../tui/src/tools/write";
 
 type Args = Record<string, unknown>;
 type Renderer = {
-	renderCall: (args: Args, options: { expanded: boolean }, uiTheme: typeof theme) => { render: (width: number) => string[] };
+	renderCall: (
+		args: Args,
+		options: { expanded: boolean },
+		uiTheme: typeof theme,
+	) => { render: (width: number) => string[] };
 };
 
 const renderers: Record<string, Renderer> = {
