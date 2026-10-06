@@ -41,7 +41,6 @@ describe("Omnara InteractiveMode event mapping", () => {
 		expect(state.turnActive).toBe(true);
 	});
 
-
 	it("honors Omnara hidden/display metadata in user content", () => {
 		const state = createOmnaraBridgeState();
 		const events = omnaraFrameToSessionEvents(
