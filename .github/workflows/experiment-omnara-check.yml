@@ -13,12 +13,16 @@ jobs:
       - uses: ./.github/actions/bun-install
       - name: Format experiment files
         run: |
-          ./node_modules/.bin/oxfmt --check \
-            packages/coding-agent/src/experiments/omnara-client.ts \
-            packages/coding-agent/src/experiments/omnara-interactive-bridge.ts \
-            packages/coding-agent/test/omnara-client.test.ts \
-            packages/coding-agent/test/omnara-interactive-bridge.test.ts \
+          files=(
+            packages/coding-agent/src/experiments/omnara-client.ts
+            packages/coding-agent/src/experiments/omnara-interactive-bridge.ts
+            packages/coding-agent/test/omnara-client.test.ts
+            packages/coding-agent/test/omnara-interactive-bridge.test.ts
             packages/coding-agent/src/main.ts
+          )
+          ./node_modules/.bin/oxfmt "${files[@]}"
+          git diff -- "${files[@]}"
+          git diff --quiet -- "${files[@]}"
       - name: Type check coding agent
         run: bun --cwd=packages/coding-agent run check:types
       - name: Test Omnara bridge
