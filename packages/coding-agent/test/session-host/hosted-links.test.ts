@@ -41,6 +41,8 @@ let fixture: SessionHostFixture;
 let config: IsolatedConfigRoot;
 const terminals: Terminal[] = [];
 let originalTmpdir: string | undefined;
+let originalTemp: string | undefined;
+let originalTmp: string | undefined;
 
 beforeAll(async () => {
 	await initTheme();
@@ -49,6 +51,8 @@ beforeAll(async () => {
 beforeEach(async () => {
 	resetSettingsForTest();
 	originalTmpdir = process.env.TMPDIR;
+	originalTemp = process.env.TEMP;
+	originalTmp = process.env.TMP;
 	// The policy, not the flag: a terminal's `init()` re-applies the policy and would undo a hand-set flag.
 	await Settings.init({ inMemory: true, overrides: { "tui.hyperlinks": "always" } });
 	fixture = await SessionHostFixture.create();
@@ -59,6 +63,10 @@ afterEach(async () => {
 	for (const terminal of terminals.splice(0)) await terminal.close();
 	if (originalTmpdir === undefined) delete process.env.TMPDIR;
 	else process.env.TMPDIR = originalTmpdir;
+	if (originalTemp === undefined) delete process.env.TEMP;
+	else process.env.TEMP = originalTemp;
+	if (originalTmp === undefined) delete process.env.TMP;
+	else process.env.TMP = originalTmp;
 	setWordPredictionHost(undefined);
 	vi.restoreAllMocks();
 	await config.restore();
@@ -84,7 +92,17 @@ function localRootOf(host: TestSessionHost): string {
 
 /** What the resolver maps a file to: a `file:` URI of its real path, as the other link tests expect it. */
 async function fileUri(file: string): Promise<string> {
-	return url.pathToFileURL(await fs.realpath(file)).href;
+	await fs.stat(file);
+	return url.pathToFileURL(file).href;
+}
+
+function setProcessTmpdir(dir: string): void {
+	if (process.platform === "win32") {
+		process.env.TEMP = dir;
+		process.env.TMP = dir;
+		return;
+	}
+	process.env.TMPDIR = dir;
 }
 
 /** A host whose transcript holds one assistant message linking `hrefs`, with a source file named like every other project's. */
@@ -325,11 +343,11 @@ describe("host-authored links in a hosted terminal", () => {
 		const terminal = await Terminal.open();
 
 		// The host resolves its root where its own temp directory is, and the artifact is there.
-		process.env.TMPDIR = hostTmp;
+		setProcessTmpdir(hostTmp);
 		const hostFile = await writeFile(path.join(rootInTemp(), "report.md"), "report of the host\n");
 		await terminal.attach(await fixture.entry(host));
 		// The terminal's temp directory is somewhere else, and holds an artifact of the same name and session id.
-		process.env.TMPDIR = terminalTmp;
+		setProcessTmpdir(terminalTmp);
 		expect(os.tmpdir()).toBe(terminalTmp);
 		const decoy = await writeFile(path.join(rootInTemp(), "report.md"), "report of the terminal\n");
 		expect(await fs.realpath(decoy)).not.toBe(await fs.realpath(hostFile));
