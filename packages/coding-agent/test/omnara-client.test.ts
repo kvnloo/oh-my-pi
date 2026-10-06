@@ -1,141 +1,55 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 
-import { OmnaraClient, SseParser } from "../src/experiments/omnara-client";
+import { resolveOmnaraBridgeCommand } from "../src/experiments/omnara-client";
 
-const originalFetch = globalThis.fetch;
-
-afterEach(() => {
-	globalThis.fetch = originalFetch;
-});
-
-function client(): OmnaraClient {
-	return new OmnaraClient({
-		baseUrl: "https://omnara.test/v1",
-		token: "token_test",
-		orgID: "org_test",
-		projectID: "proj_test",
-		agentID: "agt_main",
-	});
-}
-
-describe("Omnara SSE parser", () => {
-	it("parses durable and delta frames", () => {
-		const parser = new SseParser();
-		const frames = parser.push(
-			[
-				"event: model_output_delta",
-				'data: {"event":{"kind":"text_delta","delta":"hello"}}',
-				"",
-				"id: 7",
-				"event: model_output",
-				'data: {"event_kind":"model_output","sequence":7}',
-				"",
-				"",
-			].join("\n"),
-		);
-
-		expect(frames).toEqual([
-			{
-				event: "model_output_delta",
-				data: '{"event":{"kind":"text_delta","delta":"hello"}}',
-			},
-			{
-				event: "model_output",
-				id: "7",
-				data: '{"event_kind":"model_output","sequence":7}',
-			},
-		]);
-	});
-
-	it("survives chunk boundaries and heartbeat comments", () => {
-		const parser = new SseParser();
-		expect(parser.push(": heart")).toEqual([]);
-		expect(parser.push("beat\r\n\r\nevent: tool_call_update\r\n")).toEqual([]);
-		expect(parser.push('data: {"tool_call_id":"tcl_1","state":"running"}\r\n\r\n')).toEqual([
-			{
-				event: "tool_call_update",
-				data: '{"tool_call_id":"tcl_1","state":"running"}',
-			},
-		]);
-	});
-
-	it("joins multi-line data fields per the SSE contract", () => {
-		const parser = new SseParser();
-		expect(parser.push("event: message\ndata: first\ndata: second\n\n")).toEqual([
-			{ event: "message", data: "first\nsecond" },
-		]);
-	});
-});
-
-
-describe("Omnara REST contract", () => {
-	it("submits input to the selected agent with auth and idempotency", async () => {
-		let request: { url: string; init?: RequestInit } | undefined;
-		globalThis.fetch = (async (input, init) => {
-			request = { url: String(input), init };
-			return Response.json({ agent_input: { id: "inp_1", state: "queued" } });
-		}) as typeof fetch;
-
-		await client().createInput("hello", "omp-key", "steering", [{ data: "cG5n", mediaType: "image/png" }]);
-
-		expect(request?.url).toBe(
-			"https://omnara.test/v1/orgs/org_test/projects/proj_test/agents/agt_main/inputs",
-		);
-		expect(request?.init?.method).toBe("POST");
-		const headers = new Headers(request?.init?.headers);
-		expect(headers.get("Authorization")).toBe("Bearer token_test");
-		expect(headers.get("Idempotency-Key")).toBe("omp-key");
-		expect(headers.get("Content-Type")).toBe("application/json");
-		expect(JSON.parse(String(request?.init?.body))).toEqual({
-			content_blocks: [
-				{
-					type: "text",
-					text: "This message came from an OMP terminal frontend connected through Omnara. Respond normally unless the user explicitly asks you to use a messaging integration.",
-					metadata: { omnara_hidden: "true" },
-				},
-				{ type: "text", text: "hello" },
-				{ type: "media", media_type: "image/png", data: "cG5n" },
-			],
-			delivery_mode: "steering",
+describe("Omnara bridge command", () => {
+	it("uses the installed CLI by default and preserves official env names", () => {
+		const command = resolveOmnaraBridgeCommand({
+			OMNARA_AGENT_ID: "agt_1",
+			OMNARA_API_KEY: "key",
+			OMNARA_ORG_ID: "org_1",
+			OMNARA_PROJECT_ID: "proj_1",
 		});
+
+		expect(command.command).toBe("omnara");
+		expect(command.args).toEqual(["agents", "bridge-omp", "agt_1"]);
+		expect(command.env.OMNARA_API_KEY).toBe("key");
 	});
 
-	it("rejects image types Omnara cannot accept", async () => {
-		await expect(
-			client().createInput("look", "omp-key", "queued", [{ data: "PHN2Zz4=", mediaType: "image/svg+xml" }]),
-		).rejects.toThrow("does not support image type image/svg+xml");
-	});
-
-	it("resolves an interaction on the interaction's owning subagent", async () => {
-		let request: { url: string; init?: RequestInit } | undefined;
-		globalThis.fetch = (async (input, init) => {
-			request = { url: String(input), init };
-			return Response.json({ interaction: { id: "int_1", state: "resolved" } });
-		}) as typeof fetch;
-
-		await client().resolveInteraction("agt_child", "int_1", [{ option_indices: [1], text: "note" }]);
-
-		expect(request?.url).toBe(
-			"https://omnara.test/v1/orgs/org_test/projects/proj_test/agents/agt_child/interactions/int_1/resolve",
-		);
-		expect(request?.init?.method).toBe("POST");
-		expect(JSON.parse(String(request?.init?.body))).toEqual({
-			answers: [{ option_indices: [1], text: "note" }],
+	it("dogfoods the companion source checkout when OMNARA_ROOT is set", () => {
+		const command = resolveOmnaraBridgeCommand({
+			OMNARA_AGENT_ID: "agt_2",
+			OMNARA_ROOT: "/src/omnara",
+			OMNARA_PNPM: "pnpm-custom",
 		});
+
+		expect(command.command).toBe("pnpm-custom");
+		expect(command.args).toEqual([
+			"--dir",
+			"/src/omnara/frontend",
+			"--filter",
+			"omnara",
+			"run",
+			"omnara",
+			"--",
+			"agents",
+			"bridge-omp",
+			"agt_2",
+		]);
 	});
 
-	it("cancels the selected remote agent", async () => {
-		let request: { url: string; init?: RequestInit } | undefined;
-		globalThis.fetch = (async (input, init) => {
-			request = { url: String(input), init };
-			return Response.json({ cancelled: true });
-		}) as typeof fetch;
+	it("maps legacy experiment env names onto the official Omnara CLI names", () => {
+		const command = resolveOmnaraBridgeCommand({
+			OMNARA_AGENT_ID: "agt_3",
+			OMNARA_TOKEN: "legacy-token",
+			OMNARA_API: "http://localhost:8080/v1",
+		});
 
-		await client().cancel();
+		expect(command.env.OMNARA_API_KEY).toBe("legacy-token");
+		expect(command.env.OMNARA_API_URL).toBe("http://localhost:8080/v1");
+	});
 
-		expect(request?.url).toBe(
-			"https://omnara.test/v1/orgs/org_test/projects/proj_test/agents/agt_main/cancel",
-		);
-		expect(request?.init?.method).toBe("POST");
+	it("requires an agent id", () => {
+		expect(() => resolveOmnaraBridgeCommand({})).toThrow("OMNARA_AGENT_ID");
 	});
 });
