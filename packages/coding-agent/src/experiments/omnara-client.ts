@@ -28,6 +28,12 @@ export interface OmnaraStreamOptions {
 	onConnectionStateChange?: (state: OmnaraStreamState) => void;
 }
 
+export interface OmnaraInputAttachment {
+	data: string;
+	filename?: string;
+	mediaType: string;
+}
+
 export interface OmnaraBridgeCommand {
 	command: string;
 	args: string[];
