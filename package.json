@@ -73,6 +73,7 @@
 		"setup": "bun scripts/setup.ts",
 		"dev": "bun --cwd=packages/coding-agent src/cli.ts",
 		"hermes:tui": "PI_HERMES_BACKEND=1 bun --cwd=packages/coding-agent src/cli.ts",
+		"omnara:tui": "PI_OMNARA_BACKEND=1 bun --cwd=packages/coding-agent src/cli.ts",
 		"dev:timing": "PI_TIMING=x bun --cwd=packages/coding-agent --preload ../utils/src/module-timer.ts src/cli.ts",
 		"stats": "bun --cwd=packages/coding-agent src/cli.ts stats",
 		"collab:web:dev": "bun --cwd=packages/collab-web run dev",
