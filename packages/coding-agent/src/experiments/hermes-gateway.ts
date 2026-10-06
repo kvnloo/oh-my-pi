@@ -204,7 +204,10 @@ export class HermesGatewayClient extends EventEmitter {
 			return;
 		}
 
-		if ((typeof frame.id === "number" || typeof frame.id === "string") && typeof frame.method === "string") {
+		if (
+			(typeof frame.id === "number" || typeof frame.id === "string") &&
+			typeof frame.method === "string"
+		) {
 			this.#handleServerRequest(frame.id, frame.method);
 		}
 	}
