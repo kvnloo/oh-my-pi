@@ -36,7 +36,7 @@ function assistantMessage(text: string, model: string): AssistantMessage {
 
 export function hermesEventToSessionEvents(
 	event: HermesGatewayEvent,
-	state: { text: string; model: string },
+	state: { text: string; model: string; started: boolean },
 ): AgentSessionEvent[] {
 	const payload = event.payload ?? {};
 	if (event.type === "message.delta") {
@@ -44,22 +44,29 @@ export function hermesEventToSessionEvents(
 		if (!delta) return [];
 		state.text += delta;
 		const message = assistantMessage(state.text, state.model);
-		return [
-			{
-				type: "message_update",
-				message,
-				assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta, partial: message },
-			},
-		];
+		const events: AgentSessionEvent[] = [];
+		if (!state.started) {
+			state.started = true;
+			events.push({ type: "agent_start" }, { type: "message_start", message });
+		}
+		events.push({
+			type: "message_update",
+			message,
+			assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta, partial: message },
+		});
+		return events;
 	}
 	if (event.type === "message.complete") {
 		const finalText = textField(payload, "text");
 		if (finalText) state.text = finalText;
 		const message = assistantMessage(state.text, state.model);
-		return [
-			{ type: "message_end", message },
-			{ type: "agent_end", messages: [message] },
-		];
+		const events: AgentSessionEvent[] = [];
+		if (!state.started && state.text) {
+			events.push({ type: "agent_start" }, { type: "message_start", message });
+		}
+		state.started = false;
+		events.push({ type: "message_end", message }, { type: "agent_end", messages: [message] });
+		return events;
 	}
 	if (event.type === "tool.start") {
 		const toolCallId = textField(payload, "tool_id") ?? textField(payload, "id");
@@ -88,13 +95,16 @@ export function hermesEventToSessionEvents(
 
 export async function attachHermesBackend(session: AgentSession): Promise<void> {
 	const gateway = new HermesGatewayClient();
-	const stream = { text: "", model: process.env.HERMES_MODEL?.trim() || "hermes" };
+	const stream = { text: "", model: process.env.HERMES_MODEL?.trim() || "hermes", started: false };
 	gateway.start();
 	gateway.on("event", (event: HermesGatewayEvent) => {
 		for (const mapped of hermesEventToSessionEvents(event, stream)) {
 			session.injectExternalEvent(mapped);
 		}
-		if (event.type === "message.complete") stream.text = "";
+		if (event.type === "message.complete") {
+			stream.text = "";
+			stream.started = false;
+		}
 	});
 	await gateway.waitReady();
 	await gateway.request("client.capabilities", { server_requests: false });
@@ -113,6 +123,7 @@ export async function attachHermesBackend(session: AgentSession): Promise<void> 
 	const originalAbort = session.abort.bind(session);
 	session.prompt = async (text: string) => {
 		stream.text = "";
+		stream.started = false;
 		await gateway.request("prompt.submit", {
 			session_id: sessionId,
 			surface: "tui",
