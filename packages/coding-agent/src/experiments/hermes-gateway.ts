@@ -46,9 +46,7 @@ export function safeDeclineResult(method: string): JsonObject | undefined {
 }
 
 function asObject(value: unknown): JsonObject | undefined {
-	return typeof value === "object" && value !== null && !Array.isArray(value)
-		? (value as JsonObject)
-		: undefined;
+	return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as JsonObject) : undefined;
 }
 
 function rpcError(error: unknown): Error {
@@ -183,11 +181,7 @@ export class HermesGatewayClient extends EventEmitter {
 			return;
 		}
 
-		if (
-			typeof frame.id === "number" &&
-			("result" in frame || "error" in frame) &&
-			typeof frame.method !== "string"
-		) {
+		if (typeof frame.id === "number" && ("result" in frame || "error" in frame) && typeof frame.method !== "string") {
 			const pending = this.#pending.get(frame.id);
 			if (!pending) return;
 			this.#pending.delete(frame.id);
@@ -208,10 +202,7 @@ export class HermesGatewayClient extends EventEmitter {
 			return;
 		}
 
-		if (
-			(typeof frame.id === "number" || typeof frame.id === "string") &&
-			typeof frame.method === "string"
-		) {
+		if ((typeof frame.id === "number" || typeof frame.id === "string") && typeof frame.method === "string") {
 			this.#handleServerRequest(frame.id, frame.method);
 		}
 	}
