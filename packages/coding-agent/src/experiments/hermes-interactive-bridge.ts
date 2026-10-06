@@ -34,16 +34,28 @@ function assistantMessage(text: string, model: string): AssistantMessage {
 		timestamp: Date.now(),
 	} as AssistantMessage;
 }
-function ompToolName(name: string): string {
+function ompToolName(name: string, raw: JsonObject = {}): string {
 	if (name === "terminal" || name === "shell") return "bash";
+	if (name === "read_file") return "read";
+	if (name === "write_file") return "write";
+	if (name === "patch") return "edit";
+	if (name === "search_files") return raw.target === "files" ? "glob" : "grep";
 	return name;
 }
 
 function ompToolArgs(name: string, raw: JsonObject): JsonObject {
-	if (ompToolName(name) !== "bash") return raw;
-	const command = textField(raw, "command") ?? textField(raw, "cmd") ?? "";
-	const cwd = textField(raw, "cwd");
-	return cwd ? { command, cwd } : { command };
+	const kind = ompToolName(name, raw);
+	if (kind === "bash") {
+		const command = textField(raw, "command") ?? textField(raw, "cmd") ?? "";
+		const cwd = textField(raw, "cwd");
+		return cwd ? { command, cwd } : { command };
+	}
+	if (kind === "read") return { path: raw.path, offset: raw.offset, limit: raw.limit };
+	if (kind === "write") return { path: raw.path, content: raw.content };
+	if (kind === "edit") return { path: raw.path, oldText: raw.old_string, newText: raw.new_string, patch: raw.patch };
+	if (kind === "grep") return { pattern: raw.pattern, path: raw.path };
+	if (kind === "glob") return { path: raw.pattern ?? raw.path };
+	return raw;
 }
 
 function toolResultBody(payload: JsonObject): JsonObject {
@@ -95,10 +107,10 @@ export function hermesEventToSessionEvents(event: HermesGatewayEvent, state: Str
 	if (event.type === "tool.start") {
 		const toolCallId = textField(payload, "tool_id");
 		const rawName = textField(payload, "name") ?? "tool";
-		const toolName = ompToolName(rawName);
+		const rawArgs = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? (payload.args as JsonObject) : {};
+		const toolName = ompToolName(rawName, rawArgs);
 		if (!toolCallId) return [];
 		state.tools.set(toolCallId, toolName);
-		const rawArgs = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? (payload.args as JsonObject) : {};
 		return [{ type: "tool_execution_start", toolCallId, toolName, args: ompToolArgs(rawName, rawArgs) }];
 	}
 	if (event.type === "tool.complete") {
