@@ -183,7 +183,11 @@ export class HermesGatewayClient extends EventEmitter {
 			return;
 		}
 
-		if (typeof frame.id === "number" && ("result" in frame || "error" in frame) && typeof frame.method !== "string") {
+		if (
+			typeof frame.id === "number" &&
+			("result" in frame || "error" in frame) &&
+			typeof frame.method !== "string"
+		) {
 			const pending = this.#pending.get(frame.id);
 			if (!pending) return;
 			this.#pending.delete(frame.id);
