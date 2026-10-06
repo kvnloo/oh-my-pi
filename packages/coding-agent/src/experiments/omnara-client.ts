@@ -25,6 +25,11 @@ export interface OmnaraStreamOptions {
 	onConnectionStateChange?: (state: OmnaraStreamState) => void;
 }
 
+export interface OmnaraInputMedia {
+	data: string;
+	mediaType: string;
+}
+
 function requireEnv(name: string): string {
 	const value = process.env[name]?.trim();
 	if (!value) throw new Error("Set " + name);
@@ -197,12 +202,32 @@ export class OmnaraClient {
 		text: string,
 		idempotencyKey: string,
 		deliveryMode: "queued" | "steering" = "queued",
+		media: readonly OmnaraInputMedia[] = [],
 	): Promise<T> {
+		const supportedMedia = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
+		for (const item of media) {
+			if (!supportedMedia.has(item.mediaType)) {
+				throw new Error("Omnara backend experiment does not support image type " + item.mediaType);
+			}
+		}
+
+		// Omnara's own web/CLI surfaces prepend a hidden provenance hint so the
+		// agent answers the active UI instead of assuming it should message an integration.
+		const contentBlocks: JsonObject[] = [
+			{
+				type: "text",
+				text: "This message came from an OMP terminal frontend connected through Omnara. Respond normally unless the user explicitly asks you to use a messaging integration.",
+				metadata: { omnara_hidden: "true" },
+			},
+			...(text ? [{ type: "text", text }] : []),
+			...media.map(item => ({ type: "media", media_type: item.mediaType, data: item.data })),
+		];
+
 		return this.#request<T>("/inputs", {
 			method: "POST",
 			headers: { "Idempotency-Key": idempotencyKey },
 			body: JSON.stringify({
-				content_blocks: [{ type: "text", text }],
+				content_blocks: contentBlocks,
 				delivery_mode: deliveryMode,
 			}),
 		});
