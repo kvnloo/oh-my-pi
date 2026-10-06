@@ -1,11 +1,14 @@
+import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
+import { EventEmitter } from "node:events";
+import { join } from "node:path";
+import { createInterface } from "node:readline";
+
 type JsonObject = Record<string, unknown>;
 
-export interface OmnaraConnection {
-	baseUrl: string;
-	token: string;
-	orgID: string;
-	projectID: string;
-	agentID: string;
+interface PendingRequest {
+	resolve: (value: unknown) => void;
+	reject: (error: Error) => void;
+	timer: NodeJS.Timeout;
 }
 
 export interface OmnaraSseFrame {
@@ -25,219 +28,278 @@ export interface OmnaraStreamOptions {
 	onConnectionStateChange?: (state: OmnaraStreamState) => void;
 }
 
-export interface OmnaraInputMedia {
-	data: string;
-	mediaType: string;
+export interface OmnaraBridgeCommand {
+	command: string;
+	args: string[];
+	env: NodeJS.ProcessEnv;
 }
 
-function requireEnv(name: string): string {
-	const value = process.env[name]?.trim();
-	if (!value) throw new Error("Set " + name);
+interface StreamNotification {
+	event: string;
+	id?: string;
+	data: unknown;
+}
+
+function requireAgentID(env: NodeJS.ProcessEnv): string {
+	const value = env.OMNARA_AGENT_ID?.trim();
+	if (!value) throw new Error("Set OMNARA_AGENT_ID");
 	return value;
 }
 
-export function omnaraConnectionFromEnv(): OmnaraConnection {
+/**
+ * Resolve the Omnara-owned bridge process.
+ *
+ * OMNARA_ROOT dogfoods the companion source branch; otherwise an installed
+ * `omnara` CLI is used. Legacy experiment env names are translated into the
+ * official CLI names so existing dogfood commands keep working.
+ */
+export function resolveOmnaraBridgeCommand(env: NodeJS.ProcessEnv = process.env): OmnaraBridgeCommand {
+	const agentID = requireAgentID(env);
+	const childEnv = { ...env };
+	if (!childEnv.OMNARA_API_KEY && childEnv.OMNARA_TOKEN) childEnv.OMNARA_API_KEY = childEnv.OMNARA_TOKEN;
+	if (!childEnv.OMNARA_API_URL && childEnv.OMNARA_API) childEnv.OMNARA_API_URL = childEnv.OMNARA_API;
+
+	const root = env.OMNARA_ROOT?.trim();
+	if (root) {
+		return {
+			command: env.OMNARA_PNPM?.trim() || "pnpm",
+			args: [
+				"--dir",
+				join(root, "frontend"),
+				"--filter",
+				"omnara",
+				"run",
+				"omnara",
+				"--",
+				"agents",
+				"bridge-omp",
+				agentID,
+			],
+			env: childEnv,
+		};
+	}
+
 	return {
-		baseUrl: (process.env.OMNARA_API?.trim() || "https://api.omnara.com/v1").replace(/\/+$/, ""),
-		token: requireEnv("OMNARA_TOKEN"),
-		orgID: requireEnv("OMNARA_ORG_ID"),
-		projectID: requireEnv("OMNARA_PROJECT_ID"),
-		agentID: requireEnv("OMNARA_AGENT_ID"),
+		command: env.OMNARA_BIN?.trim() || "omnara",
+		args: ["agents", "bridge-omp", agentID],
+		env: childEnv,
 	};
-}
-
-export class SseParser {
-	#buffer = "";
-
-	push(chunk: string): OmnaraSseFrame[] {
-		this.#buffer += chunk;
-		const frames: OmnaraSseFrame[] = [];
-
-		for (;;) {
-			const boundary = this.#findBoundary();
-			if (!boundary) break;
-
-			const raw = this.#buffer.slice(0, boundary.index);
-			this.#buffer = this.#buffer.slice(boundary.index + boundary.length);
-			const frame = this.#parseEvent(raw);
-			if (frame) frames.push(frame);
-		}
-
-		return frames;
-	}
-
-	#findBoundary(): { index: number; length: number } | undefined {
-		const matches = [
-			{ index: this.#buffer.indexOf("\r\n\r\n"), length: 4 },
-			{ index: this.#buffer.indexOf("\n\n"), length: 2 },
-			{ index: this.#buffer.indexOf("\r\r"), length: 2 },
-		].filter(candidate => candidate.index >= 0);
-
-		if (!matches.length) return undefined;
-		return matches.reduce((best, candidate) => (candidate.index < best.index ? candidate : best));
-	}
-
-	#parseEvent(raw: string): OmnaraSseFrame | undefined {
-		let event = "message";
-		let id: string | undefined;
-		const data: string[] = [];
-
-		for (const line of raw.split(/\r\n|\n|\r/)) {
-			if (!line || line.startsWith(":")) continue;
-			const colon = line.indexOf(":");
-			const field = colon < 0 ? line : line.slice(0, colon);
-			let value = colon < 0 ? "" : line.slice(colon + 1);
-			if (value.startsWith(" ")) value = value.slice(1);
-
-			if (field === "event") event = value;
-			else if (field === "id") id = value;
-			else if (field === "data") data.push(value);
-		}
-
-		if (!data.length) return undefined;
-		return { event, id, data: data.join("\n") };
-	}
 }
 
 function asObject(value: unknown): JsonObject {
 	return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
-function apiError(response: Response, body: unknown): Error {
-	const object = asObject(body);
-	const nested = asObject(object.error);
-	const message =
-		(typeof nested.message === "string" && nested.message) ||
-		(typeof object.message === "string" && object.message) ||
-		response.statusText ||
-		"Omnara API request failed";
-	const code =
-		(typeof nested.code === "string" && nested.code) ||
-		(typeof object.code === "string" && object.code) ||
-		String(response.status);
-	return new Error("Omnara " + code + ": " + message);
+function messageFromError(value: unknown, fallback: string): string {
+	const body = asObject(value);
+	return typeof body.message === "string" && body.message ? body.message : fallback;
 }
 
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-	return new Promise((resolve, reject) => {
-		if (signal?.aborted) {
-			reject(signal.reason ?? new Error("aborted"));
+/**
+ * Thin client for the Omnara-owned renderer bridge.
+ *
+ * OMP no longer implements Omnara auth, REST paths, generated schemas or SSE
+ * recovery. It only consumes a small NDJSON JSON-RPC protocol and translates
+ * the resulting native Omnara events into AgentSession events.
+ */
+export class OmnaraClient extends EventEmitter {
+	#child: ChildProcessWithoutNullStreams | undefined;
+	#nextID = 1;
+	#pending = new Map<number, PendingRequest>();
+	#ready = false;
+	#readyPromise: Promise<void>;
+	#resolveReady!: () => void;
+	#rejectReady!: (error: Error) => void;
+	#streamQueue: OmnaraSseFrame[] = [];
+	#streamWaiters: Array<(value: IteratorResult<OmnaraSseFrame>) => void> = [];
+	#streamError: Error | undefined;
+	#connectionListener: ((state: OmnaraStreamState) => void) | undefined;
+	#closed = false;
+
+	constructor(command: OmnaraBridgeCommand = resolveOmnaraBridgeCommand()) {
+		super();
+		this.#readyPromise = new Promise<void>((resolve, reject) => {
+			this.#resolveReady = resolve;
+			this.#rejectReady = reject;
+		});
+		this.#start(command);
+	}
+
+	#start(spec: OmnaraBridgeCommand): void {
+		const child = spawn(spec.command, spec.args, {
+			env: spec.env,
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+		this.#child = child;
+
+		const stdout = createInterface({ input: child.stdout });
+		stdout.on("line", line => this.#handleLine(line));
+
+		const stderr = createInterface({ input: child.stderr });
+		stderr.on("line", line => {
+			const text = line.trim();
+			if (text) this.emit("stderr", text);
+		});
+
+		child.on("error", error => {
+			this.#fail(error);
+		});
+		child.on("exit", (code, signal) => {
+			if (this.#child !== child || this.#closed) return;
+			const suffix = signal ? " signal=" + signal : "";
+			this.#fail(
+				new Error(
+					"Omnara bridge exited code=" +
+						String(code ?? "null") +
+						suffix +
+						". Set OMNARA_ROOT to the companion Omnara checkout or install a CLI with agents bridge-omp.",
+				),
+			);
+		});
+	}
+
+	async #request<T = JsonObject>(method: string, params: JsonObject = {}, timeoutMs = 120_000): Promise<T> {
+		await this.#readyPromise;
+		const child = this.#child;
+		if (!child?.stdin || child.killed || child.exitCode !== null) {
+			throw new Error("Omnara bridge is not running");
+		}
+
+		const id = this.#nextID++;
+		return new Promise<T>((resolve, reject) => {
+			const timer = setTimeout(() => {
+				this.#pending.delete(id);
+				reject(new Error("Omnara bridge timeout: " + method));
+			}, timeoutMs);
+			timer.unref?.();
+			this.#pending.set(id, {
+				resolve: value => resolve(value as T),
+				reject,
+				timer,
+			});
+			child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n");
+		});
+	}
+
+	#handleLine(line: string): void {
+		let frame: JsonObject;
+		try {
+			frame = asObject(JSON.parse(line));
+		} catch {
+			this.emit("protocolError", new Error("Invalid Omnara bridge frame"));
 			return;
 		}
-		const timer = setTimeout(resolve, ms);
-		const abort = () => {
-			clearTimeout(timer);
-			reject(signal?.reason ?? new Error("aborted"));
-		};
-		signal?.addEventListener("abort", abort, { once: true });
-	});
-}
 
-export class OmnaraClient {
-	readonly connection: OmnaraConnection;
-
-	constructor(connection: OmnaraConnection = omnaraConnectionFromEnv()) {
-		this.connection = connection;
-	}
-
-	get agentID(): string {
-		return this.connection.agentID;
-	}
-
-	#agentPath(path = ""): string {
-		const { baseUrl, orgID, projectID, agentID } = this.connection;
-		return (
-			baseUrl +
-			"/orgs/" +
-			encodeURIComponent(orgID) +
-			"/projects/" +
-			encodeURIComponent(projectID) +
-			"/agents/" +
-			encodeURIComponent(agentID) +
-			path
-		);
-	}
-
-	async #request<T>(path: string, init: RequestInit = {}): Promise<T> {
-		return this.#requestAbsolute<T>(this.#agentPath(path), init);
-	}
-
-	async #requestAbsolute<T>(url: string, init: RequestInit = {}): Promise<T> {
-		const headers = new Headers(init.headers);
-		headers.set("Authorization", "Bearer " + this.connection.token);
-		headers.set("Accept", "application/json");
-		if (init.body !== undefined && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-
-		const response = await fetch(url, { ...init, headers });
-		const text = await response.text();
-		let body: unknown = {};
-		if (text) {
-			try {
-				body = JSON.parse(text);
-			} catch {
-				body = { message: text };
+		if (typeof frame.id === "number" && ("result" in frame || "error" in frame)) {
+			const pending = this.#pending.get(frame.id);
+			if (!pending) return;
+			this.#pending.delete(frame.id);
+			clearTimeout(pending.timer);
+			if (frame.error != null) {
+				pending.reject(new Error(messageFromError(frame.error, "Omnara bridge request failed")));
+			} else {
+				pending.resolve(frame.result);
 			}
+			return;
 		}
-		if (!response.ok) throw apiError(response, body);
-		return body as T;
+
+		if (typeof frame.method !== "string") return;
+		const params = asObject(frame.params);
+		if (frame.method === "ready") {
+			if (!this.#ready) {
+				this.#ready = true;
+				this.#resolveReady();
+			}
+			return;
+		}
+		if (frame.method === "stream.connection") {
+			const state = params.state;
+			if (state === "connected" || state === "reconnecting") {
+				this.#connectionListener?.({
+					state,
+					reconnected: params.reconnected === true,
+				});
+			}
+			return;
+		}
+		if (frame.method === "stream.error") {
+			this.#streamError = new Error(messageFromError(params, "Omnara event stream failed"));
+			this.#flushStreamWaiters();
+			return;
+		}
+		if (frame.method === "stream.event") {
+			const event = params.event;
+			if (typeof event !== "string") return;
+			const streamFrame: OmnaraSseFrame = {
+				event,
+				...(typeof params.id === "string" ? { id: params.id } : {}),
+				data: JSON.stringify(params.data ?? {}),
+			};
+			const waiter = this.#streamWaiters.shift();
+			if (waiter) waiter({ value: streamFrame, done: false });
+			else this.#streamQueue.push(streamFrame);
+		}
+	}
+
+	#nextStreamFrame(): Promise<IteratorResult<OmnaraSseFrame>> {
+		const queued = this.#streamQueue.shift();
+		if (queued) return Promise.resolve({ value: queued, done: false });
+		if (this.#streamError) return Promise.reject(this.#streamError);
+		if (this.#closed) return Promise.resolve({ value: undefined, done: true });
+		return new Promise(resolve => this.#streamWaiters.push(resolve));
+	}
+
+	#flushStreamWaiters(): void {
+		while (this.#streamWaiters.length) {
+			const waiter = this.#streamWaiters.shift();
+			if (waiter) waiter({ value: undefined, done: true });
+		}
+	}
+
+	#fail(error: Error): void {
+		if (this.#closed) return;
+		this.#closed = true;
+		if (!this.#ready) this.#rejectReady(error);
+		for (const pending of this.#pending.values()) {
+			clearTimeout(pending.timer);
+			pending.reject(error);
+		}
+		this.#pending.clear();
+		this.#streamError = error;
+		this.#flushStreamWaiters();
+		this.emit("error", error);
 	}
 
 	getAgent<T = JsonObject>(): Promise<T> {
-		return this.#request<T>("");
+		return this.#request<T>("agent.get");
 	}
 
 	listRecentEvents<T = JsonObject>(limit = 100): Promise<T> {
-		return this.#request<T>("/events?before_sequence=0&limit=" + Math.max(1, Math.min(500, Math.trunc(limit))));
+		return this.#request<T>("events.list", { limit });
 	}
 
 	listToolCalls<T = JsonObject>(): Promise<T> {
-		return this.#request<T>("/tool-calls?include_subagents=true&limit=500");
+		return this.#request<T>("tool_calls.list", { limit: 500 });
 	}
 
 	listOpenInteractions<T = JsonObject>(): Promise<T> {
-		return this.#request<T>("/interactions?state=open&include_subagents=true&limit=500");
+		return this.#request<T>("interactions.list", { limit: 500 });
 	}
 
 	createInput<T = JsonObject>(
 		text: string,
 		idempotencyKey: string,
 		deliveryMode: "queued" | "steering" = "queued",
-		media: readonly OmnaraInputMedia[] = [],
 	): Promise<T> {
-		const supportedMedia = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
-		for (const item of media) {
-			if (!supportedMedia.has(item.mediaType)) {
-				throw new Error("Omnara backend experiment does not support image type " + item.mediaType);
-			}
-		}
-
-		// Omnara's own web/CLI surfaces prepend a hidden provenance hint so the
-		// agent answers the active UI instead of assuming it should message an integration.
-		const contentBlocks: JsonObject[] = [
-			{
-				type: "text",
-				text: "This message came from an OMP terminal frontend connected through Omnara. Respond normally unless the user explicitly asks you to use a messaging integration.",
-				metadata: { omnara_hidden: "true" },
-			},
-			...(text ? [{ type: "text", text }] : []),
-			...media.map(item => ({ type: "media", media_type: item.mediaType, data: item.data })),
-		];
-
-		return this.#request<T>("/inputs", {
-			method: "POST",
-			headers: { "Idempotency-Key": idempotencyKey },
-			body: JSON.stringify({
-				content_blocks: contentBlocks,
-				delivery_mode: deliveryMode,
-			}),
+		return this.#request<T>("input.create", {
+			text,
+			idempotency_key: idempotencyKey,
+			delivery_mode: deliveryMode,
 		});
 	}
 
 	cancel<T = JsonObject>(): Promise<T> {
-		return this.#request<T>("/cancel", {
-			method: "POST",
-			body: JSON.stringify({}),
-		});
+		return this.#request<T>("agent.cancel");
 	}
 
 	resolveInteraction<T = JsonObject>(
@@ -245,116 +307,57 @@ export class OmnaraClient {
 		interactionID: string,
 		answers: Array<{ option_indices: number[]; text?: string }>,
 	): Promise<T> {
-		const { baseUrl, orgID, projectID } = this.connection;
-		const url =
-			baseUrl +
-			"/orgs/" +
-			encodeURIComponent(orgID) +
-			"/projects/" +
-			encodeURIComponent(projectID) +
-			"/agents/" +
-			encodeURIComponent(interactionAgentID) +
-			"/interactions/" +
-			encodeURIComponent(interactionID) +
-			"/resolve";
-		return this.#requestAbsolute<T>(url, {
-			method: "POST",
-			body: JSON.stringify({ answers }),
+		return this.#request<T>("interaction.resolve", {
+			target_agent_id: interactionAgentID,
+			interaction_id: interactionID,
+			answers,
 		});
 	}
 
 	async *streamEvents(options: OmnaraStreamOptions = {}): AsyncGenerator<OmnaraSseFrame> {
+		await this.#readyPromise;
+		this.#streamQueue = [];
+		this.#streamError = undefined;
+		this.#connectionListener = options.onConnectionStateChange;
 		const signal = options.signal;
-		let afterSequence = Math.max(0, Math.trunc(options.afterSequence ?? 0));
-		let reconnects = 0;
 
-		while (!signal?.aborted) {
-			const url = new URL(this.#agentPath("/events/stream"));
-			url.searchParams.set("stream_deltas", "true");
-			if (afterSequence > 0) url.searchParams.set("after_sequence", String(afterSequence));
+		const abort = () => {
+			void this.#request("stream.stop").catch(() => undefined);
+			this.#flushStreamWaiters();
+		};
+		signal?.addEventListener("abort", abort, { once: true });
 
-			const headers = new Headers({
-				Accept: "text/event-stream",
-				Authorization: "Bearer " + this.connection.token,
-			});
-			if (afterSequence > 0) headers.set("Last-Event-ID", String(afterSequence));
+		await this.#request("stream.start", {
+			after_sequence: Math.max(0, Math.trunc(options.afterSequence ?? 0)),
+		});
 
-			let response: Response;
-			try {
-				response = await fetch(url, { headers, signal });
-			} catch {
-				if (signal?.aborted) return;
-				options.onConnectionStateChange?.({ state: "reconnecting", reconnected: reconnects > 0 });
-				await sleep(Math.min(5_000, 500 * 2 ** Math.min(reconnects, 4)), signal);
-				reconnects++;
-				continue;
-			}
-
-			if (!response.ok || !response.body) {
-				let body: unknown = {};
-				try {
-					body = JSON.parse(await response.text());
-				} catch {
-					// Keep the HTTP status as the fallback diagnostic.
+		try {
+			while (!signal?.aborted && !this.#closed) {
+				const next = await this.#nextStreamFrame();
+				if (next.done) {
+					if (this.#streamError) throw this.#streamError;
+					break;
 				}
-				if (response.status >= 500) {
-					options.onConnectionStateChange?.({ state: "reconnecting", reconnected: reconnects > 0 });
-					await sleep(Math.min(5_000, 500 * 2 ** Math.min(reconnects, 4)), signal);
-					reconnects++;
-					continue;
-				}
-				throw apiError(response, body);
+				yield next.value;
 			}
-
-			options.onConnectionStateChange?.({ state: "connected", reconnected: reconnects > 0 });
-			reconnects = 0;
-			const parser = new SseParser();
-			const decoder = new TextDecoder();
-			const reader = response.body.getReader();
-			let retry = true;
-
-			try {
-				for (;;) {
-					const { done, value } = await reader.read();
-					if (done) break;
-					for (const frame of parser.push(decoder.decode(value, { stream: true }))) {
-						const sequence = frame.id === undefined ? NaN : Number(frame.id);
-						if (Number.isSafeInteger(sequence) && sequence > afterSequence) afterSequence = sequence;
-
-						if (frame.event === "error") {
-							let body: unknown = {};
-							try {
-								body = JSON.parse(frame.data);
-							} catch {
-								body = {};
-							}
-							const object = asObject(body);
-							const nested = asObject(object.error);
-							const code =
-								(typeof object.code === "string" && object.code) ||
-								(typeof nested.code === "string" && nested.code);
-							if (code !== "service_unavailable") {
-								retry = false;
-								throw new Error(
-									"Omnara stream error" +
-										(code ? " (" + code + ")" : "") +
-										": " +
-										(typeof object.message === "string" ? object.message : frame.data),
-								);
-							}
-							break;
-						}
-
-						yield frame;
-					}
-				}
-			} finally {
-				reader.releaseLock();
-			}
-
-			if (!retry || signal?.aborted) return;
-			options.onConnectionStateChange?.({ state: "reconnecting", reconnected: true });
-			await sleep(500, signal);
+		} finally {
+			signal?.removeEventListener("abort", abort);
+			this.#connectionListener = undefined;
+			if (!this.#closed) await this.#request("stream.stop").catch(() => undefined);
 		}
+	}
+
+	close(): void {
+		if (this.#closed) return;
+		this.#closed = true;
+		const child = this.#child;
+		this.#child = undefined;
+		if (child && !child.killed && child.exitCode === null) child.kill();
+		for (const pending of this.#pending.values()) {
+			clearTimeout(pending.timer);
+			pending.reject(new Error("Omnara bridge closed"));
+		}
+		this.#pending.clear();
+		this.#flushStreamWaiters();
 	}
 }
