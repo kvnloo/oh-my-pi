@@ -1,0 +1,13 @@
+schema = 1
+id = "native-visual"
+name = "Native Visual Replies (experiment)"
+version = "0.1.0"
+description = "Fixed, data-only repository explorer; no generated Luau execution."
+host = "host.luau"
+window = "window.luau"
+styles = ["visual.css"]
+
+[[blocks]]
+id = "reply"
+title = "Native Visual Reply"
+files = ["*.visual.json"]

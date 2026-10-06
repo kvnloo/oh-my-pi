@@ -1,0 +1,76 @@
+{
+  "schema": "omp-native-visual/v1",
+  "id": "8a8f423767124bbb5ad0e70d6942859eb9feaffb2da66823a9a067a755b978bb",
+  "rendererHash": "aca4cf382f74d9e83244c12c3ef0bf2d12dec1e87ccfb50d2a7d7aadd2f2bce4",
+  "document": {
+    "version": 1,
+    "title": "Synthetic repository — code/churn units (not real measurements)",
+    "root": {
+      "id": "root",
+      "label": "sample-repo",
+      "code": 5300,
+      "churn": 210,
+      "children": [
+        {
+          "id": "apps",
+          "label": "apps/",
+          "code": 3700,
+          "churn": 110,
+          "children": [
+            {
+              "id": "web",
+              "label": "web.ts",
+              "code": 1500,
+              "churn": 80,
+              "children": []
+            },
+            {
+              "id": "server",
+              "label": "server.ts",
+              "code": 2200,
+              "churn": 30,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "packages",
+          "label": "packages/",
+          "code": 1400,
+          "churn": 90,
+          "children": [
+            {
+              "id": "tui",
+              "label": "tui.ts",
+              "code": 1000,
+              "churn": 70,
+              "children": []
+            },
+            {
+              "id": "wire",
+              "label": "wire.ts",
+              "code": 400,
+              "churn": 20,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "docs",
+          "label": "docs/",
+          "code": 200,
+          "churn": 10,
+          "children": [
+            {
+              "id": "guide",
+              "label": "guide.ts",
+              "code": 200,
+              "churn": 10,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

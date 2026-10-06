@@ -1,0 +1,140 @@
+{
+  "status": "setup-only",
+  "base": "3f000c524cf82279f804ffd7526280cc9a5f25fe",
+  "node": "v22.16.0",
+  "checks": {
+    "nodeContractTests": {
+      "passed": 16,
+      "failed": 0,
+      "command": "node --test experiments/native-visual-replies/core.test.mjs"
+    },
+    "typescriptSyntaxTranspile": "passed; not a project typecheck",
+    "shellSyntax": "passed",
+    "ompRuntime": "not run: Bun/OMP unavailable",
+    "luauTypecheck": "not run: tern and luau-lsp unavailable",
+    "ternLiveWindow": "not run: binary/window unavailable",
+    "uiLatency": "not measured",
+    "JevInference": "not run; default-off"
+  },
+  "sourceSha256": {
+    "study.json": "9638d4822e9b310ae4616522025e353e3a9b6d0edfb4adf14c15d1cb01d17fa3",
+    "tern-smoke.sh": "602da97ba451fd4f2d77194bee4d435adebd0cd344f7af86859116df9f3d449f",
+    "authoring.md": "2e3ae953e0795826559e0f718cd411bf2a6f9bfb56778024321fa1e9e243f456",
+    "core.mjs": "1e66c1fd8850b129cd2c6d0aa4c071176694820c8315105f1ac53a8e74c891a5",
+    "prior.mjs": "e0a9cf6aec445b3257f3aaacc59434938f17ad205e7e7752297e9cd7432f46f7",
+    "study.mjs": "ffda9050aa4ddbf6aca4ccb7174146d6f79ec35f365c90e7a6548f49ddfb7049",
+    "core.test.mjs": "ee39066c0958267f69b31f605154393b1db5083c76b342c1f29c5a3b940edd38",
+    "extension.ts": "ae82d8a5dd6d07dd4b06a5e121ee2bd42e8b15e6d8de91f5b531cd48b2dc3468",
+    "README.md": "7243affd1864219ac5114377a99f26be0dc2e7f86a39901389c264d1314427a1",
+    "core.d.mts": "9f52ba8890d309607b2c33dd4020c3ef01cfa89b1109118be35ab9a44c374c84",
+    "tern/window.luau": "a548f63037085363e4c7522debbbdd1e48f590e88c8601b3a1f38e2f346f1aac",
+    "tern/demo.visual.json": "07f3acb75bdce03a4a81531fec7db00e2e00a8ff674f24b4bf28ed002031ae31",
+    "tern/host.luau": "c2b0e5d1736cf8aa37c9fc2d0e49e40350a94ea6c0e48f2a6c537a3d46acda7b",
+    "tern/plugin.toml": "379bde906cee996839f81269c4beac3641d3f295b051ccc995561e3c65710222",
+    "tern/visual.css": "ed7dad2099028faa08db439617d41bcc8f4da4c94c3250d770171827131a7a09"
+  },
+  "contractMicrobenchmark": {
+    "kind": "JS contract microbenchmark ONLY",
+    "node": "v22.16.0",
+    "rendererHash": "aca4cf382f74d9e83244c12c3ef0bf2d12dec1e87ccfb50d2a7d7aadd2f2bce4",
+    "luauExecuted": false,
+    "ompExecuted": false,
+    "pixelsVerified": false,
+    "endToEndMeasured": false,
+    "results": [
+      {
+        "files": 1000,
+        "inputBytes": 52793,
+        "runs": [
+          {
+            "prepareMs": 2.5503479999999996,
+            "projectionMs": 0.23736800000000358,
+            "visible": 128
+          },
+          {
+            "prepareMs": 1.7790740000000014,
+            "projectionMs": 0.09794799999999526,
+            "visible": 128
+          },
+          {
+            "prepareMs": 4.422426999999999,
+            "projectionMs": 0.21023800000000392,
+            "visible": 128
+          },
+          {
+            "prepareMs": 2.3004510000000025,
+            "projectionMs": 0.16304600000000136,
+            "visible": 128
+          },
+          {
+            "prepareMs": 2.463667000000001,
+            "projectionMs": 0.1371870000000044,
+            "visible": 128
+          }
+        ]
+      },
+      {
+        "files": 5000,
+        "inputBytes": 272281,
+        "runs": [
+          {
+            "prepareMs": 6.6561729999999955,
+            "projectionMs": 0.5849720000000076,
+            "visible": 128
+          },
+          {
+            "prepareMs": 7.812837999999999,
+            "projectionMs": 0.7460749999999905,
+            "visible": 128
+          },
+          {
+            "prepareMs": 7.320756000000003,
+            "projectionMs": 0.5108409999999992,
+            "visible": 128
+          },
+          {
+            "prepareMs": 5.696624999999997,
+            "projectionMs": 0.5855140000000034,
+            "visible": 128
+          },
+          {
+            "prepareMs": 6.866399999999999,
+            "projectionMs": 0.7930669999999935,
+            "visible": 128
+          }
+        ]
+      },
+      {
+        "files": 50000,
+        "inputBytes": 2821510,
+        "runs": [
+          {
+            "prepareMs": 80.06335000000001,
+            "projectionMs": 19.30862300000001,
+            "visible": 128
+          },
+          {
+            "prepareMs": 81.28170899999998,
+            "projectionMs": 20.90655400000003,
+            "visible": 128
+          },
+          {
+            "prepareMs": 78.52110300000004,
+            "projectionMs": 7.112662,
+            "visible": 128
+          },
+          {
+            "prepareMs": 70.87443600000006,
+            "projectionMs": 9.190817000000038,
+            "visible": 128
+          },
+          {
+            "prepareMs": 66.37240299999996,
+            "projectionMs": 11.989440000000059,
+            "visible": 128
+          }
+        ]
+      }
+    ]
+  }
+}

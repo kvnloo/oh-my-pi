@@ -1,0 +1,25 @@
+{
+  "schema": "native-visual-study/v1",
+  "status": "setup-only",
+  "coordination": "https://github.com/kvnloo/oh-my-pi/issues/143",
+  "sources": {
+    "omp": "3f000c524cf82279f804ffd7526280cc9a5f25fe",
+    "opendesign": "53231d40b778d88eba23f35547bf99485d3ae9fc",
+    "htmlBaseline": "eb4e8fdaca960adc086f49cf09f6228334236f9f"
+  },
+  "arms": [
+    { "id": "A", "name": "HTML PR 136", "runtimeValidated": false },
+    { "id": "B", "name": "native fixed Luau", "runtimeValidated": false },
+    { "id": "C", "name": "B + bounded OpenDesign package", "generationValidated": false },
+    { "id": "D", "name": "C + Jev UI-routing shadow", "enabled": false, "authority": "none", "requires": "domain evaluation and explicit inference consent" }
+  ],
+  "comparison": {
+    "order": "interleaved paired ABBA after warmup; cold launches separate",
+    "minimumPairs": 30,
+    "fixed": ["model", "seed where supported", "dataset hash", "required interactions", "quality rubric", "theme", "viewport", "verification policy"],
+    "syntheticFileCounts": [1000, 5000, 50000]
+  },
+  "targetsNotMeasurements": { "inputToPaintP95Ms": 50, "inputToPaintP99Ms": 100, "viewP95Ms": 8, "inferenceCallsPerInteraction": 0, "idlePolling": false },
+  "requiredMetrics": ["cold startup", "first useful preview", "time to verified publication", "input-to-paint", "process CPU and RSS deltas", "wire bytes and frame count", "generated tokens", "repair rounds", "Jev added latency and abstentions", "quality and missing-interaction failures"],
+  "promotion": "No measured UI speedup or automated visual-pass claim until real OMP/Tern evidence is attached. JavaScript microbenchmarks are not Luau or paint measurements."
+}
