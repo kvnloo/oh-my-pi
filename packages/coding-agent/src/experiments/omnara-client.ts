@@ -267,7 +267,7 @@ export class OmnaraClient extends EventEmitter {
 		this.#pending.clear();
 		this.#streamError = error;
 		this.#flushStreamWaiters();
-		this.emit("error", error);
+		this.emit("bridgeError", error);
 	}
 
 	getAgent<T = JsonObject>(): Promise<T> {
