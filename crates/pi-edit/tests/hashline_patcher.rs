@@ -133,3 +133,35 @@ fn completed_preview_surfaces_stale_hash_error() {
 			.is_some_and(|error| error.contains("not from this session"))
 	);
 }
+
+#[tokio::test]
+async fn mv_relative_destination_resolves_against_source_file_directory() {
+	// Regression for #14842: `MV ../x` must leave the source file's folder,
+	// not the session cwd (which silently escapes a sandbox root).
+	let workspace = common::Workspace::new(EditMode::Hashline);
+	workspace.write(".repro/sub/mvme.txt", "line1\nline2\n");
+	let tag = workspace.snapshot(".repro/sub/mvme.txt", "line1\nline2\n", None);
+	let args = json!({
+		"input": format!("[.repro/sub/mvme.txt#{tag}]\nMV ../renamed-outside.txt")
+	});
+	let writer = common::DiskWriter::default();
+	workspace
+		.apply_json(&args, &writer)
+		.await
+		.expect("MV apply should succeed");
+
+	assert_eq!(
+		workspace.read(".repro/renamed-outside.txt").as_deref(),
+		Some("line1\nline2\n"),
+		"relative MV destination must resolve against the source file directory"
+	);
+	assert!(
+		workspace.read(".repro/sub/mvme.txt").is_none(),
+		"source file should be removed after the move"
+	);
+	let escaped = workspace.cwd().parent().expect("temp parent").join("renamed-outside.txt");
+	assert!(
+		!escaped.exists(),
+		"MV ../ must not resolve against the session cwd and escape the workspace"
+	);
+}
