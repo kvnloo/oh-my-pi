@@ -4,7 +4,7 @@
 use std::{
 	borrow::Cow,
 	collections::{BTreeSet, HashMap},
-	path::Path,
+	path::{Path, PathBuf},
 	sync::Arc,
 };
 
@@ -590,6 +590,27 @@ fn undecodable_delete_staged(
 }
 
 /// Stage every parsed hashline section atomically.
+
+/// Resolve an `MV` destination. Relative destinations are anchored at the
+/// source file's directory so `MV ../x` leaves that folder rather than the
+/// session cwd (can1357/oh-my-pi#14842). Absolute paths and internal URLs keep
+/// ordinary [`FileSource::resolve`] behavior.
+fn resolve_move_destination(
+	files: &mut dyn FileSource,
+	source: &Resolved,
+	dest: &str,
+) -> Result<Resolved, EditError> {
+	if files.policy().is_internal_url(dest) || Path::new(dest).is_absolute() {
+		return files.resolve(dest, false);
+	}
+	let authored = match Path::new(&source.display).parent() {
+		Some(parent) if !parent.as_os_str().is_empty() => parent.join(dest),
+		_ => PathBuf::from(dest),
+	};
+	let authored = authored.to_string_lossy().replace('\\', "/");
+	files.resolve(&authored, false)
+}
+
 pub fn stage_patch(
 	patch: &Patch,
 	raw_input: &str,
@@ -648,7 +669,7 @@ pub fn stage_patch(
 			)));
 		}
 		if let Some(FileOp::Move { dest }) = &parsed.file_op {
-			let destination = files.resolve(dest, false)?;
+			let destination = resolve_move_destination(files, &read.resolved, dest)?;
 			if crate::path_policy::canonical_key(&destination.absolute) == read.canonical {
 				return Err(EditError::apply(format!(
 					"MV destination is the same as {}.",
@@ -686,7 +707,7 @@ pub fn stage_patch(
 			streaming: false,
 		});
 		let move_to = if let Some(FileOp::Move { dest }) = &parsed.file_op {
-			Some(files.resolve(dest, false)?)
+			Some(resolve_move_destination(files, &read.resolved, dest)?)
 		} else {
 			None
 		};

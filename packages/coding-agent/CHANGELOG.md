@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed hashline `MV` so a relative destination resolves against the source file's directory rather than the session working directory, preventing `MV ../…` from silently escaping a sandbox root ([#14842](https://github.com/can1357/oh-my-pi/issues/14842)).
+
 ## [18.8.1] - 2026-10-07
 
 ### Added

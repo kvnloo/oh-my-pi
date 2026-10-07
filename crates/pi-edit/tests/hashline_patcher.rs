@@ -134,6 +134,7 @@ fn completed_preview_surfaces_stale_hash_error() {
 	);
 }
 
+
 #[tokio::test]
 async fn mv_relative_destination_resolves_against_source_file_directory() {
 	// Regression for #14842: `MV ../x` must leave the source file's folder,
@@ -159,9 +160,12 @@ async fn mv_relative_destination_resolves_against_source_file_directory() {
 		workspace.read(".repro/sub/mvme.txt").is_none(),
 		"source file should be removed after the move"
 	);
-	let escaped = workspace.cwd().parent().expect("temp parent").join("renamed-outside.txt");
-	assert!(
-		!escaped.exists(),
-		"MV ../ must not resolve against the session cwd and escape the workspace"
+	let requests = writer.requests.lock();
+	assert_eq!(requests.len(), 1, "one write for the move");
+	let move_to = requests[0].move_to.as_ref().expect("move_to recorded");
+	assert_eq!(
+		move_to,
+		&workspace.cwd().join(".repro/renamed-outside.txt"),
+		"recorded move_to must stay under the session cwd"
 	);
 }
