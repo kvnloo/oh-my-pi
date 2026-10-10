@@ -1,0 +1,27 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/tui/test/vibe-render.test.ts:
+(pass) vibe tool renderers > send composer types the message into a mini CLI frame with a blinking cursor while pending [1.63ms]
+(pass) vibe tool renderers > composer cursor re-derives from mutated options on the same component [0.34ms]
+(pass) vibe tool renderers > wait wall spinner re-derives from mutated options on the same component [7.77ms]
+(pass) vibe tool renderers > send result frames the ack under the composer [0.17ms]
+(pass) vibe tool renderers > wait renders stacked TV screens: live trace + streamed text, idle gist, settled footer [0.69ms]
+(pass) vibe tool renderers > clamps every TV line to the render width [0.31ms]
+(pass) vibe tool renderers > keeps an animated tool label within the frame when styling crosses an emoji variation selector [0.69ms]
+(pass) vibe tool renderers > reports killed sessions left off the wall as a header count, with or without live screens [1.27ms]
+
+packages/tui/test/shimmer.test.ts:
+(pass) shimmerText > uses a supplied raw ANSI color for the shimmer crest [0.13ms]
+(pass) shimmerText > shimmers a mixed BMP + surrogate-pair message correctly (issue #4353 refactor) [0.10ms]
+(pass) shimmerText > shimmers an all-emoji message without dropping any code point [0.05ms]
+(pass) shimmerText > keeps generated color boundaries outside whole Unicode graphemes [1.29ms]
+(pass) shimmerSegments frame boundaries > preserves disabled palette boundaries without emitting ANSI for an all-empty frame [0.12ms]
+(pass) shimmerSegments frame boundaries > keeps a one-code-point KITT head bright across time and empty palette segments [0.26ms]
+(pass) shimmerText band fast-path > paints code points outside the band in the muted low tier [0.11ms]
+(pass) shimmerText band fast-path > keeps the crest color when the band sweeps across the string [0.10ms]
+(pass) shimmerText band fast-path > handles a surrogate pair straddling the band boundary atomically [0.07ms]
+
+ 17 pass
+ 0 fail
+ 115 expect() calls
+Ran 17 tests across 2 files. [582.00ms]

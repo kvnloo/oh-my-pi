@@ -1,0 +1,385 @@
+{
+  "aggregation": "Report per-arm median and min/max across 20 samples per workload. Pair adjacent arm processes, comparing each process median, then report all four paired ratios and their median.",
+  "pairs": [
+    [
+      1,
+      2
+    ],
+    [
+      4,
+      3
+    ],
+    [
+      5,
+      6
+    ],
+    [
+      8,
+      7
+    ]
+  ],
+  "checksumByProcess": {
+    "1": 616751400,
+    "2": 610381300,
+    "3": 610381300,
+    "4": 616751400,
+    "5": 616751400,
+    "6": 610381300,
+    "7": 610381300,
+    "8": 616751400
+  },
+  "results": [
+    {
+      "workload": "helper/ascii/classic",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 1.0625502850000021,
+      "baselineRangeUs": [
+        0.6890404749999994,
+        3.066944874999999
+      ],
+      "candidateMedianUs": 1.2911151474999998,
+      "candidateRangeUs": [
+        0.9685389200000009,
+        2.097494489999999
+      ],
+      "absoluteMedianDeltaUs": 0.2285648624999976,
+      "pairedRatios": [
+        1.3212682318672881,
+        1.2323892614770682,
+        1.0566511179073206,
+        0.6920673229795222
+      ],
+      "medianPairedRatio": 1.1445201896921944
+    },
+    {
+      "workload": "helper/ascii/disabled",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 0.22133893499999885,
+      "baselineRangeUs": [
+        0.15397439999999732,
+        0.6318748899999992
+      ],
+      "candidateMedianUs": 0.192443430000003,
+      "candidateRangeUs": [
+        0.1441103949999979,
+        0.7161855050000031
+      ],
+      "absoluteMedianDeltaUs": -0.028895504999995866,
+      "pairedRatios": [
+        0.9422155647445055,
+        0.9933755529800122,
+        0.8619713441982128,
+        0.5726927175966446
+      ],
+      "medianPairedRatio": 0.9020934544713591
+    },
+    {
+      "workload": "helper/unicode/classic",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 0.996476725,
+      "baselineRangeUs": [
+        0.8667331599999943,
+        2.7123529849999977
+      ],
+      "candidateMedianUs": 5.752870957499999,
+      "candidateRangeUs": [
+        4.369155740000005,
+        9.303304799999998
+      ],
+      "absoluteMedianDeltaUs": 4.756394232499999,
+      "pairedRatios": [
+        6.072025106290101,
+        5.451913850533117,
+        5.33901575226521,
+        5.155572508843376
+      ],
+      "medianPairedRatio": 5.3954648013991635
+    },
+    {
+      "workload": "helper/unicode/disabled",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 0.19416990499999656,
+      "baselineRangeUs": [
+        0.16925360000000184,
+        0.45764753999999813
+      ],
+      "candidateMedianUs": 0.23334975500000155,
+      "candidateRangeUs": [
+        0.1571623499999987,
+        0.5724993350000023
+      ],
+      "absoluteMedianDeltaUs": 0.03917985000000499,
+      "pairedRatios": [
+        1.1017654342944208,
+        1.3011630251131057,
+        1.1243917012200715,
+        1.028053523239835
+      ],
+      "medianPairedRatio": 1.1130785677572461
+    },
+    {
+      "workload": "renderer/ascii/40/animated",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 12.203962150000006,
+      "baselineRangeUs": [
+        8.81562300000005,
+        31.58651519999985
+      ],
+      "candidateMedianUs": 13.745798300000024,
+      "candidateRangeUs": [
+        9.058342600000014,
+        35.125139299999866
+      ],
+      "absoluteMedianDeltaUs": 1.5418361500000173,
+      "pairedRatios": [
+        1.3104017775228916,
+        1.0767714641085833,
+        1.0304712631378188,
+        0.8186182820556989
+      ],
+      "medianPairedRatio": 1.053621363623201
+    },
+    {
+      "workload": "renderer/ascii/40/stable",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 7.302819099999988,
+      "baselineRangeUs": [
+        5.6738517000000686,
+        14.85901879999983
+      ],
+      "candidateMedianUs": 8.15891789999996,
+      "candidateRangeUs": [
+        5.633302600000024,
+        12.875131599999985
+      ],
+      "absoluteMedianDeltaUs": 0.8560987999999725,
+      "pairedRatios": [
+        1.0794680752690455,
+        1.4073957142069304,
+        1.1157242433487342,
+        1.0652327758968188
+      ],
+      "medianPairedRatio": 1.0975961593088899
+    },
+    {
+      "workload": "renderer/ascii/40/disabled",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 6.978242350000029,
+      "baselineRangeUs": [
+        5.93140859999985,
+        12.146923199999947
+      ],
+      "candidateMedianUs": 7.712140499999942,
+      "candidateRangeUs": [
+        5.797337599999992,
+        15.798279600000024
+      ],
+      "absoluteMedianDeltaUs": 0.7338981499999127,
+      "pairedRatios": [
+        1.1428296364550121,
+        1.1656466872510183,
+        0.9584041869956887,
+        0.9789853445883139
+      ],
+      "medianPairedRatio": 1.060907490521663
+    },
+    {
+      "workload": "renderer/ascii/100/animated",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 9.828255749999972,
+      "baselineRangeUs": [
+        7.580669399999988,
+        19.75135169999994
+      ],
+      "candidateMedianUs": 11.094027199999891,
+      "candidateRangeUs": [
+        7.543959600000017,
+        22.840077199999996
+      ],
+      "absoluteMedianDeltaUs": 1.2657714499999202,
+      "pairedRatios": [
+        1.167718704185252,
+        1.0880057846271793,
+        1.0596967778159991,
+        0.9696777971970508
+      ],
+      "medianPairedRatio": 1.0738512812215892
+    },
+    {
+      "workload": "renderer/ascii/100/stable",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 6.050656200000049,
+      "baselineRangeUs": [
+        4.713432000000012,
+        7.8189061999999465
+      ],
+      "candidateMedianUs": 6.172346250000009,
+      "candidateRangeUs": [
+        4.4898624000001295,
+        17.7750943
+      ],
+      "absoluteMedianDeltaUs": 0.12169004999996105,
+      "pairedRatios": [
+        1.2125270166872562,
+        0.8635133544769723,
+        1.1007914016555855,
+        1.0009097154878328
+      ],
+      "medianPairedRatio": 1.0508505585717092
+    },
+    {
+      "workload": "renderer/ascii/100/disabled",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 6.2350028000000295,
+      "baselineRangeUs": [
+        4.652068999999938,
+        14.452178699999967
+      ],
+      "candidateMedianUs": 6.589386200000081,
+      "candidateRangeUs": [
+        5.2302298000000516,
+        11.01462419999989
+      ],
+      "absoluteMedianDeltaUs": 0.35438340000005153,
+      "pairedRatios": [
+        1.102769574788952,
+        1.0941245063716882,
+        1.2419805095028376,
+        0.9000848090644459
+      ],
+      "medianPairedRatio": 1.0984470405803202
+    },
+    {
+      "workload": "renderer/unicode/40/animated",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 15.927665750000095,
+      "baselineRangeUs": [
+        11.417221700000027,
+        37.086323100000115
+      ],
+      "candidateMedianUs": 24.6826587999999,
+      "candidateRangeUs": [
+        20.312454699999943,
+        67.89352730000009
+      ],
+      "absoluteMedianDeltaUs": 8.754993049999804,
+      "pairedRatios": [
+        1.5536180135631097,
+        1.8027956313984068,
+        1.3047297320302764,
+        1.794681352742699
+      ],
+      "medianPairedRatio": 1.6741496831529044
+    },
+    {
+      "workload": "renderer/unicode/40/stable",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 10.003012049999962,
+      "baselineRangeUs": [
+        8.450692600000002,
+        23.035384999999952
+      ],
+      "candidateMedianUs": 9.922896500000025,
+      "candidateRangeUs": [
+        8.449191100000098,
+        22.771953099999973
+      ],
+      "absoluteMedianDeltaUs": -0.08011554999993678,
+      "pairedRatios": [
+        1.0127825025975685,
+        0.982120025209151,
+        1.1532027629667934,
+        1.0893649766358797
+      ],
+      "medianPairedRatio": 1.051073739616724
+    },
+    {
+      "workload": "renderer/unicode/40/disabled",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 10.002423650000036,
+      "baselineRangeUs": [
+        8.461912200000006,
+        49.725488300000144
+      ],
+      "candidateMedianUs": 10.30833174999998,
+      "candidateRangeUs": [
+        7.958228099999905,
+        16.67535619999999
+      ],
+      "absoluteMedianDeltaUs": 0.30590809999994234,
+      "pairedRatios": [
+        1.078823522756924,
+        0.9928054622674332,
+        1.0746310890496853,
+        1.0890619371255543
+      ],
+      "medianPairedRatio": 1.0767273059033047
+    },
+    {
+      "workload": "renderer/unicode/100/animated",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 13.655653150000035,
+      "baselineRangeUs": [
+        9.574206100000037,
+        38.11575769999991
+      ],
+      "candidateMedianUs": 21.536175299999922,
+      "candidateRangeUs": [
+        17.936342999999944,
+        45.866740699999994
+      ],
+      "absoluteMedianDeltaUs": 7.880522149999888,
+      "pairedRatios": [
+        1.6337192596568262,
+        1.6557432154454155,
+        1.3595290883519449,
+        1.7305348433158836
+      ],
+      "medianPairedRatio": 1.6447312375511207
+    },
+    {
+      "workload": "renderer/unicode/100/stable",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 8.054979600000024,
+      "baselineRangeUs": [
+        6.497146799999973,
+        29.390051499999984
+      ],
+      "candidateMedianUs": 7.808651349999991,
+      "candidateRangeUs": [
+        6.442671599999994,
+        27.68935179999999
+      ],
+      "absoluteMedianDeltaUs": -0.24632825000003322,
+      "pairedRatios": [
+        1.0264603171918145,
+        1.519777405877263,
+        0.7870650675507773,
+        1.49015401612755
+      ],
+      "medianPairedRatio": 1.2583071666596823
+    },
+    {
+      "workload": "renderer/unicode/100/disabled",
+      "samplesPerArm": 20,
+      "baselineMedianUs": 7.844846099999995,
+      "baselineRangeUs": [
+        6.259419700000035,
+        13.109714300000087
+      ],
+      "candidateMedianUs": 8.449427950000063,
+      "candidateRangeUs": [
+        6.178257999999914,
+        17.68109140000006
+      ],
+      "absoluteMedianDeltaUs": 0.6045818500000678,
+      "pairedRatios": [
+        1.0797764400996597,
+        1.0167591851928042,
+        0.9335705395259022,
+        1.247506451589976
+      ],
+      "medianPairedRatio": 1.048267812646232
+    }
+  ]
+}

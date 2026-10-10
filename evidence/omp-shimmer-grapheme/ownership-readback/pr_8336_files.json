@@ -1,0 +1,57 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "filenames": [
+      "packages/coding-agent/CHANGELOG.md",
+      "packages/coding-agent/src/cli/args.ts",
+      "packages/coding-agent/src/cli/flag-tables.ts",
+      "packages/coding-agent/src/cli/profile-bootstrap.ts",
+      "packages/coding-agent/src/commands/launch-help.ts",
+      "packages/coding-agent/src/main.ts",
+      "packages/coding-agent/src/modes/controllers/event-controller.ts",
+      "packages/coding-agent/src/modes/controllers/mcp-command-controller.ts",
+      "packages/coding-agent/src/modes/interactive-mode.ts",
+      "packages/coding-agent/src/modes/settings.ts",
+      "packages/coding-agent/src/modes/setup.ts",
+      "packages/coding-agent/src/startup-splash.ts",
+      "packages/coding-agent/src/stt/push-to-talk.ts",
+      "packages/coding-agent/src/utils/title-generator.ts",
+      "packages/coding-agent/test/cli-reduce-motion-flag.test.ts",
+      "packages/coding-agent/test/modes/interactive-mode-live-settings.test.ts",
+      "packages/coding-agent/test/reduce-motion-runtime.test.ts",
+      "packages/coding-agent/test/startup-splash.test.ts",
+      "packages/coding-agent/test/title-generator.test.ts",
+      "packages/coding-agent/test/tools/todo.test.ts",
+      "packages/tui/CHANGELOG.md",
+      "packages/tui/src/apps/autoresearch-dashboard.ts",
+      "packages/tui/src/apps/live-visualizer.ts",
+      "packages/tui/src/chat/assistant-message.ts",
+      "packages/tui/src/chat/tool-execution.ts",
+      "packages/tui/src/components/loader.ts",
+      "packages/tui/src/native/reconcile.ts",
+      "packages/tui/src/native/reduce-motion.ts",
+      "packages/tui/src/overlays/mcp-add-wizard.ts",
+      "packages/tui/src/overlays/model-hub.ts",
+      "packages/tui/src/overlays/oauth-selector.ts",
+      "packages/tui/src/prompt/custom-editor.ts",
+      "packages/tui/src/prompt/welcome.ts",
+      "packages/tui/src/reduce-motion.ts",
+      "packages/tui/src/setup/scenes/types.ts",
+      "packages/tui/src/setup/wizard-overlay.ts",
+      "packages/tui/src/setup/wizard.ts",
+      "packages/tui/src/status-line/component.ts",
+      "packages/tui/src/theme/shimmer.ts",
+      "packages/tui/src/theme/theme-class.ts",
+      "packages/tui/src/tui.ts",
+      "packages/tui/test/adaptive-render-backpressure.test.ts",
+      "packages/tui/test/loader.test.ts",
+      "packages/tui/test/native/reduce-motion.test.ts"
+    ]
+  },
+  "isError": false
+}

@@ -1,0 +1,40 @@
+bun test v1.3.14 (0d9b296a)
+
+../shimmer-critic/candidate-independent.test.ts:
+(pass) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside ZWJ profession as the band passes [9.96ms]
+(pass) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside variation selector as the band passes [1.59ms]
+(pass) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside combining mark as the band passes [1.24ms]
+(pass) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside regional-indicator flag as the band passes [1.02ms]
+(pass) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside family ZWJ chain as the band passes [2.60ms]
+(pass) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside skin-tone modifier as the band passes [1.75ms]
+(pass) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside ZWJ profession as the band passes [4.29ms]
+(pass) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside variation selector as the band passes [1.42ms]
+(pass) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside combining mark as the band passes [1.26ms]
+(pass) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside regional-indicator flag as the band passes [1.43ms]
+(pass) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside family ZWJ chain as the band passes [0.92ms]
+(pass) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside skin-tone modifier as the band passes [0.99ms]
+(pass) independent shimmer grapheme boundary contract > chooses the first code point's tier and advances subsequent text by original code-point count [0.14ms]
+(pass) independent shimmer grapheme boundary contract > retains exact ASCII tier placement at the fixed regression frame [0.06ms]
+(pass) independent shimmer grapheme boundary contract > retains separate palettes when adjacent semantic segments split a grapheme [0.07ms]
+(pass) independent shimmer grapheme boundary contract > keeps an all-empty animation empty and preserves disabled empty-segment palette emission [0.11ms]
+(pass) independent shimmer grapheme boundary contract > leaves native/TSP payloads and terminal-clocked descriptors unchanged [0.19ms]
+(pass) independent real wait-renderer contract > renders ZWJ profession input with existing preprocessing and whole-grapheme clipping [3.81ms]
+(pass) independent real wait-renderer contract > renders variation selector input with existing preprocessing and whole-grapheme clipping [1.28ms]
+(pass) independent real wait-renderer contract > renders combining mark input with existing preprocessing and whole-grapheme clipping [1.78ms]
+(pass) independent real wait-renderer contract > renders regional-indicator flag input with existing preprocessing and whole-grapheme clipping [1.60ms]
+(pass) independent real wait-renderer contract > renders family ZWJ chain input with existing preprocessing and whole-grapheme clipping [1.85ms]
+(pass) independent real wait-renderer contract > renders skin-tone modifier input with existing preprocessing and whole-grapheme clipping [0.50ms]
+(pass) independent real wait-renderer contract > preserves ASCII, empty args, disabled animation, and stable rendering controls [2.38ms]
+
+../shimmer-critic/candidate-phase-and-control.test.ts:
+(pass) code-point phase remains stable beyond a full sweep > classic wraps at the original 33-code-point padded period [0.13ms]
+(pass) code-point phase remains stable beyond a full sweep > KITT bounces over the original twelve-code-point range [0.04ms]
+(pass) isolated stable and disabled real-renderer controls > stable: renders Unicode whole and stays byte-identical across time [0.78ms]
+(pass) isolated stable and disabled real-renderer controls > disabled: renders Unicode whole and stays byte-identical across time [0.28ms]
+
+ 28 pass
+ 0 fail
+ 7702 expect() calls
+Ran 28 tests across 2 files. [685.00ms]
+
+EXIT_STATUS=0

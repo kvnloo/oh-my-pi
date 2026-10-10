@@ -1,0 +1,76 @@
+import { afterEach, beforeAll, describe, expect, it, vi } from "bun:test";
+import { getThemeByName } from "../../omp-styled-graphemes/source/packages/tui/src/theme/loader";
+import type { Theme } from "../../omp-styled-graphemes/source/packages/tui/src/theme/theme-class";
+import { setShimmerMode, shimmerSegments, type ShimmerPalette } from "../../omp-styled-graphemes/source/packages/tui/src/theme/shimmer";
+import { createVibeToolRenderer, type VibeToolDetails } from "../../omp-styled-graphemes/source/packages/tui/src/tools/vibe";
+
+// Supplemental expectations fixed before any candidate inspection or run.
+// These explicitly exercise wrap/bounce timing and isolate baseline controls.
+const originalNow = Date.now;
+let theme: Theme;
+const palette: ShimmerPalette = {
+	low: { ansi: "\x1b[31m" }, mid: { ansi: "\x1b[32m" }, high: { ansi: "\x1b[34m" },
+};
+beforeAll(async () => {
+	const loaded = await getThemeByName("dark");
+	if (!loaded) throw new Error("Dark theme unavailable");
+	theme = loaded;
+});
+afterEach(() => {
+	vi.restoreAllMocks();
+	setShimmerMode("classic");
+	expect(Date.now).toBe(originalNow);
+});
+
+describe("code-point phase remains stable beyond a full sweep", () => {
+	it("classic wraps at the original 33-code-point padded period", () => {
+		setShimmerMode("classic");
+		vi.spyOn(Date, "now").mockReturnValue(1400);
+		// 42 cells traveled % 33 = 9. Positions 0..1 high, 2..3 mid, rest low.
+		expect(shimmerSegments([{ text: "read: 👩‍💻tail", palette }], theme)).toBe(
+			"\x1b[34mre\x1b[39m\x1b[32mad\x1b[39m\x1b[31m: 👩‍💻tail\x1b[39m",
+		);
+	});
+	it("KITT bounces over the original twelve-code-point range", () => {
+		setShimmerMode("kitt");
+		vi.spyOn(Date, "now").mockReturnValue(733);
+		// 21.99 cells into a 24-cell cycle: leftward head at 2.01; emoji starts at 6.
+		expect(shimmerSegments([{ text: "read: 👩‍💻tail", palette }], theme)).toBe(
+			"\x1b[31mre\x1b[39m\x1b[34mad\x1b[39m\x1b[32m: 👩‍💻\x1b[39m\x1b[31mtail\x1b[39m",
+		);
+	});
+});
+
+describe("isolated stable and disabled real-renderer controls", () => {
+	for (const variant of ["stable", "disabled"] as const) {
+		it(`${variant}: renders Unicode whole and stays byte-identical across time`, () => {
+			setShimmerMode(variant === "disabled" ? "disabled" : "classic");
+			const clock = vi.spyOn(Date, "now").mockReturnValue(467);
+			for (const cluster of ["👩‍💻", "❤️", "é", "🇺🇳", "👨‍👩‍👧‍👦", "👍🏽"]) {
+				const displayed = cluster.replaceAll("\u200d", " ");
+				const details: VibeToolDetails = {
+					op: "wait", screens: [{
+						id: "Anna", cli: "fast", state: "running", turns: 1, queued: 0,
+						trace: [], outputTail: [], lastActivityAt: 0,
+						currentTool: "read", currentToolArgs: `${cluster}tail`,
+					}],
+					wait: { settled: [], stillRunning: ["Anna"], timedOut: false, waiting: true },
+				};
+				const component = createVibeToolRenderer("wait").renderResult(
+					{ content: [{ type: "text", text: "" }], details },
+					{ expanded: false, isPartial: true, spinnerFrame: variant === "stable" ? undefined : 0 },
+					theme, { sessions: ["Anna"] },
+				);
+				const rail = `${theme.boxRound.vertical} ${theme.tree.hook} `;
+				const width = Bun.stringWidth(rail) + 6 + Bun.stringWidth(displayed) + 2;
+				clock.mockReturnValue(467);
+				const first = component.render(width).find(row => Bun.stripANSI(row).includes("read"));
+				if (first === undefined) throw new Error("Missing tool row");
+				expect(Bun.stripANSI(first)).toBe(`${rail}read: ${displayed}t…`);
+				expect(Bun.stringWidth(Bun.stripANSI(first))).toBe(width);
+				clock.mockReturnValue(967);
+				expect(component.render(width).find(row => Bun.stripANSI(row).includes("read"))).toBe(first);
+			}
+		});
+	}
+});

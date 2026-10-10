@@ -1,0 +1,53 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/tui/test/vibe-render.test.ts:
+(pass) vibe tool renderers > send composer types the message into a mini CLI frame with a blinking cursor while pending [1.87ms]
+(pass) vibe tool renderers > composer cursor re-derives from mutated options on the same component [0.12ms]
+(pass) vibe tool renderers > wait wall spinner re-derives from mutated options on the same component [2.75ms]
+(pass) vibe tool renderers > send result frames the ack under the composer [0.14ms]
+(pass) vibe tool renderers > wait renders stacked TV screens: live trace + streamed text, idle gist, settled footer [0.69ms]
+(pass) vibe tool renderers > clamps every TV line to the render width [0.30ms]
+224 | 				{ sessions: ["Anna"] },
+225 | 			) as { render(width: number): readonly string[] };
+226 | 			const width = Bun.stringWidth(`${uiTheme.boxRound.vertical} ${uiTheme.tree.hook} `) + 10;
+227 | 			const row = renderLines(component, width).find(line => line.includes("read: "));
+228 | 			const expected = `${uiTheme.boxRound.vertical} ${uiTheme.tree.hook} read: ❤️t…`;
+229 | 			expect(row).toBe(expected);
+                     ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: ❤️t…"
+Received: "│ └ read: ❤️ta…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-styled-graphemes/shipping-red-base/packages/tui/test/vibe-render.test.ts:229:16)
+(fail) vibe tool renderers > keeps an animated tool label within the frame when styling crosses an emoji variation selector [1.07ms]
+(pass) vibe tool renderers > reports killed sessions left off the wall as a header count, with or without live screens [1.13ms]
+
+packages/tui/test/shimmer.test.ts:
+(pass) shimmerText > uses a supplied raw ANSI color for the shimmer crest [2.07ms]
+(pass) shimmerText > shimmers a mixed BMP + surrogate-pair message correctly (issue #4353 refactor) [0.06ms]
+(pass) shimmerText > shimmers an all-emoji message without dropping any code point [0.04ms]
+75 | 			expect(Bun.stripANSI(output)).toBe(source);
+76 | 			const boundaries = new Set([...segmenter.segment(source)].map(({ index }) => index));
+77 | 			boundaries.add(source.length);
+78 | 			let escapeUnits = 0;
+79 | 			for (const match of output.matchAll(/\x1b\[[0-9;]*m/g)) {
+80 | 				expect(boundaries.has(match.index - escapeUnits)).toBe(true);
+                                                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-styled-graphemes/shipping-red-base/packages/tui/test/shimmer.test.ts:80:55)
+(fail) shimmerText > keeps generated color boundaries outside whole Unicode graphemes [0.69ms]
+(pass) shimmerSegments frame boundaries > preserves disabled palette boundaries without emitting ANSI for an all-empty frame [0.10ms]
+(pass) shimmerSegments frame boundaries > keeps a one-code-point KITT head bright across time and empty palette segments [0.09ms]
+(pass) shimmerText band fast-path > paints code points outside the band in the muted low tier [0.12ms]
+(pass) shimmerText band fast-path > keeps the crest color when the band sweeps across the string [0.08ms]
+(pass) shimmerText band fast-path > handles a surrogate pair straddling the band boundary atomically [0.08ms]
+
+ 15 pass
+ 2 fail
+ 56 expect() calls
+Ran 17 tests across 2 files. [831.00ms]

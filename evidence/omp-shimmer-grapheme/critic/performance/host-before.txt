@@ -1,0 +1,41 @@
+2026-10-10T17:11:13Z
+Linux b6551eb8ab50 6.18.44 #1 SMP Sat Sep 26 20:02:31 UTC 2026 x86_64 GNU/Linux
+processor	: 0
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 1
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 2
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 3
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 4
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 5
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 6
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 7
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+processor	: 8
+model name	: INTEL(R) XEON(R) PLATINUM 8573C
+cpu MHz		: 2299.998
+Cpus_allowed_list:	0-8
+Mems_allowed_list:	0
+0.71 0.45 0.40 1/516 13
+MemTotal:       10206504 kB
+MemAvailable:    8721384 kB
+SwapTotal:             0 kB
+Per-command affinity: CPU 2
+Cpus_allowed_list:	2
+d3af92b27ca1c63dfec6f7e8ef1206b8056045280806d8d58c50dc97cbf9c227  ../shimmer-critic/benchmark.ts
+4a92f35cc995239c3cbcd3966ef0bbc7102329d4bbedb8626be3734339ea6b96  ../shimmer-critic/baseline-benchmark.ts
+440f77492afb6f3d1a6e8f4273d946431bcbd5c1ef9f76dc30a8e377be2793f2  ../shimmer-critic/candidate-benchmark.ts
+2dc59a0ba4e5b26fdc42d54e5d0f0894f6db1ff322c0957465dbcfcc3be7b91a  ../../omp-styled-graphemes/candidate-final.diff

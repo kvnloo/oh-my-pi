@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "content": "{\"sha\":\"abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"node_id\":\"C_kwDOTW8s4NoAKGFiZjdjNTllNzYwNzhmZTdlYzZlYWQyMDY2OGYxY2JlMmUwN2Q5MGU\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"html_url\":\"https://github.com/kvnloo/oh-my-pi/commit/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"author\":{\"name\":\"Kevin Rajan\",\"email\":\"7121943+kvnloo@users.noreply.github.com\",\"date\":\"2026-10-10T17:21:21Z\"},\"committer\":{\"name\":\"Kevin Rajan\",\"email\":\"7121943+kvnloo@users.noreply.github.com\",\"date\":\"2026-10-10T17:21:21Z\"},\"tree\":{\"sha\":\"176ebfa50792ba6b5ed118f7e52914dd9042d98b\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/trees/176ebfa50792ba6b5ed118f7e52914dd9042d98b\"},\"message\":\"fix(tui): keep shimmer ANSI outside Unicode graphemes\\n\\nAuthored by dot (AI assistant) for downstream review. Keep each segment's palette and the original code-point sweep phase while styling whole Unicode grapheme clusters. Preserve the ASCII fast path and native/disabled behavior.\\n\\nExercise the actual animated wait renderer and stable/disabled controls. Prior shimmer work by can1357 and roboomp, and CPU reports by szavadsky, informed the narrow scope.\\n\\nBaseline: can1357/oh-my-pi 5063baf59ec68ad3f2bff060a3ba44b0547eee15. Unicode animated rendering has a measured cost; upstream contribution remains on hold pending human review.\",\"parents\":[{\"sha\":\"5063baf59ec68ad3f2bff060a3ba44b0547eee15\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/5063baf59ec68ad3f2bff060a3ba44b0547eee15\",\"html_url\":\"https://github.com/kvnloo/oh-my-pi/commit/5063baf59ec68ad3f2bff060a3ba44b0547eee15\"}],\"verification\":{\"verified\":false,\"reason\":\"unsigned\",\"signature\":null,\"payload\":null,\"verified_at\":null}}",
+    "title": "abf7c59e76078fe7ec6ead20668f1cbe2e07d90e",
+    "modified_date": null,
+    "url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e",
+    "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e",
+    "display_title": "abf7c59e76078fe7ec6ead20668f1cbe2e07d90e",
+    "structuredContent": {
+      "title": "abf7c59e76078fe7ec6ead20668f1cbe2e07d90e",
+      "content": "{\"sha\":\"abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"node_id\":\"C_kwDOTW8s4NoAKGFiZjdjNTllNzYwNzhmZTdlYzZlYWQyMDY2OGYxY2JlMmUwN2Q5MGU\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"html_url\":\"https://github.com/kvnloo/oh-my-pi/commit/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"author\":{\"name\":\"Kevin Rajan\",\"email\":\"7121943+kvnloo@users.noreply.github.com\",\"date\":\"2026-10-10T17:21:21Z\"},\"committer\":{\"name\":\"Kevin Rajan\",\"email\":\"7121943+kvnloo@users.noreply.github.com\",\"date\":\"2026-10-10T17:21:21Z\"},\"tree\":{\"sha\":\"176ebfa50792ba6b5ed118f7e52914dd9042d98b\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/trees/176ebfa50792ba6b5ed118f7e52914dd9042d98b\"},\"message\":\"fix(tui): keep shimmer ANSI outside Unicode graphemes\\n\\nAuthored by dot (AI assistant) for downstream review. Keep each segment's palette and the original code-point sweep phase while styling whole Unicode grapheme clusters. Preserve the ASCII fast path and native/disabled behavior.\\n\\nExercise the actual animated wait renderer and stable/disabled controls. Prior shimmer work by can1357 and roboomp, and CPU reports by szavadsky, informed the narrow scope.\\n\\nBaseline: can1357/oh-my-pi 5063baf59ec68ad3f2bff060a3ba44b0547eee15. Unicode animated rendering has a measured cost; upstream contribution remains on hold pending human review.\",\"parents\":[{\"sha\":\"5063baf59ec68ad3f2bff060a3ba44b0547eee15\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/5063baf59ec68ad3f2bff060a3ba44b0547eee15\",\"html_url\":\"https://github.com/kvnloo/oh-my-pi/commit/5063baf59ec68ad3f2bff060a3ba44b0547eee15\"}],\"verification\":{\"verified\":false,\"reason\":\"unsigned\",\"signature\":null,\"payload\":null,\"verified_at\":null}}",
+      "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e"
+    }
+  },
+  "isError": false
+}

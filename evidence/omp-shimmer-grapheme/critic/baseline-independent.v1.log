@@ -1,0 +1,306 @@
+bun test v1.3.14 (0d9b296a)
+
+../shimmer-critic/baseline-independent.test.ts:
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside ZWJ profession as the band passes [1.92ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside variation selector as the band passes [0.21ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside combining mark as the band passes [0.11ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside regional-indicator flag as the band passes [0.14ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside family ZWJ chain as the band passes [0.09ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > classic: never inserts generated SGR inside skin-tone modifier as the band passes [0.15ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside ZWJ profession as the band passes [0.62ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside variation selector as the band passes [0.65ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside combining mark as the band passes [1.05ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside regional-indicator flag as the band passes [0.87ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside family ZWJ chain as the band passes [0.20ms]
+53 | 
+54 | function assertWholeStyledGraphemes(value: string, source: string): void {
+55 | 	expect(plain(value)).toBe(source);
+56 | 	const boundaries = new Set([0, source.length]);
+57 | 	for (const { index } of oracle.segment(source)) boundaries.add(index);
+58 | 	for (const offset of generatedSgrOffsets(value)) expect(boundaries.has(offset)).toBe(true);
+                                                                                      ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at assertWholeStyledGraphemes (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:58:82)
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:117:6)
+(fail) independent shimmer grapheme boundary contract > kitt: never inserts generated SGR inside skin-tone modifier as the band passes [0.27ms]
+125 | 		vi.spyOn(Date, "now").mockReturnValue(467);
+126 | 		// At 467 ms, positions 6/7/8/9 have high/mid/mid/low intensity.
+127 | 		// The emoji covers 6..8, so its whole glyph is high; t at 9 is low.
+128 | 		const output = shimmerSegments([{ text: "read: 👩‍💻tail", palette }], uiTheme);
+129 | 		expect(output).toContain("\x1b[34m");
+130 | 		expect(output).toContain("👩‍💻\x1b[39m\x1b[31mtail");
+                       ^
+error: expect(received).toContain(expected)
+
+Expected to contain: "👩‍💻\u001b[39m\u001b[31mtail"
+Received: "\u001b[32mre\u001b[39m\u001b[34mad: 👩\u001b[39m\u001b[32m‍💻\u001b[39m\u001b[31mtail\u001b[39m"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:130:18)
+(fail) independent shimmer grapheme boundary contract > chooses the first code point's tier and advances subsequent text by original code-point count [0.16ms]
+(pass) independent shimmer grapheme boundary contract > retains exact ASCII tier placement at the fixed regression frame [0.06ms]
+(pass) independent shimmer grapheme boundary contract > retains separate palettes when adjacent semantic segments split a grapheme [0.05ms]
+(pass) independent shimmer grapheme boundary contract > keeps an all-empty animation empty and preserves disabled empty-segment palette emission [0.13ms]
+(pass) independent shimmer grapheme boundary contract > leaves native/TSP payloads and terminal-clocked descriptors unchanged [0.24ms]
+190 | 			for (const width of [6, 7, 8, 9, 10, 11, 12, 100].map(n => n + railWidth)) {
+191 | 				const rows = component.render(width);
+192 | 				const raw = rows.find(row => plain(row).includes("read"));
+193 | 				if (raw === undefined) throw new Error(`Missing current tool row at width ${width}`);
+194 | 				const expected = expectedTruncation(full, width);
+195 | 				expect(plain(raw)).toBe(expected);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: 👩‍💻…"
+Received: "│ └ read: 👩…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:195:24)
+(fail) independent real wait-renderer contract > keeps ZWJ profession whole through animation, framing, and actual width truncation [4.16ms]
+190 | 			for (const width of [6, 7, 8, 9, 10, 11, 12, 100].map(n => n + railWidth)) {
+191 | 				const rows = component.render(width);
+192 | 				const raw = rows.find(row => plain(row).includes("read"));
+193 | 				if (raw === undefined) throw new Error(`Missing current tool row at width ${width}`);
+194 | 				const expected = expectedTruncation(full, width);
+195 | 				expect(plain(raw)).toBe(expected);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: …"
+Received: "│ └ read: ❤️…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:195:24)
+(fail) independent real wait-renderer contract > keeps variation selector whole through animation, framing, and actual width truncation [0.62ms]
+190 | 			for (const width of [6, 7, 8, 9, 10, 11, 12, 100].map(n => n + railWidth)) {
+191 | 				const rows = component.render(width);
+192 | 				const raw = rows.find(row => plain(row).includes("read"));
+193 | 				if (raw === undefined) throw new Error(`Missing current tool row at width ${width}`);
+194 | 				const expected = expectedTruncation(full, width);
+195 | 				expect(plain(raw)).toBe(expected);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: é…"
+Received: "│ └ read: e…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:195:24)
+(fail) independent real wait-renderer contract > keeps combining mark whole through animation, framing, and actual width truncation [0.54ms]
+190 | 			for (const width of [6, 7, 8, 9, 10, 11, 12, 100].map(n => n + railWidth)) {
+191 | 				const rows = component.render(width);
+192 | 				const raw = rows.find(row => plain(row).includes("read"));
+193 | 				if (raw === undefined) throw new Error(`Missing current tool row at width ${width}`);
+194 | 				const expected = expectedTruncation(full, width);
+195 | 				expect(plain(raw)).toBe(expected);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: …"
+Received: "│ └ read: 🇺…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:195:24)
+(fail) independent real wait-renderer contract > keeps regional-indicator flag whole through animation, framing, and actual width truncation [0.67ms]
+190 | 			for (const width of [6, 7, 8, 9, 10, 11, 12, 100].map(n => n + railWidth)) {
+191 | 				const rows = component.render(width);
+192 | 				const raw = rows.find(row => plain(row).includes("read"));
+193 | 				if (raw === undefined) throw new Error(`Missing current tool row at width ${width}`);
+194 | 				const expected = expectedTruncation(full, width);
+195 | 				expect(plain(raw)).toBe(expected);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: 👨‍👩‍👧‍👦…"
+Received: "│ └ read: 👨…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:195:24)
+(fail) independent real wait-renderer contract > keeps family ZWJ chain whole through animation, framing, and actual width truncation [0.65ms]
+190 | 			for (const width of [6, 7, 8, 9, 10, 11, 12, 100].map(n => n + railWidth)) {
+191 | 				const rows = component.render(width);
+192 | 				const raw = rows.find(row => plain(row).includes("read"));
+193 | 				if (raw === undefined) throw new Error(`Missing current tool row at width ${width}`);
+194 | 				const expected = expectedTruncation(full, width);
+195 | 				expect(plain(raw)).toBe(expected);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: 👍🏽…"
+Received: "│ └ read: 👍…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:195:24)
+(fail) independent real wait-renderer contract > keeps skin-tone modifier whole through animation, framing, and actual width truncation [0.82ms]
+211 | 					const full = `${uiTheme.boxRound.vertical} ${uiTheme.tree.hook} read${args ? `: ${args}` : ""}`;
+212 | 					for (const width of [14, 40, 100]) {
+213 | 						clock.mockReturnValue(467);
+214 | 						const first = component.render(width).find(row => plain(row).includes("read"));
+215 | 						if (first === undefined) throw new Error("Missing control row");
+216 | 						expect(plain(first)).toBe(expectedTruncation(full, width));
+                                 ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: 👩‍💻t…"
+Received: "│ └ read: 👩 …"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-independent.test.ts:216:28)
+(fail) independent real wait-renderer contract > preserves ASCII, empty args, disabled animation, and stable rendering controls [4.08ms]
+
+ 4 pass
+ 20 fail
+ 595 expect() calls
+Ran 24 tests across 1 file. [981.00ms]
+
+EXIT_STATUS=1

@@ -1,0 +1,54 @@
+5063baf59ec68ad3f2bff060a3ba44b0547eee15
+976975b1f483b2ee5d842cb986e2eba6b46f8fb4f56bd542dba75ab95f49e693  ../shimmer-critic-base/packages/tui/src/theme/shimmer.ts
+10269a2a3a0f4d4ebb326c90d327724e55a3d19ab5c165cebd85929d62639ee4  ../shimmer-critic-base/packages/tui/src/tools/vibe.ts
+9faed38a85a7094b308e8bc96f8638f4ca40c35a986e1c7aebda38dfe72f2629  ../shimmer-critic-base/packages/tui/src/utils.ts
+dffa5e58169c79778756f345c6530c9f1136cd99a407f5d6d52d744d1b91aec0  ../shimmer-critic/baseline-independent.test.ts
+ec6e2ec5d01400ee17d3d16986884cbdcce6bd661373c90a55bb9a7bcae025fe  ../shimmer-critic/independent.test.ts
+62266f555ff35683556279b48b7dba50d6626a8e744c053b055c88aa575235b2  ../shimmer-critic/phase-and-control.test.ts
+5a1f17d997e5edb5c6bab87750c105ade68e48598d50e17471e633412983c1d8  ../shimmer-critic/baseline-independent.test.ts
+2e12716d28023cf7f19436243d75eff63990f473012dd3105ffe1acb81d6715b  ../shimmer-critic/baseline-phase-and-control.test.ts
+
+--- Native source-equivalence and runtime artifact provenance ---
+1ca13863a82825bdce02908b3db9713e9b084290
+f245c6c5897a76dd51b5806c9cd3c6f2363d7483
+f245c6c5897a76dd51b5806c9cd3c6f2363d7483
+cd5ebcac394aeab1d43f7c1610bbf5b8fa4ec289
+cd5ebcac394aeab1d43f7c1610bbf5b8fa4ec289
+8b62f147475c259441e2b5db1af801fc6e5178e0
+8b62f147475c259441e2b5db1af801fc6e5178e0
+03fb4a8c424c312de3a99441696bc488da70a4689e989e29776606bdedf6991d  packages/natives/native/pi_natives.linux-x64-baseline.node
+d90742efdc5cacadcb146f4214783333a09921013908d6e4d0983575a8fde642  packages/natives/native/pi_natives.linux-x64-modern.node
+PI_NATIVES_VERSION_STAMP:18.8.8
+{
+	"name": "@oh-my-pi/pi-natives-linux-x64",
+	"version": "18.8.8",
+	"author": "Stencil Labs, Inc.",
+	"os": [
+		"linux"
+	],
+	"cpu": [
+		"x64"
+	],
+	"main": "./pi_natives.linux-x64-baseline.node",
+	"files": [
+		"*.node",
+		"README.md",
+		"LICENSE",
+		"THIRD-PARTY-NOTICES.txt"
+	],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/can1357/oh-my-pi.git",
+		"directory": "packages/natives"
+	},
+	"engines": {
+		"bun": ">=1.3.14"
+	}
+}
+
+--- Corrected final v2 harness before candidate inspection ---
+aea93cd821cc6387af5ab6a6d549082fbdc23bc48892bd4ca3317f784d09372c  ../shimmer-critic/independent.test.ts
+62266f555ff35683556279b48b7dba50d6626a8e744c053b055c88aa575235b2  ../shimmer-critic/phase-and-control.test.ts
+b5fcea570d632e510c03a8ebe9ae6d47ef6f20d104660383059d28f185b534d4  ../shimmer-critic/baseline-independent.test.ts
+2e12716d28023cf7f19436243d75eff63990f473012dd3105ffe1acb81d6715b  ../shimmer-critic/baseline-phase-and-control.test.ts

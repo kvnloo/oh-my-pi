@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "content": "{\"ref\":\"refs/heads/fix/omp-shimmer-grapheme-20261010\",\"node_id\":\"REF_kwDOTW8s4NoALHJlZnMvaGVhZHMvZml4L29tcC1zaGltbWVyLWdyYXBoZW1lLTIwMjYxMDEw\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/refs/heads/fix/omp-shimmer-grapheme-20261010\",\"object\":{\"sha\":\"abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"type\":\"commit\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\"}}",
+    "title": "omp-shimmer-grapheme-20261010",
+    "modified_date": null,
+    "url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/ref/heads/fix/omp-shimmer-grapheme-20261010",
+    "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/ref/heads/fix/omp-shimmer-grapheme-20261010",
+    "display_title": "omp-shimmer-grapheme-20261010",
+    "structuredContent": {
+      "title": "omp-shimmer-grapheme-20261010",
+      "content": "{\"ref\":\"refs/heads/fix/omp-shimmer-grapheme-20261010\",\"node_id\":\"REF_kwDOTW8s4NoALHJlZnMvaGVhZHMvZml4L29tcC1zaGltbWVyLWdyYXBoZW1lLTIwMjYxMDEw\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/refs/heads/fix/omp-shimmer-grapheme-20261010\",\"object\":{\"sha\":\"abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\",\"type\":\"commit\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/abf7c59e76078fe7ec6ead20668f1cbe2e07d90e\"}}",
+      "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/ref/heads/fix/omp-shimmer-grapheme-20261010"
+    }
+  },
+  "isError": false
+}

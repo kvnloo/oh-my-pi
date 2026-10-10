@@ -1,0 +1,53 @@
+bun test v1.3.14 (0d9b296a)
+
+../shimmer-critic/baseline-phase-and-control.test.ts:
+(pass) code-point phase remains stable beyond a full sweep > classic wraps at the original 33-code-point padded period [0.56ms]
+33 | 	});
+34 | 	it("KITT bounces over the original twelve-code-point range", () => {
+35 | 		setShimmerMode("kitt");
+36 | 		vi.spyOn(Date, "now").mockReturnValue(733);
+37 | 		// 21.99 cells into a 24-cell cycle: leftward head at 2.01; emoji starts at 6.
+38 | 		expect(shimmerSegments([{ text: "read: 👩‍💻tail", palette }], theme)).toBe(
+                                                                             ^
+error: expect(received).toBe(expected)
+
+Expected: "[31mre[39m[34mad[39m[32m: 👩‍💻[39m[31mtail[39m"
+Received: "[31mre[39m[34mad[39m[32m: 👩[39m[31m‍💻tail[39m"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-phase-and-control.test.ts:38:73)
+(fail) code-point phase remains stable beyond a full sweep > KITT bounces over the original twelve-code-point range [0.31ms]
+63 | 				const rail = `${theme.boxRound.vertical} ${theme.tree.hook} `;
+64 | 				const width = Bun.stringWidth(rail) + 6 + Bun.stringWidth(cluster) + 2;
+65 | 				clock.mockReturnValue(467);
+66 | 				const first = component.render(width).find(row => Bun.stripANSI(row).includes("read"));
+67 | 				if (first === undefined) throw new Error("Missing tool row");
+68 | 				expect(Bun.stripANSI(first)).toBe(`${rail}read: ${cluster}t…`);
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: 👩‍💻t…"
+Received: "│ └ read: 👩 …"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-phase-and-control.test.ts:68:34)
+(fail) isolated stable and disabled real-renderer controls > stable: renders Unicode whole and stays byte-identical across time [2.09ms]
+63 | 				const rail = `${theme.boxRound.vertical} ${theme.tree.hook} `;
+64 | 				const width = Bun.stringWidth(rail) + 6 + Bun.stringWidth(cluster) + 2;
+65 | 				clock.mockReturnValue(467);
+66 | 				const first = component.render(width).find(row => Bun.stripANSI(row).includes("read"));
+67 | 				if (first === undefined) throw new Error("Missing tool row");
+68 | 				expect(Bun.stripANSI(first)).toBe(`${rail}read: ${cluster}t…`);
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: "│ └ read: 👩‍💻t…"
+Received: "│ └ read: 👩 …"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/shimmer-critic/baseline-phase-and-control.test.ts:68:34)
+(fail) isolated stable and disabled real-renderer controls > disabled: renders Unicode whole and stays byte-identical across time [0.34ms]
+
+ 1 pass
+ 3 fail
+ 8 expect() calls
+Ran 4 tests across 1 file. [534.00ms]
+
+EXIT_STATUS=1

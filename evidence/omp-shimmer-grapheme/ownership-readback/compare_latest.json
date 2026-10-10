@@ -1,0 +1,223 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "repository_full_name": "can1357/oh-my-pi",
+    "base": "5063baf59ec68ad3f2bff060a3ba44b0547eee15",
+    "head": "fa5ff4a3a977a28b93d025f4cf50f046e019f18c",
+    "status": "ahead",
+    "ahead_by": 3,
+    "behind_by": 0,
+    "total_commits": 3,
+    "too_large": null,
+    "base_commit": {
+      "sha": "5063baf59ec68ad3f2bff060a3ba44b0547eee15",
+      "url": "https://api.github.com/repos/can1357/oh-my-pi/commits/5063baf59ec68ad3f2bff060a3ba44b0547eee15",
+      "html_url": "https://github.com/can1357/oh-my-pi/commit/5063baf59ec68ad3f2bff060a3ba44b0547eee15"
+    },
+    "merge_base_commit": {
+      "sha": "5063baf59ec68ad3f2bff060a3ba44b0547eee15",
+      "url": "https://api.github.com/repos/can1357/oh-my-pi/commits/5063baf59ec68ad3f2bff060a3ba44b0547eee15",
+      "html_url": "https://github.com/can1357/oh-my-pi/commit/5063baf59ec68ad3f2bff060a3ba44b0547eee15"
+    },
+    "files": [
+      {
+        "filename": ".github/workflows/ci.yml",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "Cargo.lock",
+        "status": "modified",
+        "additions": 12,
+        "deletions": 12,
+        "changes": 24,
+        "previous_filename": null
+      },
+      {
+        "filename": "Cargo.toml",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "MODULE.bazel.lock",
+        "status": "modified",
+        "additions": 1439,
+        "deletions": 1422,
+        "changes": 2861,
+        "previous_filename": null
+      },
+      {
+        "filename": "bun.lock",
+        "status": "modified",
+        "additions": 24,
+        "deletions": 24,
+        "changes": 48,
+        "previous_filename": null
+      },
+      {
+        "filename": "package.json",
+        "status": "modified",
+        "additions": 12,
+        "deletions": 12,
+        "changes": 24,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/agent/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/ai/CHANGELOG.md",
+        "status": "modified",
+        "additions": 2,
+        "deletions": 0,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/ai/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/catalog/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/coding-agent/CHANGELOG.md",
+        "status": "modified",
+        "additions": 2,
+        "deletions": 3,
+        "changes": 5,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/coding-agent/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/mnemopi/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/natives/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/omptype/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/snapcompact/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/stats/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/tui/CHANGELOG.md",
+        "status": "modified",
+        "additions": 3,
+        "deletions": 11,
+        "changes": 14,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/tui/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/utils/CHANGELOG.md",
+        "status": "modified",
+        "additions": 2,
+        "deletions": 0,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/utils/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "packages/wire/package.json",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 1,
+        "changes": 2,
+        "previous_filename": null
+      },
+      {
+        "filename": "scripts/ci-test-ts.test.ts",
+        "status": "removed",
+        "additions": 0,
+        "deletions": 87,
+        "changes": 87,
+        "previous_filename": null
+      },
+      {
+        "filename": "scripts/ci-test-ts.ts",
+        "status": "modified",
+        "additions": 73,
+        "deletions": 60,
+        "changes": 133,
+        "previous_filename": null
+      }
+    ]
+  },
+  "isError": false
+}

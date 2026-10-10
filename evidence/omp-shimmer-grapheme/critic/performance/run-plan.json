@@ -1,0 +1,17 @@
+{
+  "frozenBeforeComparativeTiming": true,
+  "calibration": "calibration-baseline.json, unchanged baseline only",
+  "cpuAffinity": "2",
+  "helperIterations": 200000,
+  "rendererIterations": 10000,
+  "warmupIterationsPerWorkload": 10000,
+  "roundsPerProcess": 5,
+  "armOrder": ["baseline", "candidate", "candidate", "baseline", "baseline", "candidate", "candidate", "baseline"],
+  "pairs": [[1, 2], [4, 3], [5, 6], [8, 7]],
+  "withinProcessOrder": "Forward for even rounds, reversed for odd rounds",
+  "aggregation": "Report per-arm median and min/max across 20 samples per workload. Pair adjacent arm processes, comparing each process median, then report all four paired ratios and their median.",
+  "scope": "Pure shimmer helper and actual wait renderer, not full application frames. Real renderer sanitizes ZWJ to spaces. No throughput or speedup claim inferred from synthetic helper alone.",
+  "runtime": "Official Bun 1.3.14, npm native 18.8.8 source-equivalent to public release; no local native rebuild",
+  "baseline": "5063baf59ec68ad3f2bff060a3ba44b0547eee15",
+  "candidateDiffSha256": "2dc59a0ba4e5b26fdc42d54e5d0f0894f6db1ff322c0957465dbcfcc3be7b91a"
+}
