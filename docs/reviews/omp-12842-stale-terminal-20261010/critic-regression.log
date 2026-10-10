@@ -1,0 +1,54 @@
+test_control_front_eviction_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_control_front_eviction_does_not_replay_old_terminal) ... ok
+test_control_oversized_first_frame_reports_overflow (__main__.ByteHistoryBoundaryTests.test_control_oversized_first_frame_reports_overflow) ... ok
+test_control_small_new_event_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_control_small_new_event_does_not_replay_old_terminal) ... ok
+test_oversized_after_old_terminal_keeps_turn_boundary (__main__.ByteHistoryBoundaryTests.test_oversized_after_old_terminal_keeps_turn_boundary) ... FAIL
+test_oversized_then_new_small_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_oversized_then_new_small_does_not_replay_old_terminal) ... FAIL
+test_second_turn_waiter_never_returns_old_terminal (__main__.ByteHistoryBoundaryTests.test_second_turn_waiter_never_returns_old_terminal) ... FAIL
+
+======================================================================
+FAIL: test_oversized_after_old_terminal_keeps_turn_boundary (__main__.ByteHistoryBoundaryTests.test_oversized_after_old_terminal_keeps_turn_boundary)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "regression_frozen.py", line 61, in test_oversized_after_old_terminal_keeps_turn_boundary
+    self.assertEqual(c._events.snapshot_from(start), ())
+AssertionError: Tuples differ: ({'type': 'agent_end', 'messages': []},) != ()
+
+First tuple contains 1 additional elements.
+First extra element 0:
+{'type': 'agent_end', 'messages': []}
+
+- ({'messages': [], 'type': 'agent_end'},)
++ ()
+
+======================================================================
+FAIL: test_oversized_then_new_small_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_oversized_then_new_small_does_not_replay_old_terminal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "regression_frozen.py", line 73, in test_oversized_then_new_small_does_not_replay_old_terminal
+    self.assertEqual(c._events.snapshot_from(start), (SMALL,))
+AssertionError: Tuples differ: ({'type': 'agent_end', 'messages': []}, {'type': 'event'}) != ({'type': 'event'},)
+
+First differing element 0:
+{'type': 'agent_end', 'messages': []}
+{'type': 'event'}
+
+First tuple contains 1 additional elements.
+First extra element 1:
+{'type': 'event'}
+
+- ({'messages': [], 'type': 'agent_end'}, {'type': 'event'})
++ ({'type': 'event'},)
+
+======================================================================
+FAIL: test_second_turn_waiter_never_returns_old_terminal (__main__.ByteHistoryBoundaryTests.test_second_turn_waiter_never_returns_old_terminal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "regression_frozen.py", line 66, in test_second_turn_waiter_never_returns_old_terminal
+    with self.assertRaises((RpcError, RpcTimeoutError)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (<class 'omp_rpc.client.RpcError'>, <class 'omp_rpc.client.RpcTimeoutError'>) not raised
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.022s
+
+FAILED (failures=3)

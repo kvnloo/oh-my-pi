@@ -1,0 +1,19 @@
+test_byte_budget_never_returns_previous_terminal (__main__.PublicCallerProbe.test_byte_budget_never_returns_previous_terminal) ... STALE PUBLIC RETURN ['agent_end', 'agent_start'] offset 2 index 4
+FAIL
+test_control_unlimited_history_waits_for_new_terminal (__main__.PublicCallerProbe.test_control_unlimited_history_waits_for_new_terminal) ... ok
+
+======================================================================
+FAIL: test_byte_budget_never_returns_previous_terminal (__main__.PublicCallerProbe.test_byte_budget_never_returns_previous_terminal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "critic_caller_probe.py", line 57, in test_byte_budget_never_returns_previous_terminal
+    self.run_two_prompts(60)
+  File "critic_caller_probe.py", line 47, in run_two_prompts
+    with self.assertRaises((RpcError, RpcTimeoutError)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (<class 'omp_rpc.client.RpcError'>, <class 'omp_rpc.client.RpcTimeoutError'>) not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.101s
+
+FAILED (failures=1)

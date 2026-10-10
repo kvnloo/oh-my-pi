@@ -1,0 +1,77 @@
+test_additive_notification_values_do_not_stop_the_reader (tests.test_client.RpcClientTests.test_additive_notification_values_do_not_stop_the_reader) ... ok
+test_all_typed_event_listeners_receive_eventful_prompt (tests.test_client.RpcClientTests.test_all_typed_event_listeners_receive_eventful_prompt) ... ok
+test_broken_startup_frame_is_reported (tests.test_client.RpcClientTests.test_broken_startup_frame_is_reported) ... ok
+test_collect_events_returns_turn_events (tests.test_client.RpcClientTests.test_collect_events_returns_turn_events) ... ok
+test_command_builder_supports_common_rpc_options (tests.test_client.RpcClientTests.test_command_builder_supports_common_rpc_options) ... ok
+test_custom_tools_are_registered_and_executed_via_rpc (tests.test_client.RpcClientTests.test_custom_tools_are_registered_and_executed_via_rpc) ... ok
+test_event_history_drops_single_oversized_frame (tests.test_client.RpcClientTests.test_event_history_drops_single_oversized_frame) ... ok
+test_event_history_evicts_by_bytes (tests.test_client.RpcClientTests.test_event_history_evicts_by_bytes) ... ok
+test_event_history_limit_reports_overflow (tests.test_client.RpcClientTests.test_event_history_limit_reports_overflow) ... ok
+test_extension_and_unknown_notification_listeners (tests.test_client.RpcClientTests.test_extension_and_unknown_notification_listeners) ... ok
+test_extension_ui_round_trip (tests.test_client.RpcClientTests.test_extension_ui_round_trip) ... ok
+test_get_state_and_bash (tests.test_client.RpcClientTests.test_get_state_and_bash) ... ok
+test_headless_ui_keeps_request_queue_drained (tests.test_client.RpcClientTests.test_headless_ui_keeps_request_queue_drained) ... ok
+test_id_less_error_responses_are_correlated (tests.test_client.RpcClientTests.test_id_less_error_responses_are_correlated) ... ok
+test_install_headless_ui_cancels_interactive_requests (tests.test_client.RpcClientTests.test_install_headless_ui_cancels_interactive_requests) ... ok
+test_json_byte_size_tracks_wire_encoding (tests.test_client.RpcClientTests.test_json_byte_size_tracks_wire_encoding) ... ok
+test_listener_exceptions_are_reported_without_stopping_client (tests.test_client.RpcClientTests.test_listener_exceptions_are_reported_without_stopping_client) ... ok
+test_listener_mutation_does_not_change_retained_turn (tests.test_client.RpcClientTests.test_listener_mutation_does_not_change_retained_turn) ... ok
+test_malformed_terminal_agent_end_wakes_waiter (tests.test_client.RpcClientTests.test_malformed_terminal_agent_end_wakes_waiter) ... ok
+test_message_and_control_commands (tests.test_client.RpcClientTests.test_message_and_control_commands) ... ok
+test_model_mode_and_session_commands (tests.test_client.RpcClientTests.test_model_mode_and_session_commands) ... ok
+test_prompt_and_wait_raises_for_late_prompt_failure (tests.test_client.RpcClientTests.test_prompt_and_wait_raises_for_late_prompt_failure) ... ok
+test_prompt_and_wait_reconstructs_compacted_terminal_messages (tests.test_client.RpcClientTests.test_prompt_and_wait_reconstructs_compacted_terminal_messages) ... ok
+test_prompt_and_wait_returns_assistant_text (tests.test_client.RpcClientTests.test_prompt_and_wait_returns_assistant_text) ... ok
+test_prompt_lifecycle_collectors_are_single_flight (tests.test_client.RpcClientTests.test_prompt_lifecycle_collectors_are_single_flight) ... ok
+test_protocol_v2_decoder_accepts_exact_logical_boundary (tests.test_client.RpcClientTests.test_protocol_v2_decoder_accepts_exact_logical_boundary) ... ok
+test_protocol_v2_get_messages_discards_stale_page_walk (tests.test_client.RpcClientTests.test_protocol_v2_get_messages_discards_stale_page_walk) ... ok
+test_protocol_v2_get_messages_falls_back_to_streaming_snapshot (tests.test_client.RpcClientTests.test_protocol_v2_get_messages_falls_back_to_streaming_snapshot) ... ok
+test_protocol_v2_reassembles_chunked_message_pages (tests.test_client.RpcClientTests.test_protocol_v2_reassembles_chunked_message_pages) ... ok
+test_ready_and_typed_event_listeners (tests.test_client.RpcClientTests.test_ready_and_typed_event_listeners) ... ok
+test_set_fast_mode_preserves_provider_tier_state (tests.test_client.RpcClientTests.test_set_fast_mode_preserves_provider_tier_state) ... ok
+test_set_todos_supports_flat_items (tests.test_client.RpcClientTests.test_set_todos_supports_flat_items) ... ok
+test_stderr_history_is_bounded (tests.test_client.RpcClientTests.test_stderr_history_is_bounded) ... ok
+test_stop_releases_event_and_ui_history (tests.test_client.RpcClientTests.test_stop_releases_event_and_ui_history) ... ok
+test_ui_confirmation_and_cancel_round_trip (tests.test_client.RpcClientTests.test_ui_confirmation_and_cancel_round_trip) ... ok
+test_xd_dispatched_custom_tool_events_carry_host_tool_name (tests.test_client.RpcClientTests.test_xd_dispatched_custom_tool_events_carry_host_tool_name)
+Events for an xd:// device dispatch are renamed to the executed host tool. ... ok
+test_stop_during_prompt_unblocks_waiter (tests.test_client.StopUnblocksPromptAndWaitTests.test_stop_during_prompt_unblocks_waiter) ... ok
+test_stop_kills_grandchild_spawned_by_server (tests.test_client.TerminatesProcessGroupTests.test_stop_kills_grandchild_spawned_by_server) ... ok
+test_assistant_text_excludes_thinking_by_default (tests.test_protocol.ProtocolParsingTests.test_assistant_text_excludes_thinking_by_default) ... ok
+test_extension_ui_request_preserves_positional_constructor (tests.test_protocol.ProtocolParsingTests.test_extension_ui_request_preserves_positional_constructor) ... ok
+test_parse_agent_end_notification (tests.test_protocol.ProtocolParsingTests.test_parse_agent_end_notification) ... ok
+test_parse_current_compaction_variants (tests.test_protocol.ProtocolParsingTests.test_parse_current_compaction_variants) ... ok
+test_parse_extension_ui_request (tests.test_protocol.ProtocolParsingTests.test_parse_extension_ui_request) ... ok
+test_parse_extension_ui_request_rejects_invalid_method (tests.test_protocol.ProtocolParsingTests.test_parse_extension_ui_request_rejects_invalid_method) ... ok
+test_parse_message_update_preserves_assistant_event_type (tests.test_protocol.ProtocolParsingTests.test_parse_message_update_preserves_assistant_event_type) ... ok
+test_parse_message_update_rejects_invalid_assistant_done_reason (tests.test_protocol.ProtocolParsingTests.test_parse_message_update_rejects_invalid_assistant_done_reason) ... ok
+test_parse_model_info_rejects_unknown_effort (tests.test_protocol.ProtocolParsingTests.test_parse_model_info_rejects_unknown_effort) ... ok
+test_parse_notification_deep_clones_nested_messages (tests.test_protocol.ProtocolParsingTests.test_parse_notification_deep_clones_nested_messages) ... ok
+test_parse_open_url_request (tests.test_protocol.ProtocolParsingTests.test_parse_open_url_request) ... ok
+test_parse_select_option_details (tests.test_protocol.ProtocolParsingTests.test_parse_select_option_details) ... ok
+test_parse_session_state (tests.test_protocol.ProtocolParsingTests.test_parse_session_state) ... ok
+test_parse_session_state_accepts_blocked_todo (tests.test_protocol.ProtocolParsingTests.test_parse_session_state_accepts_blocked_todo) ... ok
+test_parse_session_state_accepts_system_prompt_array (tests.test_protocol.ProtocolParsingTests.test_parse_session_state_accepts_system_prompt_array) ... ok
+test_parse_session_state_defaults_missing_fast_mode_and_throughput (tests.test_protocol.ProtocolParsingTests.test_parse_session_state_defaults_missing_fast_mode_and_throughput) ... ok
+test_parse_session_state_defaults_system_prompt_to_empty_tuple (tests.test_protocol.ProtocolParsingTests.test_parse_session_state_defaults_system_prompt_to_empty_tuple) ... ok
+test_parse_session_state_rejects_invalid_system_prompt_shape (tests.test_protocol.ProtocolParsingTests.test_parse_session_state_rejects_invalid_system_prompt_shape) ... ok
+test_parse_session_state_rejects_invalid_thinking_level (tests.test_protocol.ProtocolParsingTests.test_parse_session_state_rejects_invalid_thinking_level) ... ok
+test_parse_session_state_rejects_non_string_in_system_prompt_array (tests.test_protocol.ProtocolParsingTests.test_parse_session_state_rejects_non_string_in_system_prompt_array) ... ok
+test_parse_todo_reminder_notification (tests.test_protocol.ProtocolParsingTests.test_parse_todo_reminder_notification) ... ok
+test_host_uri_helper_normalizes_scheme (tests.test_host_uris.HostUriHelperTests.test_host_uri_helper_normalizes_scheme) ... ok
+test_host_uri_writable_when_write_supplied (tests.test_host_uris.HostUriHelperTests.test_host_uri_writable_when_write_supplied) ... ok
+test_normalize_read_result_accepts_full_mapping (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_full_mapping) ... ok
+test_normalize_read_result_accepts_string (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_string) ... ok
+test_normalize_read_result_rejects_invalid_content_type (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_rejects_invalid_content_type) ... ok
+test_normalize_read_result_requires_content (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_requires_content) ... ok
+test_handler_exception_is_surfaced_as_error (tests.test_host_uris.RpcHostUriBridgeTests.test_handler_exception_is_surfaced_as_error) ... ok
+test_read_handler_can_return_structured_result (tests.test_host_uris.RpcHostUriBridgeTests.test_read_handler_can_return_structured_result) ... ok
+test_set_host_uris_registers_schemes_on_start (tests.test_host_uris.RpcHostUriBridgeTests.test_set_host_uris_registers_schemes_on_start) ... ok
+test_unknown_scheme_is_rejected_with_error (tests.test_host_uris.RpcHostUriBridgeTests.test_unknown_scheme_is_rejected_with_error) ... ok
+test_write_handler_receives_content_and_succeeds (tests.test_host_uris.RpcHostUriBridgeTests.test_write_handler_receives_content_and_succeeds) ... ok
+test_write_rejected_for_read_only_scheme (tests.test_host_uris.RpcHostUriBridgeTests.test_write_rejected_for_read_only_scheme) ... ok
+
+----------------------------------------------------------------------
+Ran 71 tests in 2.669s
+
+OK
