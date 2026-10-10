@@ -1,0 +1,46 @@
+{
+  "base": "01e0b5c26e267dff08c305f51d1ab56ec5a2f05d",
+  "implementation_origin": "df9aedccee5d47dd26df33990971811bf1edfdf3",
+  "files": [
+    {
+      "path": "packages/coding-agent/src/eval/runner-cache.ts",
+      "bytes": 4098,
+      "sha256": "fce74606ac30122c326f1b1f2268d6037218a43793a3d77c72a603c6f808a07a"
+    },
+    {
+      "path": "packages/coding-agent/test/runner-cache-restage.test.ts",
+      "bytes": 6883,
+      "sha256": "163ccc44fad36190e01a34869abf0ea98b05c86c58bcb05958dede6fbe210d56"
+    },
+    {
+      "path": "validation/runner-cache-identity/independent-probes.test.ts",
+      "bytes": 6416,
+      "sha256": "77bd616952b3f5f166df1248b7a2fe142d069882ce82d3d56fae08a55e6168c8"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/AUDIT.md",
+      "bytes": 3299,
+      "sha256": "d5b812af94f5578122c23a9e52374df147cf0124784d5103bdf51fa5cb9e3254"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/README.md",
+      "bytes": 4249,
+      "sha256": "885a348ed1d6bd5efdeeaee540d1e6604c2b18c6db0847095a372ccd631f6042"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/audit-logs.json",
+      "bytes": 14850,
+      "sha256": "a4a2858f8f364a211b7971de5f8677a18b0868be2078f6f5e7cae5a0e148e106"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/receipts.json",
+      "bytes": 7401,
+      "sha256": "8f5014ce2e161a5e42e60736ecc4271567d23a8402f1bd09ee618f70de66ff37"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/run-logs.json",
+      "bytes": 22280,
+      "sha256": "2b47da31d09739099fa98954ef21a250c9cb8a97b725a2da46af9a69cd22902f"
+    }
+  ]
+}

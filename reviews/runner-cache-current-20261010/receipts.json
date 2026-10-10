@@ -1,0 +1,171 @@
+{
+  "source-and-runtime.json": {
+    "base": "01e0b5c26e267dff08c305f51d1ab56ec5a2f05d",
+    "source_fix_origin": "df9aedccee5d47dd26df33990971811bf1edfdf3",
+    "runtime": "Bun1.4.2 (744846f84)",
+    "limits": [
+      "Prebuilt native dependency only; no native rebuild or certification",
+      "Missing-addon-link initial collection failures retained",
+      "New-head full-package typecheck pending",
+      "Independent current-head critic pending"
+    ],
+    "arms": {
+      "base": {
+        "head": "01e0b5c26e267dff08c305f51d1ab56ec5a2f05d",
+        "status": " M packages/coding-agent/test/runner-cache-restage.test.ts\n?? validation/\n",
+        "files": {
+          "packages/coding-agent/src/eval/runner-cache.ts": "0027a705f0aaf7969f122cdf3b65702fc2a02347c80b800e67b3faf55df83a16",
+          "packages/coding-agent/src/utils/owner-private-dir.ts": "e51fab1c457c010b3cc50b4e152c1adf47898bb2c2c3b43281feb5f4c9800176",
+          "packages/coding-agent/test/runner-cache-restage.test.ts": "163ccc44fad36190e01a34869abf0ea98b05c86c58bcb05958dede6fbe210d56",
+          "validation/runner-cache-identity/independent-probes.test.ts": "77bd616952b3f5f166df1248b7a2fe142d069882ce82d3d56fae08a55e6168c8",
+          "packages/natives/native/index.js": "e4ee6f849c4e34a648d773c9090a84cfa5f8219c4a1db582532fba0cfc9daccb",
+          "packages/natives/native/loader-state.js": "3de1f2e6b7edbe11b38f678f815ddeab7ca7678c9786c122472c4f29602eb908"
+        },
+        "imports": {
+          "pi-utils": "<workspace>/wave-omp-runner-current-base/packages/utils",
+          "pi-natives": "<workspace>/wave-omp-runner-current-base/packages/natives",
+          "pi-coding-agent": "<workspace>/wave-omp-runner-current-base/packages/coding-agent"
+        }
+      },
+      "fix": {
+        "head": "01e0b5c26e267dff08c305f51d1ab56ec5a2f05d",
+        "status": " M packages/coding-agent/src/eval/runner-cache.ts\n M packages/coding-agent/test/runner-cache-restage.test.ts\n?? validation/\n",
+        "files": {
+          "packages/coding-agent/src/eval/runner-cache.ts": "fce74606ac30122c326f1b1f2268d6037218a43793a3d77c72a603c6f808a07a",
+          "packages/coding-agent/src/utils/owner-private-dir.ts": "e51fab1c457c010b3cc50b4e152c1adf47898bb2c2c3b43281feb5f4c9800176",
+          "packages/coding-agent/test/runner-cache-restage.test.ts": "163ccc44fad36190e01a34869abf0ea98b05c86c58bcb05958dede6fbe210d56",
+          "validation/runner-cache-identity/independent-probes.test.ts": "77bd616952b3f5f166df1248b7a2fe142d069882ce82d3d56fae08a55e6168c8",
+          "packages/natives/native/index.js": "e4ee6f849c4e34a648d773c9090a84cfa5f8219c4a1db582532fba0cfc9daccb",
+          "packages/natives/native/loader-state.js": "3de1f2e6b7edbe11b38f678f815ddeab7ca7678c9786c122472c4f29602eb908"
+        },
+        "imports": {
+          "pi-utils": "<workspace>/wave-omp-runner-current-fix/packages/utils",
+          "pi-natives": "<workspace>/wave-omp-runner-current-fix/packages/natives",
+          "pi-coding-agent": "<workspace>/wave-omp-runner-current-fix/packages/coding-agent"
+        }
+      }
+    },
+    "native": {
+      "path": "<dependency-cache>/node_modules/@oh-my-pi/pi-natives-linux-x64/pi_natives.linux-x64-baseline.node",
+      "bytes": 113535624,
+      "sha256": "fa226e95db498db0b72c4c494a43d13670ffc4f4effdd559668afa4d4c6f7403",
+      "build_commit": "unknown; prebuilt dependency"
+    }
+  },
+  "post-type-source-verification.json": {
+    "time": "2026-10-10T13:04:03.116801+00:00",
+    "source_hashes_unchanged": true,
+    "checked_files": 12,
+    "checks": [
+      [
+        "base",
+        "packages/coding-agent/src/eval/runner-cache.ts",
+        "0027a705f0aaf7969f122cdf3b65702fc2a02347c80b800e67b3faf55df83a16"
+      ],
+      [
+        "base",
+        "packages/coding-agent/src/utils/owner-private-dir.ts",
+        "e51fab1c457c010b3cc50b4e152c1adf47898bb2c2c3b43281feb5f4c9800176"
+      ],
+      [
+        "base",
+        "packages/coding-agent/test/runner-cache-restage.test.ts",
+        "163ccc44fad36190e01a34869abf0ea98b05c86c58bcb05958dede6fbe210d56"
+      ],
+      [
+        "base",
+        "validation/runner-cache-identity/independent-probes.test.ts",
+        "77bd616952b3f5f166df1248b7a2fe142d069882ce82d3d56fae08a55e6168c8"
+      ],
+      [
+        "base",
+        "packages/natives/native/index.js",
+        "e4ee6f849c4e34a648d773c9090a84cfa5f8219c4a1db582532fba0cfc9daccb"
+      ],
+      [
+        "base",
+        "packages/natives/native/loader-state.js",
+        "3de1f2e6b7edbe11b38f678f815ddeab7ca7678c9786c122472c4f29602eb908"
+      ],
+      [
+        "fix",
+        "packages/coding-agent/src/eval/runner-cache.ts",
+        "fce74606ac30122c326f1b1f2268d6037218a43793a3d77c72a603c6f808a07a"
+      ],
+      [
+        "fix",
+        "packages/coding-agent/src/utils/owner-private-dir.ts",
+        "e51fab1c457c010b3cc50b4e152c1adf47898bb2c2c3b43281feb5f4c9800176"
+      ],
+      [
+        "fix",
+        "packages/coding-agent/test/runner-cache-restage.test.ts",
+        "163ccc44fad36190e01a34869abf0ea98b05c86c58bcb05958dede6fbe210d56"
+      ],
+      [
+        "fix",
+        "validation/runner-cache-identity/independent-probes.test.ts",
+        "77bd616952b3f5f166df1248b7a2fe142d069882ce82d3d56fae08a55e6168c8"
+      ],
+      [
+        "fix",
+        "packages/natives/native/index.js",
+        "e4ee6f849c4e34a648d773c9090a84cfa5f8219c4a1db582532fba0cfc9daccb"
+      ],
+      [
+        "fix",
+        "packages/natives/native/loader-state.js",
+        "3de1f2e6b7edbe11b38f678f815ddeab7ca7678c9786c122472c4f29602eb908"
+      ]
+    ],
+    "candidate_diff_check": true,
+    "package_types": {
+      "started_utc": "2026-10-10T13:01:25.643413+00:00",
+      "ended_utc": "2026-10-10T13:02:14.236037+00:00",
+      "command": [
+        "timeout",
+        "-k",
+        "5",
+        "150",
+        "bun",
+        "run",
+        "check:types"
+      ],
+      "env": {
+        "GOMAXPROCS": "2",
+        "GOMEMLIMIT": "2GiB"
+      },
+      "exit_code": 0,
+      "elapsed_seconds": 48.593,
+      "peak_children_rss_kib": 4203956,
+      "user_seconds": 84.371306,
+      "system_seconds": 10.783403,
+      "initial_preexecution_failure": "/usr/bin/time absent; exit127; compiler never started; retained separately"
+    }
+  },
+  "full-types-result.json": {
+    "started_utc": "2026-10-10T13:01:25.643413+00:00",
+    "ended_utc": "2026-10-10T13:02:14.236037+00:00",
+    "command": [
+      "timeout",
+      "-k",
+      "5",
+      "150",
+      "bun",
+      "run",
+      "check:types"
+    ],
+    "env": {
+      "GOMAXPROCS": "2",
+      "GOMEMLIMIT": "2GiB"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 48.593,
+    "peak_children_rss_kib": 4203956,
+    "user_seconds": 84.371306,
+    "system_seconds": 10.783403,
+    "initial_preexecution_failure": "/usr/bin/time absent; exit127; compiler never started; retained separately"
+  },
+  "native-addon.sha256": "fa226e95db498db0b72c4c494a43d13670ffc4f4effdd559668afa4d4c6f7403  <dependency-cache>/node_modules/@oh-my-pi/pi-natives-linux-x64/pi_natives.linux-x64-baseline.node\n",
+  "types-preflight.txt": "2026-10-10T13:01:02Z\n               total        used        free      shared  buff/cache   available\nMem:            9967        3904        1542        2310        7165        6062\nSwap:              0           0           0\nFilesystem      Size  Used Avail Use% Mounted on\noverlay          32G   16G   15G  53% <workspace>\n"
+}
