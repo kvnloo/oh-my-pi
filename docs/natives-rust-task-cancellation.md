@@ -39,7 +39,14 @@ This document describes how `crates/pi-natives` schedules native work and how ca
    - Returns `PromiseRaw<'env, T>`.
    - Records a profiling sample through `profile_region(tag)`.
 
-3. `CancelToken` / `AbortToken` / `AbortReason`
+3. `task::filesystem(env, tag, cancel_token, fs, work)`
+   - Wraps `env.spawn_future_with_callback(...)`; the work closure runs inside `tokio::task::spawn_blocking(...)`.
+   - Runs synchronous filesystem work on Tokio's blocking pool rather than libuv's, so provider callbacks needing libuv workers do not get starved during scans.
+   - Outer cancellation/timeout races the worker via `tokio::select!`, trips an inner `CancellationToken` to release pending provider I/O, and aborts the worker. Settlement respects the explicit abort flag (deadlines alone do not invalidate a completed result).
+   - Returns `PromiseRaw<'env, T>`.
+   - Records a profiling sample through `profile_region(tag)`; worker panics are caught at the same FFI boundary as `blocking`.
+
+4. `CancelToken` / `AbortToken` / `AbortReason`
    - `CancelToken::new(timeout_ms, signal)` wraps the shared `pi_shell::cancel::CancelToken`, adding an optional JS `AbortSignal` bridge. Already-aborted signals set the flag immediately; invalid optional signal values are tolerated rather than rejecting the operation.
    - `CancelToken::heartbeat()` is cooperative cancellation for blocking loops.
    - `CancelToken::wait()` asynchronously waits for signal or timeout.
@@ -47,7 +54,7 @@ This document describes how `crates/pi-natives` schedules native work and how ca
    - `CancelToken::aborted()` provides a non-blocking signal/deadline check. `abort_reason()` checks only the explicit flag, excluding deadlines; `into_core()` transfers the token to `pi-shell`.
    - `AbortToken::abort(reason)` lets external code request abort. Reasons are `Unknown`, `Timeout`, `Signal`, and `User`.
 
-4. `task::blocking_mapped(tag, cancel_token, reject_hook, cancel_hook, work)`
+5. `task::blocking_mapped(tag, cancel_token, reject_hook, cancel_hook, work)`
    - Uses the same libuv execution/profiling and panic guard as `blocking`.
    - Converts typed domain failures into rich JS errors through `reject_hook(env, error)` on the JS thread.
    - Uses `cancel_hook(env, reason)` for explicit cancellation noticed at result settlement. Native VCS exports use this path.
@@ -58,8 +65,8 @@ This document describes how `crates/pi-natives` schedules native work and how ca
 
 Use when work is CPU-heavy or fundamentally synchronous/blocking:
 
-- regex/file scanning (`grep`, `glob`, `fuzzyFind`)
-- ast-grep search/edit worker work
+- regex/file scanning (`fuzzyFind`)
+- in-memory AST matching (`astMatch`)
 - HTML conversion
 - clipboard image read
 
@@ -87,10 +94,11 @@ Behavior:
 
 | JS-facing API                                                 | Rust export                 | Scheduler                                                      | Cancellation hookup                                                                                                                  |
 | ------------------------------------------------------------- | --------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `grep(options, onMatch?)`                                     | `grep`                      | `task::blocking("grep", ct, ...)`                              | `CancelToken::new(options.timeoutMs, options.signal)` + heartbeat checks                                                             |
-| `glob(options, onMatch?)`                                     | `glob`                      | `task::blocking("glob", ct, ...)`                              | `CancelToken::new(...)` + heartbeat checks                                                                                           |
+| `grep(options, onMatch?)`                                     | `grep`                      | `task::filesystem(env, "grep", ct, fs, ...)`                  | `CancelToken::new(options.timeoutMs, options.signal)` + heartbeat checks; outer cancel trips the worker's `CancellationToken`        |
+| `glob(options, onMatch?)`                                     | `glob`                      | `task::filesystem(env, "glob", ct, fs, ...)`                  | `CancelToken::new(...)` + heartbeat checks; outer cancel trips the worker's `CancellationToken`                                       |
 | `fuzzyFind(options)`                                          | `fuzzy_find`                | `task::blocking("fuzzy_find", ct, ...)`                        | `CancelToken::new(...)` + heartbeat checks                                                                                           |
-| `astGrep(options)` / `astMatch(options)` / `astEdit(options)` | ast exports                 | blocking worker path                                           | timeout/signal fields are accepted by options and checked cooperatively in worker loops                                              |
+| `astGrep(options)` / `astEdit(options)`                       | `ast_grep` / `ast_edit`      | `task::filesystem(env, "ast_grep"/"ast_edit", ct, fs, ...)`   | timeout/signal fields are accepted by options and checked cooperatively in worker loops                                              |
+| `astMatch(options)`                                           | `ast_match`                  | `task::blocking("ast_match", ct, ...)`                         | timeout/signal fields are accepted by options and checked cooperatively in worker loops                                              |
 | `listWorkspace(options)`                                      | `list_workspace`            | `task::blocking("listWorkspace", ct, ...)`                     | `CancelToken::new(options.timeoutMs, options.signal)` + heartbeat checks                                                             |
 | `Shell#run(options, onChunk?)`                                | `Shell::run`                | `task::future(env, "shell.run", ...)`                          | JS `CancelToken` is converted into `pi_shell::cancel::CancelToken`; shell races it against command completion and descendant cleanup |
 | `executeShell(options, onChunk?)`                             | `execute_shell`             | `task::future(env, "shell.execute", ...)`                      | same cancellation race and 2s graceful window (5s on Windows)                                                                        |
