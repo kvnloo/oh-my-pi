@@ -12,8 +12,9 @@
  *    repaint the block without re-invoking renderCall/renderResult.
  * 4. Every emitted line respects the render width (sanitized, truncated).
  */
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it, vi } from "bun:test";
 import { getThemeByName, setThemeInstance, type Theme } from "@oh-my-pi/pi-tui/theme";
+import { setShimmerMode } from "@oh-my-pi/pi-tui/theme/shimmer";
 import { createVibeToolRenderer, type VibeToolDetails } from "@oh-my-pi/pi-tui/tools/vibe";
 import type { VibeScreenSnapshot } from "@oh-my-pi/pi-tui/tools/vibe";
 
@@ -203,6 +204,45 @@ describe("vibe tool renderers", () => {
 		const width = 48;
 		for (const line of renderLines(component, width)) {
 			expect(line.length).toBeLessThanOrEqual(width);
+		}
+	});
+
+	it("keeps an animated tool label within the frame when styling crosses an emoji variation selector", () => {
+		const clock = vi.spyOn(Date, "now").mockReturnValue(467);
+		try {
+			setShimmerMode("classic");
+			const renderer = createVibeToolRenderer("wait");
+			const details: VibeToolDetails = {
+				op: "wait",
+				screens: [makeScreen({ currentTool: "read", currentToolArgs: "❤️tail" })],
+				wait: { settled: [], stillRunning: ["Anna"], timedOut: false, waiting: true },
+			};
+			const component = renderer.renderResult(
+				{ content: [{ type: "text", text: "" }], details },
+				{ expanded: false, isPartial: true, spinnerFrame: 0 },
+				uiTheme,
+				{ sessions: ["Anna"] },
+			) as { render(width: number): readonly string[] };
+			const width = Bun.stringWidth(`${uiTheme.boxRound.vertical} ${uiTheme.tree.hook} `) + 10;
+			const row = renderLines(component, width).find(line => line.includes("read: "));
+			const expected = `${uiTheme.boxRound.vertical} ${uiTheme.tree.hook} read: ❤️t…`;
+			expect(row).toBe(expected);
+			expect(Bun.stringWidth(row ?? "")).toBeLessThanOrEqual(width);
+
+			setShimmerMode("disabled");
+			const disabled = renderLines(component, width).find(line => line.includes("read: "));
+			expect(disabled).toBe(expected);
+			setShimmerMode("classic");
+			const stable = renderer.renderResult(
+				{ content: [{ type: "text", text: "" }], details },
+				{ expanded: false, isPartial: true },
+				uiTheme,
+				{ sessions: ["Anna"] },
+			) as { render(width: number): readonly string[] };
+			expect(renderLines(stable, width).find(line => line.includes("read: "))).toBe(expected);
+		} finally {
+			clock.mockRestore();
+			setShimmerMode("classic");
 		}
 	});
 

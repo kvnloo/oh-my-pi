@@ -2,6 +2,7 @@ import type { TspSpan } from "@oh-my-pi/pi-wire";
 import { node } from "../native/describe";
 import type { NativeNode } from "../native/node";
 import { isNativeRendering } from "../native/state";
+import { getSegmenter } from "../utils";
 import type { Theme, ThemeColor } from "./theme";
 import { FG_RESET } from "./color";
 
@@ -188,7 +189,8 @@ export function describeShimmer(segments: readonly ShimmerSegment[], key?: strin
  *   - One `compile()` lookup per segment (Symbol-keyed cache slot, hot path
  *     skipped after first frame).
  *   - One ANSI open/close pair per **run of same-tier chars**, not per char.
- *   - No per-char allocations beyond the run buffer.
+ *   - ASCII uses the allocation-free code-point loop; Unicode segments
+ *     graphemes to keep style boundaries out of multi-code-point glyphs.
  */
 export function shimmerSegments(segments: readonly ShimmerSegment[], theme: ShimmerTheme): string {
 	// A TSP terminal animates shimmer from described nodes; a frame painted
@@ -260,18 +262,28 @@ export function shimmerSegments(segments: readonly ShimmerSegment[], theme: Shim
 	let index = 0;
 	for (const { text, palette } of segments) {
 		const compiled = compile(theme, palette ?? DEFAULT_SHIMMER_PALETTE);
+		// The ASCII path keeps its allocation-free code-point scan. For Unicode,
+		// style whole graphemes so SGR never separates a base from its joiner,
+		// variation selector, combining mark, or emoji modifier.
+		const graphemes = /[^\x00-\x7f]/.test(text) ? getSegmenter().segment(text)[Symbol.iterator]() : undefined;
 		let runTier: Tier | null = null;
 		let runStart = 0;
 		let runEnd = 0;
 		let i = 0;
 		while (i < text.length) {
-			// Detect a surrogate pair so a single code point (e.g. an emoji) stays
-			// atomic; the band position is measured in code points, not UTF-16 units.
-			const c = text.charCodeAt(i);
 			let step = 1;
-			if (c >= 0xd800 && c <= 0xdbff && i + 1 < text.length) {
-				const c2 = text.charCodeAt(i + 1);
-				if (c2 >= 0xdc00 && c2 <= 0xdfff) step = 2;
+			let codePoints = 1;
+			if (graphemes) {
+				const segment = graphemes.next().value!.segment;
+				step = segment.length;
+				if (step > 1) codePoints = countCodePoints(segment);
+			} else {
+				// Keep the original ASCII/surrogate-pair scan and sweep positions.
+				const c = text.charCodeAt(i);
+				if (c >= 0xd800 && c <= 0xdbff && i + 1 < text.length) {
+					const c2 = text.charCodeAt(i + 1);
+					if (c2 >= 0xdc00 && c2 <= 0xdfff) step = 2;
+				}
 			}
 			const tier: Tier =
 				index < bandLo || index > bandHi ? "low" : tierFor(intensityFn(index, position, goingRight));
@@ -284,7 +296,7 @@ export function shimmerSegments(segments: readonly ShimmerSegment[], theme: Shim
 				runStart = i;
 			}
 			runEnd = i + step;
-			index++;
+			index += codePoints;
 			i += step;
 		}
 		if (runTier !== null && runEnd > runStart) {

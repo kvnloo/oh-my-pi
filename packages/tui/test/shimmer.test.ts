@@ -64,6 +64,24 @@ describe("shimmerText", () => {
 		const rendered = shimmerText("🎉🌟✨🚀", testTheme);
 		expect(Bun.stripANSI(rendered)).toBe("🎉🌟✨🚀");
 	});
+
+	it("keeps generated color boundaries outside whole Unicode graphemes", () => {
+		setShimmerMode("classic");
+		vi.spyOn(Date, "now").mockReturnValue(467);
+		const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+		for (const cluster of ["👩‍💻", "❤️", "e\u0301", "🇺🇳", "👨‍👩‍👧‍👦", "👍🏽"]) {
+			const source = `read: ${cluster}tail`;
+			const output = shimmerText(source, testTheme);
+			expect(Bun.stripANSI(output)).toBe(source);
+			const boundaries = new Set([...segmenter.segment(source)].map(({ index }) => index));
+			boundaries.add(source.length);
+			let escapeUnits = 0;
+			for (const match of output.matchAll(/\x1b\[[0-9;]*m/g)) {
+				expect(boundaries.has(match.index - escapeUnits)).toBe(true);
+				escapeUnits += match[0].length;
+			}
+		}
+	});
 });
 
 describe("shimmerSegments frame boundaries", () => {
