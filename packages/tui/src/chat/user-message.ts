@@ -1,4 +1,4 @@
-import { applyBackgroundToLine, padding, visibleWidth } from "../utils";
+import { applyBackgroundToLine, padding, truncateToWidth, visibleWidth } from "../utils";
 import { type Component, Container } from "../tui";
 import { Disclosure } from "../components/disclosure";
 import { Markdown } from "../components/markdown";
@@ -355,7 +355,7 @@ class SyntheticSummary implements Component {
 		width = Math.max(1, width);
 		if (this.#cache?.width === width) return this.#cache.lines;
 		const hint = `${theme.sep.dot.trim()} ${expandKeyHint()}`;
-		const lines = [` ${theme.fg("dim", truncateSummary(`${this.#summary} ${hint}`, Math.max(10, width - 1)))}`];
+		const lines = [` ${theme.fg("dim", truncateToWidth(`${this.#summary} ${hint}`, Math.max(10, width - 1)))}`];
 		this.#cache = { width, lines };
 		return lines;
 	}
@@ -446,20 +446,6 @@ export class CollapsedSyntheticMessageComponent implements Component {
 	render(width: number): readonly string[] {
 		return this.#disclosure.render(width);
 	}
-}
-
-/** Truncate a plain summary label to `maxWidth` display columns, appending `…`. */
-function truncateSummary(text: string, maxWidth: number): string {
-	if (Bun.stringWidth(text, { countAnsiEscapeCodes: false }) <= maxWidth) return text;
-	let out = "";
-	let w = 0;
-	for (const ch of text) {
-		const cw = Bun.stringWidth(ch, { countAnsiEscapeCodes: false });
-		if (w + cw > maxWidth - 1) break;
-		out += ch;
-		w += cw;
-	}
-	return `${out}…`;
 }
 
 /**
