@@ -58,6 +58,9 @@ import type {
 	StatusLineSettings,
 } from "./types";
 
+/** Minimum age of a settled PR lookup before generic activity may refetch it (#15197). */
+const PR_ACTIVITY_REFRESH_MS = 30_000;
+
 /** What a click on a native status segment asks omp to open. */
 export type StatusLineNativeAction = "status.model" | "status.context" | "status.git" | "status.cost" | "status.path";
 
@@ -769,6 +772,7 @@ export class StatusLineComponent<TSession extends StatusLineSession = StatusLine
 	#cachedPr: { number: number; url: string } | null | undefined = undefined;
 	#cachedPrContext: PrCacheContext | undefined = undefined;
 	#prLookupInFlight = false;
+	#prSettledAt = 0;
 	#defaultBranch?: string;
 	#defaultBranchCwd: string | undefined = undefined;
 	#lastTokensPerSecond: number | null = null;
@@ -1434,8 +1438,12 @@ export class StatusLineComponent<TSession extends StatusLineSession = StatusLine
 		// was designed to avoid. Explicit Git/repository invalidation (watcher
 		// HEAD-move, cwd/repo switch) goes through {@link invalidateGitCaches}.
 		// A tool may open, close, or merge a PR without moving HEAD. Expire the
-		// settled PR context on ordinary activity while leaving HEAD work intact.
-		this.#cachedPrContext = undefined;
+		// settled PR context on ordinary activity while leaving HEAD work intact,
+		// but at most once per PR_ACTIVITY_REFRESH_MS: each lookup is a GitHub
+		// GraphQL request, and agent events arrive many times per second.
+		if (Date.now() - this.#prSettledAt >= PR_ACTIVITY_REFRESH_MS) {
+			this.#cachedPrContext = undefined;
+		}
 	}
 	#invalidateSessionCaches(): void {
 		this.#clearUsageStartTimer();
@@ -1824,6 +1832,7 @@ export class StatusLineComponent<TSession extends StatusLineSession = StatusLine
 				if (lookupContext && isSamePrCacheContext(latestContext, lookupContext)) {
 					this.#cachedPr = value;
 					this.#cachedPrContext = lookupContext;
+					this.#prSettledAt = Date.now();
 				}
 			};
 			try {
