@@ -1,0 +1,44 @@
+{
+  "started_at": "2026-10-10T05:14:25.458599+00:00",
+  "finished_at": "2026-10-10T05:15:08.552468+00:00",
+  "command": [
+    "bun",
+    "run",
+    "check:types"
+  ],
+  "script": "tsgo -p tsconfig.json --noEmit",
+  "resource_env": {
+    "GOMAXPROCS": "2",
+    "GOMEMLIMIT": "2GiB"
+  },
+  "timeout_seconds": 240,
+  "initial_available_kib": 5943948,
+  "minimum_available_kib": 1815152,
+  "peak_sampled_process_group_rss_kib": 4188956,
+  "wait4_max_child_rss_kib": 4185312,
+  "elapsed_seconds": 43.05782874400029,
+  "exit_code": 0,
+  "shell_equivalent_exit_code": 0,
+  "stop_reason": null,
+  "source_and_ownership_unchanged": true,
+  "published_identity": "df9aedccee5d47dd26df33990971811bf1edfdf3",
+  "verified_source_tree": "c47e7dfd01e16bfa81aa2e991af408b2726a4a95",
+  "working_directory": "packages/coding-agent",
+  "executed_local_commit": "8ea36482a2f6fdcb46cb512f89b58d4490781a85",
+  "before_after_snapshots_identical": true,
+  "clean_status_before_after": true,
+  "source_hashes": {
+    "bun.lock": "94f45068fb3439a272dfa08331a6f7ec2d3fc4f7f4f3ca54a47a7c540e05a9e2",
+    "packages/coding-agent/src/eval/runner-cache.ts": "fce74606ac30122c326f1b1f2268d6037218a43793a3d77c72a603c6f808a07a",
+    "packages/coding-agent/test/runner-cache-restage.test.ts": "163ccc44fad36190e01a34869abf0ea98b05c86c58bcb05958dede6fbe210d56",
+    "packages/coding-agent/tsconfig.json": "7ecdf5f6d565b73b211fdb7ff63c3fe9af941e2fc4d0f7101eb0757ebb5e4f3d",
+    "packages/tsconfig.workspace.json": "db394417f5299939dfc83aad2d8d58c196f8ed237cbded65bac8e9f0c57ef705"
+  },
+  "limits": [
+    "No aggregate root/full-workspace check",
+    "No full test suite or native/Rust suite",
+    "No Windows or end-to-end CLI execution",
+    "Hosted CI remains unverified"
+  ],
+  "gomemlimit_is_soft_runtime_target": true
+}

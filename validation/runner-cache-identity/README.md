@@ -43,19 +43,21 @@ bun test validation/runner-cache-identity/independent-probes.test.ts
 
 ## Checks and limits
 
-Status: the bounded fix is independently reviewed. The full typecheck is environment/resource-blocked after both exit-137 attempts; **full typecheck / hosted CI HOLD** remains. This is not a merge-ready claim.
+Status: the bounded fix is independently reviewed. The actual **full coding-agent package typecheck passed** on the exact published source tree `c47e7dfd01e16bfa81aa2e991af408b2726a4a95` after memory cleanup. The earlier resource-blocked attempts remain historical evidence. Full-workspace checks, the full test/native suites, and hosted CI remain separate unverified stages; **hosted CI HOLD** remains. This is not a merge-ready claim.
 
 - `git diff --check`: passed.
 - Package lint passed; formatting passed across 3,206 matched files.
 - The first full coding-agent package check was SIGKILLed during typechecking (exit 137); it did not pass. See [initial-package-check.txt](initial-package-check.txt).
 - Focused typechecking of the helper, owner-private dependency, frozen test, and asset declarations passed through the documented package entry with `GOMAXPROCS=2`, `GOMEMLIMIT=512MiB`. This is a focused check, not the full package gate. See [focused-typecheck.txt](focused-typecheck.txt) and [tsconfig.focused.json](tsconfig.focused.json).
-- The final exclusive full-package typecheck was also SIGKILLed (shell exit 137) after 40.55 seconds with `GOMAXPROCS=2` and `GOMEMLIMIT=512MiB`. Peak child RSS was 3,499,956 KiB. The 180-second timeout and 600-MiB host-availability safety guard did not trigger; no type diagnostics preceded the kill. The full package gate remains **not passed**. See [final-full-typecheck.txt](final-full-typecheck.txt) and [resource receipt](final-full-typecheck-resources.txt).
-- No Windows execution, native/Rust rebuild, full-workspace tests, package build, or end-to-end CLI workflow was performed.
+- The second exclusive full-package typecheck attempt was also SIGKILLed (shell exit 137) after 40.55 seconds with `GOMAXPROCS=2` and `GOMEMLIMIT=512MiB`. Peak child RSS was 3,499,956 KiB. The 180-second timeout and 600-MiB host-availability safety guard did not trigger; no type diagnostics preceded the kill. The gate did not pass in that attempt. See [final-full-typecheck.txt](final-full-typecheck.txt) and [resource receipt](final-full-typecheck-resources.txt).
+- A later independent, exclusive full-package run of `GOMAXPROCS=2 GOMEMLIMIT=2GiB bun run check:types` **passed, exit 0**, in 43.06 seconds (05:14:25–05:15:08 UTC). It executed the actual `tsgo -p tsconfig.json --noEmit` package script without a narrowed project or configuration override. The clean local checkout at `8ea36482a2f6fdcb46cb512f89b58d4490781a85` had the same complete tree as published `df9aedccee5d47dd26df33990971811bf1edfdf3`; before/after snapshots, source hashes, and status were unchanged. Peak child RSS was 4,185,312 KiB. `GOMEMLIMIT` is a soft Go runtime target, not a total-RSS ceiling. See [PASS output](full-typecheck-pass.txt) and [sanitized result](full-typecheck-pass-result.json).
+- No Windows execution, native/Rust rebuild or full suite, full-workspace check/tests, package build, hosted CI, or end-to-end CLI workflow was performed. Earlier package lint/format and frozen/independent tests are separate prior executions, not newly rerun by the typecheck verifier.
 
 ```sh
 cd packages/coding-agent
 GOMAXPROCS=2 GOMEMLIMIT=512MiB bun run check:types -- -p ../../validation/runner-cache-identity/tsconfig.focused.json
-# Full package typechecking uses the same entry without the extra -p option.
+# Later independent full-package PASS, after memory cleanup:
+GOMAXPROCS=2 GOMEMLIMIT=2GiB bun run check:types
 ```
 
 This fork branch is a review handoff. No upstream issue, PR, or comment was created for this patch. An upstream contributor PR still requires the contributor's own explanation, human review, and PR-number changelog attribution.
