@@ -239,9 +239,8 @@ Advisor failures do not permanently stall the primary. The host first attempts i
 The advisor also uses `model.toolCallLoopGuard.*` to bound repeated identical tool calls. One detected loop injects a corrective; if the same bound trips again during that review, the review is aborted without treating the stop as a provider failure or starting fallback recovery. The detector resets at the next review/context boundary.
 
 Unsafe Advisor output follows a separate quarantine path rather than that
-three-attempt request-retry policy. Calls to tools not granted to the advisor receive `Tool <name> not found`
-results so the model can correct itself; they do not quarantine a turn.
-Before tool dispatch, the runtime quarantines generated text/advice when an output-only destructive-shell
+ three-attempt request-retry policy. Before tool dispatch, the runtime
+ quarantines generated text/advice when an output-only destructive-shell
 directive is detected, or when at least three output-only hazard classes match
 among destructive shell, instruction override, denial instruction, and
 account-deletion claim. A new instruction override paired with a destructive
