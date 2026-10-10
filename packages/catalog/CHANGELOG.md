@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Removed the unused `routingVariantPlain`, `hasRoutingVariants`, `recoversCanonicalParams`, `responsesHintGroup`, `responsesRouteModels`, `supportsDynamicEffortSiblings`, `effortFamiliesFor`, and `stripEffortLane` exports from `@oh-my-pi/pi-catalog/compat/taxonomy`.
+
 ## [18.8.7] - 2026-10-09
 
 ### Added
