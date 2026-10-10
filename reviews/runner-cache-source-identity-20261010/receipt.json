@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "scope": "Static source identity only; no runtime, native, or type qualification of observed upstream heads",
+  "historical_tested_base": {
+    "commit": "01e0b5c26e267dff08c305f51d1ab56ec5a2f05d",
+    "tree": "4e4549c868c9f06b802448ec51e9af25d412eef7"
+  },
+  "observed_upstream": [
+    {
+      "commit": "d45ba77ee6a5efa389ab1fcde4711276e805c8dd",
+      "tree": "3d5dfe4c0742d0dbd021af93bfd8939224eda082",
+      "observed_at": "2026-10-10T14:22:47.316635+00:00"
+    },
+    {
+      "commit": "0c301e9a8c4e2e132c709982c01d46acfdf88310",
+      "tree": "5ee94de9bba8fce8592c1ab9a3101bfee0217184",
+      "observed_at": "2026-10-10T14:31:00.072272+00:00"
+    }
+  ],
+  "published_repair": {
+    "commit": "aed6e8717b49111c02881f58c628589b66aeb32e",
+    "tree": "12547555ed50107be82cc229193d065edc03fc8e",
+    "parent": "01e0b5c26e267dff08c305f51d1ab56ec5a2f05d",
+    "source_credit": "Kevin Rajan",
+    "implementation_origin": "df9aedccee5d47dd26df33990971811bf1edfdf3"
+  },
+  "selected_objects": {
+    "identical_at": [
+      "01e0b5c26e267dff08c305f51d1ab56ec5a2f05d",
+      "d45ba77ee6a5efa389ab1fcde4711276e805c8dd",
+      "0c301e9a8c4e2e132c709982c01d46acfdf88310"
+    ],
+    "all_identical": true,
+    "entries": [
+      {
+        "path": "packages/coding-agent/src/eval/runner-cache.ts",
+        "type": "blob",
+        "git_object": "425cb40d301bfedb2c5e21ba38f3642663358698"
+      },
+      {
+        "path": "packages/coding-agent/src/utils/owner-private-dir.ts",
+        "type": "blob",
+        "git_object": "929a6107bd7eadab24dc7eb2cd36dbe9c3ad7fb3"
+      },
+      {
+        "path": "packages/coding-agent/src/eval/py/kernel.ts",
+        "type": "blob",
+        "git_object": "a0fb33b24e33fed9ec257322ecfa42577f71d652"
+      },
+      {
+        "path": "packages/coding-agent/src/ida/supervisor.ts",
+        "type": "blob",
+        "git_object": "461e101f89b2b01761649bdada832872f474bc0d"
+      },
+      {
+        "path": "packages/coding-agent/src/tiny/title-client.ts",
+        "type": "blob",
+        "git_object": "304e1171e26c8e2d10b0f0b29df5bbde38eb6e9b"
+      },
+      {
+        "path": "packages/coding-agent/test/runner-cache-restage.test.ts",
+        "type": "blob",
+        "git_object": "d9ce5b6e4bb387c7ec555a98f0a50a65df36cadc"
+      },
+      {
+        "path": "packages/coding-agent/package.json",
+        "type": "blob",
+        "git_object": "0ed8ba84a44a205a889ea6482258c21414439b72"
+      },
+      {
+        "path": "packages/coding-agent/tsconfig.json",
+        "type": "blob",
+        "git_object": "74de4209a7b67a4212323afc16fadea9e1f39f7b"
+      },
+      {
+        "path": "packages/utils",
+        "type": "tree",
+        "git_object": "942c4859003e31e0891416ca80003226e342eeb5"
+      },
+      {
+        "path": "package.json",
+        "type": "blob",
+        "git_object": "086414fec5f5cafd527628295f94a1f1aacdbccc"
+      },
+      {
+        "path": "bun.lock",
+        "type": "blob",
+        "git_object": "f954c188f44892eee35ba57b5f27f614c5b6ed11"
+      },
+      {
+        "path": "tsconfig.json",
+        "type": "blob",
+        "git_object": "fe353ca67c826a16f1d29c987090e254b35953f1"
+      }
+    ]
+  },
+  "runner_helper": {
+    "path": "packages/coding-agent/src/eval/runner-cache.ts",
+    "upstream_at_all_selected_refs": {
+      "git_blob": "425cb40d301bfedb2c5e21ba38f3642663358698",
+      "bytes": 3963,
+      "sha256": "0027a705f0aaf7969f122cdf3b65702fc2a02347c80b800e67b3faf55df83a16"
+    },
+    "published_repair": {
+      "git_blob": "f750e5a3b7736a7e40bdf89ff08ebdb4eceaf18c",
+      "bytes": 4098,
+      "sha256": "fce74606ac30122c326f1b1f2268d6037218a43793a3d77c72a603c6f808a07a"
+    },
+    "implementation_origin_same_blob": true
+  },
+  "previous_to_observed_delta": [
+    {
+      "status": "M",
+      "path": "packages/coding-agent/test/tools/browser-open-lease.test.ts"
+    }
+  ],
+  "published_payload_preserved": [
+    {
+      "path": "packages/coding-agent/src/eval/runner-cache.ts",
+      "git_blob": "f750e5a3b7736a7e40bdf89ff08ebdb4eceaf18c",
+      "bytes": 4098,
+      "sha256": "fce74606ac30122c326f1b1f2268d6037218a43793a3d77c72a603c6f808a07a"
+    },
+    {
+      "path": "packages/coding-agent/test/runner-cache-restage.test.ts",
+      "git_blob": "8a526e26b4326cffb810c25da9cdbbf06457151c",
+      "bytes": 6883,
+      "sha256": "163ccc44fad36190e01a34869abf0ea98b05c86c58bcb05958dede6fbe210d56"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/AUDIT.md",
+      "git_blob": "be9fc395e43e61f7b9648d01ee7be827ed24b0ae",
+      "bytes": 3299,
+      "sha256": "d5b812af94f5578122c23a9e52374df147cf0124784d5103bdf51fa5cb9e3254"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/README.md",
+      "git_blob": "b7e6c9f0d2d68b54a2366a8377096fd94f0a4f1f",
+      "bytes": 4249,
+      "sha256": "885a348ed1d6bd5efdeeaee540d1e6604c2b18c6db0847095a372ccd631f6042"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/audit-logs.json",
+      "git_blob": "3a6873a441bd0c6b9f05b1e30069a5edd430e5e8",
+      "bytes": 14850,
+      "sha256": "a4a2858f8f364a211b7971de5f8677a18b0868be2078f6f5e7cae5a0e148e106"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/manifest.json",
+      "git_blob": "f8f05c719da8a13d257ce23be0e0bf85c67f1795",
+      "bytes": 1635,
+      "sha256": "8d459fdb72f063fdb303f3b1d21ed2ea6dfe2535a0c8c7d82e67c5388d993f8c"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/receipts.json",
+      "git_blob": "bf948b2b42371ba796fe28864fc7930a192ad1e9",
+      "bytes": 7401,
+      "sha256": "8f5014ce2e161a5e42e60736ecc4271567d23a8402f1bd09ee618f70de66ff37"
+    },
+    {
+      "path": "reviews/runner-cache-current-20261010/run-logs.json",
+      "git_blob": "f5459a3905328517a8b99f9848649fb954ed6e1e",
+      "bytes": 22280,
+      "sha256": "2b47da31d09739099fa98954ef21a250c9cb8a97b725a2da46af9a69cd22902f"
+    },
+    {
+      "path": "validation/runner-cache-identity/independent-probes.test.ts",
+      "git_blob": "17176f0735739394323d884415f7c3ca364c3c64",
+      "bytes": 6416,
+      "sha256": "77bd616952b3f5f166df1248b7a2fe142d069882ce82d3d56fae08a55e6168c8"
+    }
+  ],
+  "follow_on_report": {
+    "path": "reviews/runner-cache-source-identity-20261010/README.md",
+    "bytes": 2946,
+    "sha256": "aa06b903a8d7058013df6eb163f153bad1ea1c51fa046dbf0aeb3a4dac5f42d7"
+  },
+  "execution": {
+    "tests": "NOT_RUN",
+    "builds": "NOT_RUN",
+    "native_rebuild": "NOT_RUN",
+    "installations": "NOT_RUN",
+    "typechecks": "NOT_RUN"
+  },
+  "qualification_boundary": "Historical runtime and type results remain scoped to 01e0b5c26e267dff08c305f51d1ab56ec5a2f05d and the published repair on that base; none transfer to d45ba77ee6a5efa389ab1fcde4711276e805c8dd or 0c301e9a8c4e2e132c709982c01d46acfdf88310"
+}
