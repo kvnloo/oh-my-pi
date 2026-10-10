@@ -1,0 +1,178 @@
+{
+  "repository": "can1357/oh-my-pi",
+  "issue": 11109,
+  "originalReporter": "szavadsky",
+  "ownerPR": 11111,
+  "owner": "roboomp",
+  "upstreamURL": "https://github.com/can1357/oh-my-pi/pull/11111",
+  "mainSHA": "46ad32961a96aef21cd35fe615374f4b3675ca58",
+  "ownerHeadSHA": "f2d0c3564a3c463a726e93aaab2c243d8e30d048",
+  "ownerBaseSHA": "2e5311bb6eb824fedca5e84f49c292ca6957acc3",
+  "upstreamStatus": {
+    "state": "open",
+    "merged": false,
+    "mergeable": false,
+    "mergeableState": "dirty"
+  },
+  "changeScope": "Exact owner scalar test body and JsonLexer import transplanted onto current main; replaces current 6s wall-clock assertion and comments, retains existing 30s timeout. No production code changes.",
+  "bunVersion": "1.4.2",
+  "officialRuntimeSHA256": "a83d263767d839e4d2649ca8e35d07159c7afc99afdc96d731ced29e056dda0c",
+  "measurements": {
+    "startUTC": "2026-10-10T01:38:04Z",
+    "endUTC": "2026-10-10T01:38:23Z",
+    "protocol": "fresh-process interleaved, no warmup, loop-only wall time, nearest-rank p95",
+    "totalSamples": 90,
+    "knownWorkersQuiet": true,
+    "sharedHostCaveat": "Known team builds/tests held; unrelated host activity cannot be excluded. Timing describes instrumentation overhead only, not parser speedup or token improvement.",
+    "summary": [
+      {
+        "count": 5000,
+        "mode": "plain",
+        "samples": 15,
+        "medianMs": 64.716679,
+        "p95Ms": 75.535563,
+        "reads": [
+          null
+        ]
+      },
+      {
+        "count": 5000,
+        "mode": "scalar",
+        "samples": 15,
+        "medianMs": 61.11302599999999,
+        "p95Ms": 77.35424599999999,
+        "reads": [
+          210019
+        ]
+      },
+      {
+        "count": 10000,
+        "mode": "plain",
+        "samples": 15,
+        "medianMs": 145.03681699999999,
+        "p95Ms": 183.001839,
+        "reads": [
+          null
+        ]
+      },
+      {
+        "count": 10000,
+        "mode": "scalar",
+        "samples": 15,
+        "medianMs": 152.24983699999999,
+        "p95Ms": 194.498341,
+        "reads": [
+          420019
+        ]
+      },
+      {
+        "count": 20000,
+        "mode": "plain",
+        "samples": 15,
+        "medianMs": 368.726448,
+        "p95Ms": 396.808303,
+        "reads": [
+          null
+        ]
+      },
+      {
+        "count": 20000,
+        "mode": "scalar",
+        "samples": 15,
+        "medianMs": 381.057727,
+        "p95Ms": 462.30436899999995,
+        "reads": [
+          840019
+        ]
+      }
+    ],
+    "sampleArtifactSHA256": "345c244334b68a8c27ede765205aa54c95920b0bed5630417f687dad532d8c08"
+  },
+  "sourceSha256": {
+    "validation/issue-11109/scan-harness.ts": "3dbde34a7ba2e516094c21b70131fa5b5fcdf6f8697c0953daf5aa4d28228c98",
+    "validation/issue-11109/run-samples.py": "ae468a8d55be570e55a0bceb52836caf57a94db5ffa1f5038d15590b25aafd45",
+    "packages/utils/src/incoming-json.ts": "771b2c0e5bfc1d731fac71b3d5732f6f4fb9458fef8fc4b8e9a9e325c08ccf0f",
+    "packages/utils/src/json-lexer.ts": "7c8ead53d734e017745c21ad60ac80e0c3d8190020306d82671fa2e1c27585b3",
+    "packages/utils/src/json-parse.ts": "9f3388c00ee71ac7a0feddbd362fd7ac907ec7e67c28e30e745c38acff78a6bf",
+    "packages/utils/src/async.ts": "59e01c10035f24caa45ea7ec86fe11a48bec74da05bb0b7d5ac9ecad00cef31d",
+    "packages/utils/test/incoming-json.test.ts": "c9953487f8b152f95868859ba1216c83bbc5b946d3a10254fd3fb7cfdb658c90"
+  },
+  "checks": {
+    "mainFocused": "23 pass, 0 fail, 137 assertions",
+    "transplantFocused": "23 pass, 0 fail, 137 assertions",
+    "originalHeadFocused": "23 pass, 0 fail, 137 assertions; exact tracked four-source dependency closure plus owner test",
+    "combinedIncomingAndJsonParse": "46 pass, 0 fail, 191 assertions across 2 files",
+    "packageCheck": "PASS: oxlint, oxfmt all 227 files, tsgo -p tsconfig.json --noEmit; tracked native type declarations, no native compile",
+    "gitDiffCheck": "PASS",
+    "fullWorkspaceNativeSuite": "Not run; outside test-only scope"
+  },
+  "mutationProof": {
+    "description": "array frontier bypass: restart each selection at first element; expected read-bound failure with semantics preserved",
+    "sourceSha256": "771b2c0e5bfc1d731fac71b3d5732f6f4fb9458fef8fc4b8e9a9e325c08ccf0f",
+    "mutantSha256": "9cdafee2d147e7df6e4753b2083ad79303342208176d9de2646a364fc72aed69",
+    "rows": [
+      {
+        "count": 128,
+        "instrument": true,
+        "injectFailure": false,
+        "elapsedMs": 17.183329,
+        "reads": 200467,
+        "readsPerElement": 1566.1484375,
+        "sum": 8128,
+        "sumCorrect": true,
+        "exhausted": true,
+        "readBound": false,
+        "restored": true,
+        "failureObserved": false
+      },
+      {
+        "count": 256,
+        "instrument": true,
+        "injectFailure": false,
+        "elapsedMs": 37.143587,
+        "reads": 794131,
+        "readsPerElement": 3102.07421875,
+        "sum": 32640,
+        "sumCorrect": true,
+        "exhausted": true,
+        "readBound": false,
+        "restored": true,
+        "failureObserved": false
+      },
+      {
+        "count": 512,
+        "instrument": true,
+        "injectFailure": false,
+        "elapsedMs": 93.73702300000001,
+        "reads": 3161107,
+        "readsPerElement": 6174.037109375,
+        "sum": 130816,
+        "sumCorrect": true,
+        "exhausted": true,
+        "readBound": false,
+        "restored": true,
+        "failureObserved": false
+      }
+    ]
+  },
+  "injectedFailureRestoration": {
+    "count": 20,
+    "instrument": true,
+    "injectFailure": true,
+    "elapsedMs": 2.9930449999999995,
+    "reads": 174,
+    "readsPerElement": 8.7,
+    "sum": 6,
+    "sumCorrect": false,
+    "exhausted": false,
+    "readBound": true,
+    "restored": true,
+    "failureObserved": true
+  },
+  "limitations": [
+    "30s timeout remains a wall-clock liveness deadline and can still fail with extreme contention.",
+    "peek instrumentation guards measured lexer work for this fixture; it does not prove all possible regressions are detected.",
+    "Prototype finally restoration is verified on success and failure; concurrent unrelated lexer activity can add reads during the mutation.",
+    "Upstream PR is dirty against current main; downstream transplant is validated, owner branch is not modified."
+  ]
+}
