@@ -172,7 +172,7 @@ throws, it returns `{ strict: false, schema: upgraded }`; callers MUST emit
 `resolveProviderModels` in `packages/catalog/src/model-manager.ts` and
 `readModelCache`/`writeModelCache` in `packages/catalog/src/model-cache.ts`
 cooperate via a `static_fingerprint` column on the `model_cache` SQLite
-table (current cache schema version 13).
+table (current cache schema version).
 
 - `fingerprintStaticModels(staticModels, dynamicModelsAuthoritative)` hashes
   the current static catalog slice (`Bun.hash(JSON.stringify(models))` in
