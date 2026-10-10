@@ -2,7 +2,6 @@
  * OpenAI Codex (ChatGPT OAuth) flow — browser and device-code flows.
  */
 
-import { OPENAI_HEADER_VALUES } from "@oh-my-pi/pi-catalog/wire/codex";
 import * as AIError from "../../error";
 import type { FetchImpl } from "../../types";
 import { isRecord } from "../../utils";
@@ -10,9 +9,7 @@ import type { AfterExchangeHook } from "../hooks/types";
 import type { OAuthController, OAuthCredentials } from "./types";
 
 const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
-const AUTHORIZE_URL = "https://auth.openai.com/oauth/authorize";
 const TOKEN_URL = "https://auth.openai.com/oauth/token";
-const SCOPE = "openid profile email offline_access api.connectors.read api.connectors.invoke";
 const JWT_CLAIM_PATH = "https://api.openai.com/auth";
 const JWT_PROFILE_CLAIM = "https://api.openai.com/profile";
 const TOKEN_REQUEST_TIMEOUT_MS = 15_000;
@@ -126,29 +123,6 @@ export function formatOpenAICodexTokenEndpointError(status: number, bodyText: st
 	} catch {
 		return `${status} ${trimmed}`;
 	}
-}
-/** Builds the Codex browser OAuth URL used by browser login; exported for auth regression tests. */
-export function createOpenAICodexAuthorizationUrl(args: {
-	state: string;
-	redirectUri: string;
-	challenge: string;
-	originator?: string;
-}): string {
-	const originator = args.originator?.trim() || OPENAI_HEADER_VALUES.ORIGINATOR_CODEX;
-	const searchParams = new URLSearchParams({
-		response_type: "code",
-		client_id: CLIENT_ID,
-		redirect_uri: args.redirectUri,
-		scope: SCOPE,
-		code_challenge: args.challenge,
-		code_challenge_method: "S256",
-		state: args.state,
-		id_token_add_organizations: "true",
-		codex_cli_simplified_flow: "true",
-		originator,
-	});
-
-	return `${AUTHORIZE_URL}?${searchParams.toString()}`;
 }
 
 async function exchangeCodeForToken(
