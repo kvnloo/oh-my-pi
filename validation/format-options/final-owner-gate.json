@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-10-10T04:58:08Z",
+  "records": [
+    {
+      "url": "https://api.github.com/repos/kvnloo/oh-my-pi",
+      "error": false,
+      "repository": "kvnloo/oh-my-pi",
+      "private": false,
+      "owner": "kvnloo"
+    },
+    {
+      "url": "https://api.github.com/repos/can1357/oh-my-pi/branches/main",
+      "error": false,
+      "head": "b07a1c146d0d12cfc855a2c65d52f892ef319040"
+    },
+    {
+      "url": "https://api.github.com/search/issues?q=repo%3Acan1357%2Foh-my-pi%20is%3Apr%20is%3Aopen%20%22format-options.ts%22&per_page=100",
+      "error": false,
+      "total": 0,
+      "items": []
+    },
+    {
+      "url": "https://api.github.com/search/issues?q=repo%3Acan1357%2Foh-my-pi%20is%3Apr%20is%3Aopen%20editorconfig&per_page=100",
+      "error": false,
+      "total": 0,
+      "items": []
+    },
+    {
+      "url": "https://api.github.com/search/issues?q=repo%3Acan1357%2Foh-my-pi%20is%3Apr%20is%3Aopen%20lsp%20in%3Atitle%20updated%3A%3E%3D2026-10-10T04%3A41%3A02Z&per_page=100",
+      "error": false,
+      "total": 0,
+      "items": []
+    }
+  ],
+  "verdict": "No relevant owner overlap; verified public downstream kvnloo/oh-my-pi; upstream main unchanged."
+}

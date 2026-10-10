@@ -1,0 +1,184 @@
+{
+  "start": "2026-10-10T04:50:38.520921+00:00",
+  "bun": "/tmp/omp-tools/bun-linux-x64/bun",
+  "bunVersion": "1.4.2",
+  "affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "startLoad": "0.41 0.50 0.55 1/636 7",
+  "cpuMax": null,
+  "replications": [
+    {
+      "mode": "baseline",
+      "replication": 0,
+      "start": "2026-10-10T04:50:38.522432+00:00",
+      "end": "2026-10-10T04:50:44.685025+00:00",
+      "elapsedSeconds": 6.162601177999022,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 262672, \"userSeconds\": 7.112153, \"systemSeconds\": 1.812583}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 0,
+      "start": "2026-10-10T04:50:44.685195+00:00",
+      "end": "2026-10-10T04:50:47.107797+00:00",
+      "elapsedSeconds": 2.4226130679999187,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 292764, \"userSeconds\": 3.052295, \"systemSeconds\": 0.665009}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 1,
+      "start": "2026-10-10T04:50:47.108036+00:00",
+      "end": "2026-10-10T04:50:49.590136+00:00",
+      "elapsedSeconds": 2.4821105289993284,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 283060, \"userSeconds\": 3.032831, \"systemSeconds\": 0.87284}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 1,
+      "start": "2026-10-10T04:50:49.590380+00:00",
+      "end": "2026-10-10T04:50:55.741131+00:00",
+      "elapsedSeconds": 6.1507609719992615,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 249768, \"userSeconds\": 7.614231, \"systemSeconds\": 1.454891}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 2,
+      "start": "2026-10-10T04:50:55.741391+00:00",
+      "end": "2026-10-10T04:51:01.763070+00:00",
+      "elapsedSeconds": 6.021688594002626,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 244452, \"userSeconds\": 7.202697, \"systemSeconds\": 1.701894}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 2,
+      "start": "2026-10-10T04:51:01.763326+00:00",
+      "end": "2026-10-10T04:51:04.520986+00:00",
+      "elapsedSeconds": 2.757671577997826,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 242916, \"userSeconds\": 3.408911, \"systemSeconds\": 0.9652339999999999}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 3,
+      "start": "2026-10-10T04:51:04.521241+00:00",
+      "end": "2026-10-10T04:51:07.554937+00:00",
+      "elapsedSeconds": 3.033706804002577,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 242144, \"userSeconds\": 3.943099, \"systemSeconds\": 1.083468}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 3,
+      "start": "2026-10-10T04:51:07.555197+00:00",
+      "end": "2026-10-10T04:51:13.147854+00:00",
+      "elapsedSeconds": 5.592666632001055,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 246956, \"userSeconds\": 6.733424, \"systemSeconds\": 1.6537410000000001}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 4,
+      "start": "2026-10-10T04:51:13.148116+00:00",
+      "end": "2026-10-10T04:51:18.614922+00:00",
+      "elapsedSeconds": 5.466815820000193,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 286588, \"userSeconds\": 6.805486, \"systemSeconds\": 0.753713}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 4,
+      "start": "2026-10-10T04:51:18.615208+00:00",
+      "end": "2026-10-10T04:51:21.149925+00:00",
+      "elapsedSeconds": 2.5347266499993566,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 268844, \"userSeconds\": 3.140732, \"systemSeconds\": 0.902262}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 5,
+      "start": "2026-10-10T04:51:21.150204+00:00",
+      "end": "2026-10-10T04:51:23.983312+00:00",
+      "elapsedSeconds": 2.833116773999791,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 246132, \"userSeconds\": 3.518728, \"systemSeconds\": 1.100639}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 5,
+      "start": "2026-10-10T04:51:23.983622+00:00",
+      "end": "2026-10-10T04:51:29.840694+00:00",
+      "elapsedSeconds": 5.857081073998415,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 247448, \"userSeconds\": 6.967994, \"systemSeconds\": 1.713877}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 6,
+      "start": "2026-10-10T04:51:29.840981+00:00",
+      "end": "2026-10-10T04:51:36.346915+00:00",
+      "elapsedSeconds": 6.505943904998276,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 245944, \"userSeconds\": 7.904459, \"systemSeconds\": 1.690363}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 6,
+      "start": "2026-10-10T04:51:36.347204+00:00",
+      "end": "2026-10-10T04:51:39.084646+00:00",
+      "elapsedSeconds": 2.7374529799999436,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 238856, \"userSeconds\": 3.618108, \"systemSeconds\": 1.065174}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 7,
+      "start": "2026-10-10T04:51:39.085057+00:00",
+      "end": "2026-10-10T04:51:41.818974+00:00",
+      "elapsedSeconds": 2.733926665998297,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 258000, \"userSeconds\": 3.7012869999999998, \"systemSeconds\": 0.933171}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 7,
+      "start": "2026-10-10T04:51:41.819280+00:00",
+      "end": "2026-10-10T04:51:48.273676+00:00",
+      "elapsedSeconds": 6.454406967000978,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 249388, \"userSeconds\": 8.07684, \"systemSeconds\": 1.7703579999999999}"
+    },
+    {
+      "mode": "baseline",
+      "replication": 8,
+      "start": "2026-10-10T04:51:48.274024+00:00",
+      "end": "2026-10-10T04:51:54.865118+00:00",
+      "elapsedSeconds": 6.591104531999008,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 246584, \"userSeconds\": 8.178141, \"systemSeconds\": 2.049043}"
+    },
+    {
+      "mode": "candidate",
+      "replication": 8,
+      "start": "2026-10-10T04:51:54.865434+00:00",
+      "end": "2026-10-10T04:51:57.756060+00:00",
+      "elapsedSeconds": 2.890639301000192,
+      "exitCode": 0,
+      "resource": "{\"peakRssKiB\": 260380, \"userSeconds\": 3.849644, \"systemSeconds\": 1.020363}"
+    }
+  ],
+  "end": "2026-10-10T04:51:57.756379+00:00",
+  "endLoad": "1.41 0.80 0.66 1/635 579"
+}

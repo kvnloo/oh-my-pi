@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": [
+    "../../packages/coding-agent/src/lsp/format-options.ts",
+    "../../packages/coding-agent/bench/format-options.bench.ts",
+    "../../packages/coding-agent/test/lsp-format-options.test.ts",
+    "../../packages/coding-agent/test/lsp-format-options-overrides.test.ts",
+    "../../packages/utils/test/spacing.test.ts",
+    "../../types/assets/index.d.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "bun"
+    ],
+    "typeRoots": [
+      "../../node_modules/@types"
+    ]
+  }
+}

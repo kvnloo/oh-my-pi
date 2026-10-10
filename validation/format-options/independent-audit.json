@@ -1,0 +1,120 @@
+{
+  "verdict": "PROMOTE for the narrow formatting-options optimization; no whole-agent or token-savings claim",
+  "candidateSha256": "0af08fc0cd0eb6adab9385e7b336772d3a0c0a2b18033f9706ddee84bfb99c3c",
+  "rawProcessRuns": 18,
+  "casesPerRun": 45,
+  "timedBatchOrColdSamples": 7290,
+  "primaryPairedGeomeanSpeedup": 23.280897568702088,
+  "primaryTimeReductionPercent": 95.7046329633598,
+  "regressions": [
+    {
+      "mode": "warm",
+      "id": "complete-space/empty",
+      "deltaMs": 3.07459999999999e-05,
+      "relativePercent": 1.131261843000897
+    },
+    {
+      "mode": "warm",
+      "id": "partial-style/tiny-yaml",
+      "deltaMs": 6.544800000000007e-05,
+      "relativePercent": 2.244013495350683
+    },
+    {
+      "mode": "warm",
+      "id": "invalid/tiny-yaml",
+      "deltaMs": 7.178800000000058e-05,
+      "relativePercent": 2.3540753954720994
+    },
+    {
+      "mode": "warm",
+      "id": "missing/tiny-yaml",
+      "deltaMs": 3.979000000000005e-05,
+      "relativePercent": 1.7534790849474513
+    },
+    {
+      "mode": "warm",
+      "id": "partial-style/tiny-space4",
+      "deltaMs": 5.461300000000023e-05,
+      "relativePercent": 1.8660814169549012
+    },
+    {
+      "mode": "warm",
+      "id": "partial-space/tiny-space4",
+      "deltaMs": 1.5954000000000315e-05,
+      "relativePercent": 0.5395258300443073
+    },
+    {
+      "mode": "warm",
+      "id": "unmatched/tiny-space4",
+      "deltaMs": 2.9234000000000378e-05,
+      "relativePercent": 0.9112334442685555
+    },
+    {
+      "mode": "warm",
+      "id": "partial-width/stress-1m-whitespace",
+      "deltaMs": 0.0029576666666667473,
+      "relativePercent": 0.5298275030214628
+    },
+    {
+      "mode": "cold-metadata",
+      "id": "invalid/tiny-yaml",
+      "deltaMs": 0.0007009999999999933,
+      "relativePercent": 1.5768045527138508
+    },
+    {
+      "mode": "cold-metadata",
+      "id": "missing/source-193k",
+      "deltaMs": 0.0007110000000000172,
+      "relativePercent": 0.19422408706484262
+    }
+  ],
+  "peakProcessRssKiB": {
+    "baseline": {
+      "median": 247448,
+      "min": 244452,
+      "max": 286588,
+      "samples": [
+        262672,
+        249768,
+        244452,
+        246956,
+        286588,
+        247448,
+        245944,
+        249388,
+        246584
+      ]
+    },
+    "candidate": {
+      "median": 258000,
+      "min": 238856,
+      "max": 292764,
+      "samples": [
+        292764,
+        283060,
+        242916,
+        242144,
+        268844,
+        246132,
+        238856,
+        258000,
+        260380
+      ]
+    }
+  },
+  "checks": [
+    "pre/post hashes and every fixture verified",
+    "all 18 processes completed with empty stderr",
+    "all 45 cases per process have 9 samples and consistent medians/p95",
+    "all protected-control and cold gates independently recomputed and passed",
+    "five-case paired geometric mean independently reproduced",
+    "both candidate flatness gates independently passed"
+  ],
+  "limitations": [
+    "Whole-corpus process RSS does not establish transient allocation reduction; candidate median RSS is higher.",
+    "Frozen functional output oracles remained green on baseline and candidate; only performance input-scaling gate is RED/GREEN.",
+    "Warm p95 describes batch means and process p95 describes nine process medians, not user-operation p95.",
+    "Cold metadata paths are fresh; OS caches uncontrolled.",
+    "Full monorepo suite and typecheck not run by independent reviewer."
+  ]
+}

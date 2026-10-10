@@ -1,0 +1,17 @@
+{
+  "flatness": [
+    {
+      "case": "stress-4m-short-lines",
+      "medianMs": 39.832306333333335,
+      "limitMs": 0.06490403,
+      "pass": false
+    },
+    {
+      "case": "stress-4m-single-line",
+      "medianMs": 0.058902,
+      "limitMs": 0.06490403,
+      "pass": true
+    }
+  ],
+  "pass": false
+}

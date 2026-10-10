@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "manualContracts": 21,
+  "manualCalls": 84,
+  "differentialComparisons": 231,
+  "versions": "1.4.2"
+}

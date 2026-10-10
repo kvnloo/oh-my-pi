@@ -1,0 +1,1733 @@
+{
+  "base": "b07a1c146d0d12cfc855a2c65d52f892ef319040",
+  "checkedAt": "2026-10-10T04:41:02Z",
+  "source": "packages/coding-agent/src/lsp/format-options.ts",
+  "tests": "packages/coding-agent/test/lsp-format-options.test.ts",
+  "originalAuthor": {
+    "name": "roboomp",
+    "commit": "2f4ba21a625e3d0351550d7c914cbbaad61afb02",
+    "issue": 2329
+  },
+  "queries": [
+    {
+      "query": "repo:can1357/oh-my-pi is:pr is:open \"format-options.ts\"",
+      "total": 0,
+      "items": []
+    },
+    {
+      "query": "repo:can1357/oh-my-pi is:pr is:open editorconfig",
+      "total": 0,
+      "items": []
+    },
+    {
+      "query": "repo:can1357/oh-my-pi is:pr is:open lsp",
+      "total": 73,
+      "items": [
+        {
+          "number": 11203,
+          "title": "feat(lsp): add Pyrefly as built-in Python LSP server",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11203"
+        },
+        {
+          "number": 11471,
+          "title": "feat(lsp): add ansible-language-server to built-in LSP defaults",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11471"
+        },
+        {
+          "number": 12285,
+          "title": "fix(lsp): roll back failed reference writes",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12285"
+        },
+        {
+          "number": 11245,
+          "title": "fix(lsp): implement dynamic watched-file registrations",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11245"
+        },
+        {
+          "number": 14633,
+          "title": "docs(coding-agent): describe lsp.shared as per-connection servers with warm reuse",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14633"
+        },
+        {
+          "number": 10661,
+          "title": "fix(lsp): bridge Volar 3 tsserver requests",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10661"
+        },
+        {
+          "number": 12142,
+          "title": "fix(lsp): complete diagnostics without repeated push waits",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12142"
+        },
+        {
+          "number": 9969,
+          "title": "fix(lsp): discover nested project roots lazily",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9969"
+        },
+        {
+          "number": 11226,
+          "title": "fix(lsp): bound shutdown when server input stalls",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11226"
+        },
+        {
+          "number": 12711,
+          "title": "test(lsp): lock cross-checkout absolute display for definitions",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12711"
+        },
+        {
+          "number": 8401,
+          "title": "feat(coding-agent): detail LSP rename previews",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8401"
+        },
+        {
+          "number": 10703,
+          "title": "fix(lsp): drop 400ms glob diagnostics batch cap",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10703"
+        },
+        {
+          "number": 10790,
+          "title": "fix(lsp): surface push diagnostics when pull is unsupported",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10790"
+        },
+        {
+          "number": 8017,
+          "title": "feat(coding-agent): add vala lsp definition",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8017"
+        },
+        {
+          "number": 12647,
+          "title": "fix(lsp): identify the target checkout in cross-worktree locations",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12647"
+        },
+        {
+          "number": 9178,
+          "title": "feat(lsp): added dart workspace diagnostics via dart analyze",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9178"
+        },
+        {
+          "number": 10702,
+          "title": "fix(lsp): glob diagnostics wait the per-file budget instead of a 400ms batch cap",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10702"
+        },
+        {
+          "number": 3769,
+          "title": "fix(gitlab-duo): follow up GitLab streaming support",
+          "url": "https://github.com/can1357/oh-my-pi/pull/3769"
+        },
+        {
+          "number": 13122,
+          "title": "Highlight purescript code blocks through the haskell grammar",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13122"
+        },
+        {
+          "number": 8523,
+          "title": "fix(lsp): never reap a client with an in-flight request",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8523"
+        },
+        {
+          "number": 10868,
+          "title": "extensions: add trustedExtensions setting and mutation-target fields",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10868"
+        },
+        {
+          "number": 8400,
+          "title": "feat(coding-agent): filter document symbols by query",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8400"
+        },
+        {
+          "number": 10345,
+          "title": "fix(task): stop classifying agents that declare `hub` as read-only",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10345"
+        },
+        {
+          "number": 14466,
+          "title": "fix(coding-agent): release the broker scope when its socket is deleted",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14466"
+        },
+        {
+          "number": 11241,
+          "title": "docs: clarify SDK runtime and lazy resource reuse",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11241"
+        },
+        {
+          "number": 6627,
+          "title": "feat(rpc): enable ask tool over plain --mode rpc",
+          "url": "https://github.com/can1357/oh-my-pi/pull/6627"
+        },
+        {
+          "number": 13727,
+          "title": "fix(task): restrict MCP for subagents with a declared tools allowlist",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13727"
+        },
+        {
+          "number": 7242,
+          "title": "feat(permissions): add opt-in resource permission guard for tool path access",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7242"
+        },
+        {
+          "number": 10054,
+          "title": "fix(coding-agent): latch parent verify after isolated merge",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10054"
+        },
+        {
+          "number": 11991,
+          "title": "fix(extensibility): legacy shim edit/write speak upstream TypeBox schemas",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11991"
+        },
+        {
+          "number": 7243,
+          "title": "feat(cli): add /perm command and status-line indicator for permission profiles",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7243"
+        },
+        {
+          "number": 11004,
+          "title": "feat(coding-agent): agent definition files as main-session personas",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11004"
+        },
+        {
+          "number": 14322,
+          "title": "fix(coding-agent): deliver the session-agent notice for steered and follow-up mentions",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14322"
+        },
+        {
+          "number": 5251,
+          "title": "feat(coding-agent): prioritize active agents in Agent Hub",
+          "url": "https://github.com/can1357/oh-my-pi/pull/5251"
+        },
+        {
+          "number": 12519,
+          "title": "fix(read): peel read selectors from xd:// device URLs",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12519"
+        },
+        {
+          "number": 12282,
+          "title": "fix(tokenize): ANSI-C dollar-quote strings ignore escaped quote state",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12282"
+        },
+        {
+          "number": 6864,
+          "title": "feat(coding-agent): tools.xdevTopLevelDevices glob allowlist to pin hot devices top-level",
+          "url": "https://github.com/can1357/oh-my-pi/pull/6864"
+        },
+        {
+          "number": 10077,
+          "title": "feat: let local models fit: tools.xdevForceMount + promptProfile: compact",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10077"
+        },
+        {
+          "number": 7293,
+          "title": "feat(i18n): add complete Simplified Chinese UI localization",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7293"
+        },
+        {
+          "number": 8591,
+          "title": "feat(coding-agent): expose live voice activity to extensions",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8591"
+        },
+        {
+          "number": 14504,
+          "title": "perf(ttsr): resume rule scanning from a bounded offset window",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14504"
+        },
+        {
+          "number": 6378,
+          "title": "feat(memory): add native Supermemory backend",
+          "url": "https://github.com/can1357/oh-my-pi/pull/6378"
+        },
+        {
+          "number": 11059,
+          "title": "fix(stt): implement CUDA GPU lease for concurrent local whisper workers",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11059"
+        },
+        {
+          "number": 12121,
+          "title": "fix: repair the omp2 build — 14 compile errors on a clean checkout",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12121"
+        },
+        {
+          "number": 11918,
+          "title": "fix(ai): handle google-antigravity synthetic 429 and avoid prompt fingerprint",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11918"
+        },
+        {
+          "number": 13954,
+          "title": "Session ID available to the agent",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13954"
+        },
+        {
+          "number": 13225,
+          "title": "feat(tui): render message code blocks as framed blocks",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13225"
+        },
+        {
+          "number": 9298,
+          "title": "feat(tui): make startup composer immediately editable",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9298"
+        },
+        {
+          "number": 11964,
+          "title": "feat(tiny): expose generic local inference separately from title policy",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11964"
+        },
+        {
+          "number": 7127,
+          "title": "fix(task): cancel descendants with their parent",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7127"
+        },
+        {
+          "number": 12912,
+          "title": "fix(browser): reject cross-session acquire of a live tab (silent re-drive collision)",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12912"
+        },
+        {
+          "number": 12476,
+          "title": "fix(mcp): quote a stdio server's stderr in connection failures",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12476"
+        },
+        {
+          "number": 9030,
+          "title": "fix(ai): send Cursor workspace paths so Imagine can save images",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9030"
+        },
+        {
+          "number": 10530,
+          "title": "feat(tui): display.layout setting with an opencode-style transcript",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10530"
+        },
+        {
+          "number": 11930,
+          "title": "feat(coding-agent): /sessions manager, workspace checkpoints and rollback",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11930"
+        },
+        {
+          "number": 12592,
+          "title": "feat(coding-agent): add opt-in then_run action fusion",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12592"
+        },
+        {
+          "number": 9958,
+          "title": "refactor(coding-agent): rewrite the ACP tool-call presentation pipeline",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9958"
+        },
+        {
+          "number": 11830,
+          "title": "tui.stateFile - offer the run state as a file, not only in the terminal title",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11830"
+        },
+        {
+          "number": 11885,
+          "title": "fix(coding-agent): preserve todo and output fidelity across harness operations",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11885"
+        },
+        {
+          "number": 9664,
+          "title": "task: expose model decisions on task results",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9664"
+        },
+        {
+          "number": 13192,
+          "title": "feat(tools): place Linux tool workloads in a delegated cgroup",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13192"
+        },
+        {
+          "number": 8338,
+          "title": "fix(task): inherit mounted xdev tools in subagents",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8338"
+        },
+        {
+          "number": 12021,
+          "title": "feat(coding-agent/web-search): add Serply search provider",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12021"
+        },
+        {
+          "number": 11176,
+          "title": "feat(approval): let extensions answer edit/write approvals with revised contents",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11176"
+        },
+        {
+          "number": 9234,
+          "title": "feat(coding-agent): add /reload-settings with live model catalog refresh",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9234"
+        },
+        {
+          "number": 10288,
+          "title": "feat(coding-agent): add in-session refresh tool for skills, rules, settings, and MCP",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10288"
+        },
+        {
+          "number": 7114,
+          "title": "feat(task): cap cumulative child session runtime",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7114"
+        },
+        {
+          "number": 9374,
+          "title": "feat(coding-agent): expand async progress in TUI",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9374"
+        },
+        {
+          "number": 7379,
+          "title": "feat(rpc): give RPC mode a durable per-session ledger",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7379"
+        },
+        {
+          "number": 10289,
+          "title": "feat(coding-agent): add in-session restart tool with SDK lifecycle callbacks",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10289"
+        },
+        {
+          "number": 6401,
+          "title": "feat(i18n,stats): add runtime i18n system and stats dashboard localization",
+          "url": "https://github.com/can1357/oh-my-pi/pull/6401"
+        },
+        {
+          "number": 8286,
+          "title": "feat(cli): load process-local provider key bundles",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8286"
+        },
+        {
+          "number": 10175,
+          "title": "feat(grokbot): add Sand and host-managed chat connectors",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10175"
+        }
+      ]
+    },
+    {
+      "query": "repo:can1357/oh-my-pi is:pr is:open formatting",
+      "total": 180,
+      "items": [
+        {
+          "number": 12287,
+          "title": "fix(benchmark): preserve semantic whitespace in verification",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12287"
+        },
+        {
+          "number": 12081,
+          "title": "feat(github): support operation-specific approval policies",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12081"
+        },
+        {
+          "number": 12541,
+          "title": "feat(advisor): add self-scheduled reassessment check-ins",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12541"
+        },
+        {
+          "number": 6401,
+          "title": "feat(i18n,stats): add runtime i18n system and stats dashboard localization",
+          "url": "https://github.com/can1357/oh-my-pi/pull/6401"
+        },
+        {
+          "number": 14840,
+          "title": "fix(compaction): restored anthropic gateway opt-in",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14840"
+        },
+        {
+          "number": 12082,
+          "title": "feat(coding-agent): add producer-scoped artifact resolution",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12082"
+        },
+        {
+          "number": 12555,
+          "title": "feat(rpc): support caller-supplied Python request IDs",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12555"
+        },
+        {
+          "number": 13001,
+          "title": "feat(coding-agent): add marketplace plugin install scope selector",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13001"
+        },
+        {
+          "number": 10948,
+          "title": "fix(task): expose native job IDs in progress",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10948"
+        },
+        {
+          "number": 10928,
+          "title": "fix(async): expose retained status and agentId",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10928"
+        },
+        {
+          "number": 13880,
+          "title": "fix(coding-agent): stabilize steering and Goal cache prefixes",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13880"
+        },
+        {
+          "number": 12285,
+          "title": "fix(lsp): roll back failed reference writes",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12285"
+        },
+        {
+          "number": 10748,
+          "title": "fix(ai/copilot): support VS Code wire identity and transient 403 transport retry",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10748"
+        },
+        {
+          "number": 14558,
+          "title": "fix(coding-agent): show resolved diagnostic and SSH config paths",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14558"
+        },
+        {
+          "number": 12381,
+          "title": "test(browser): require a live CDP endpoint for Linux Chromium",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12381"
+        },
+        {
+          "number": 10754,
+          "title": "feat(ttsr): support structured AST conditions",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10754"
+        },
+        {
+          "number": 14969,
+          "title": "fix(agent): attributed extension aborts separately from user interrupts",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14969"
+        },
+        {
+          "number": 12818,
+          "title": "fix(natives): keep macOS TUI sessions out of the Dock",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12818"
+        },
+        {
+          "number": 11751,
+          "title": "feat(rpc): add completed child message subscription",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11751"
+        },
+        {
+          "number": 14439,
+          "title": "Coalesce identical advisor notes within a review batch",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14439"
+        },
+        {
+          "number": 7519,
+          "title": "fix(gitlab-duo): harden streaming and compaction handling",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7519"
+        },
+        {
+          "number": 11318,
+          "title": "feat(coding-agent): highlight selected agent row across full width in /agents",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11318"
+        },
+        {
+          "number": 9152,
+          "title": "fix(coding-agent): omit volatile metadata from prompt workspace tree",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9152"
+        },
+        {
+          "number": 12765,
+          "title": "fix(plan): add compaction failure execution control",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12765"
+        },
+        {
+          "number": 14580,
+          "title": "feat(extensions): expose configured thinking selector",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14580"
+        },
+        {
+          "number": 12424,
+          "title": "fix(coding-agent): apply `/extensions` skill toggles to the active session",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12424"
+        },
+        {
+          "number": 12997,
+          "title": "feat(tui): add custom endpoints to provider list",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12997"
+        },
+        {
+          "number": 12957,
+          "title": "fix(retry): honored parsed resets without correlation",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12957"
+        },
+        {
+          "number": 14855,
+          "title": "fix(ai): recovered Responses sessions after credential rotation",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14855"
+        },
+        {
+          "number": 10175,
+          "title": "feat(grokbot): add Sand and host-managed chat connectors",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10175"
+        },
+        {
+          "number": 14991,
+          "title": "feat(coding-agent): exclude selected models without disabling providers",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14991"
+        },
+        {
+          "number": 14440,
+          "title": "fix(ai): preserve GLM-5.2 thinking on Ollama Cloud",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14440"
+        },
+        {
+          "number": 12326,
+          "title": "fix(ai): resolve OpenCode free-tier 403 by aligning client identity and session format (#12306)",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12326"
+        },
+        {
+          "number": 12658,
+          "title": "feat: support self-hosted image models and ComfyUI",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12658"
+        },
+        {
+          "number": 11137,
+          "title": "fix(tui): preserve in-flight tools across turns",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11137"
+        },
+        {
+          "number": 14915,
+          "title": "fix(coding-agent): prevent subagent retry fallback chains from being shadowed by inherited model keys",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14915"
+        },
+        {
+          "number": 10842,
+          "title": "fix(telemetry): isolate OTLP metrics by process",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10842"
+        },
+        {
+          "number": 11324,
+          "title": "fix(ai,catalog): align Cursor wire surface with decompiled CLI",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11324"
+        },
+        {
+          "number": 14302,
+          "title": "feat(live): add Gemini voice and direct execution",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14302"
+        },
+        {
+          "number": 14805,
+          "title": "feat(tui): make usage refresh interval configurable",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14805"
+        },
+        {
+          "number": 12253,
+          "title": "fix(session): anchor exit marker to persisted tail",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12253"
+        },
+        {
+          "number": 9652,
+          "title": "Add /updates shortcut for ephemeral session updates",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9652"
+        },
+        {
+          "number": 14542,
+          "title": "feat(coding-agent): log skipped extension directory errors",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14542"
+        },
+        {
+          "number": 12974,
+          "title": "feat(coding-agent): add toggleable live jobs HUD",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12974"
+        },
+        {
+          "number": 12828,
+          "title": "fix(hub): preserve POSIX PTY environment overrides",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12828"
+        },
+        {
+          "number": 13886,
+          "title": "fix(tui): show consumed percentages in usage panel",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13886"
+        },
+        {
+          "number": 14910,
+          "title": "fix(tui): render content line in user message emergency row and omit prompt marks",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14910"
+        },
+        {
+          "number": 12454,
+          "title": "fix: prune retired CoreWeave models",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12454"
+        },
+        {
+          "number": 12378,
+          "title": "fix(session): relocate custom sessions across filesystems",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12378"
+        },
+        {
+          "number": 11203,
+          "title": "feat(lsp): add Pyrefly as built-in Python LSP server",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11203"
+        },
+        {
+          "number": 8398,
+          "title": "feat(coding-agent): show per-turn cost in assistant usage row",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8398"
+        },
+        {
+          "number": 10099,
+          "title": "feat(cursor): add Auto routing and verified client tool passthrough",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10099"
+        },
+        {
+          "number": 13620,
+          "title": "feat(coding-agent): add multiplexer terminal launch for extensions",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13620"
+        },
+        {
+          "number": 14172,
+          "title": "feat(mcp): added streamable-http transport for the MCP 2026-07-28 revision",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14172"
+        },
+        {
+          "number": 11875,
+          "title": "feat(auth-broker): support importing local Google Antigravity credent…",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11875"
+        },
+        {
+          "number": 14133,
+          "title": "fix(coding-agent): reject unknown slash commands locally",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14133"
+        },
+        {
+          "number": 11478,
+          "title": "fix(config): preserve config.yml comments on model-role writes",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11478"
+        },
+        {
+          "number": 12653,
+          "title": "fix(coding-agent): prevent model picker exits with compatibility plugins",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12653"
+        },
+        {
+          "number": 12037,
+          "title": "fix(local): decode filename components once",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12037"
+        },
+        {
+          "number": 12583,
+          "title": "fix(browser): diagnose a timed-out open and evict a stalled single-flight",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12583"
+        },
+        {
+          "number": 15032,
+          "title": "fix(coding-agent): retry failed turns with continuation shortcuts",
+          "url": "https://github.com/can1357/oh-my-pi/pull/15032"
+        },
+        {
+          "number": 14054,
+          "title": "feat(coding-agent): discover model-backed subagents automatically",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14054"
+        },
+        {
+          "number": 12975,
+          "title": "feat(coding-agent): add scoped fast mode",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12975"
+        },
+        {
+          "number": 12527,
+          "title": "perf(tui): bound linear session tree projection",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12527"
+        },
+        {
+          "number": 13947,
+          "title": "fix(read): preserve full artifact lines within read budgets",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13947"
+        },
+        {
+          "number": 13995,
+          "title": "feat(coding-agent): add auto thinking floor (providers.autoThinkingMinEffort)",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13995"
+        },
+        {
+          "number": 14961,
+          "title": "fix: honor explicit effort for slow completions",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14961"
+        },
+        {
+          "number": 10061,
+          "title": "feat(github): add stacked pull request support",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10061"
+        },
+        {
+          "number": 3892,
+          "title": "Add European inference providers",
+          "url": "https://github.com/can1357/oh-my-pi/pull/3892"
+        },
+        {
+          "number": 12239,
+          "title": "feat(coding-agent): restore primary after successful refusal fallback",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12239"
+        },
+        {
+          "number": 10905,
+          "title": "fix(browser): align worker and cmux capability contracts",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10905"
+        },
+        {
+          "number": 11281,
+          "title": "feat(tools): add indexed canonical tool discovery",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11281"
+        },
+        {
+          "number": 14185,
+          "title": "feat(advisor): make feedback message role configurable",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14185"
+        },
+        {
+          "number": 6402,
+          "title": "feat(coding-agent): add opt-in lossless re-encoding for structured tool results",
+          "url": "https://github.com/can1357/oh-my-pi/pull/6402"
+        },
+        {
+          "number": 6801,
+          "title": "feat: add fast in session commit workflow",
+          "url": "https://github.com/can1357/oh-my-pi/pull/6801"
+        },
+        {
+          "number": 13954,
+          "title": "Session ID available to the agent",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13954"
+        },
+        {
+          "number": 12623,
+          "title": "feat(tui): jump across session tree branches",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12623"
+        },
+        {
+          "number": 8904,
+          "title": "Statusline advisor usage limits and two-line overflow",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8904"
+        },
+        {
+          "number": 7051,
+          "title": "feat(internal-urls): add session archive browsing and session_search tool",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7051"
+        },
+        {
+          "number": 14962,
+          "title": "feat: expose completion routing metadata",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14962"
+        },
+        {
+          "number": 11926,
+          "title": "feat(web-search): expose per-query model selection",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11926"
+        },
+        {
+          "number": 11529,
+          "title": "fix(catalog): preserve metadata during model discovery",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11529"
+        },
+        {
+          "number": 9062,
+          "title": "perf(read): compact directory metadata spacing",
+          "url": "https://github.com/can1357/oh-my-pi/pull/9062"
+        },
+        {
+          "number": 13282,
+          "title": "fix(task): preserve bounded failure details and saved-result links",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13282"
+        },
+        {
+          "number": 15036,
+          "title": "feat(coding-agent): add focused read-only session seance",
+          "url": "https://github.com/can1357/oh-my-pi/pull/15036"
+        },
+        {
+          "number": 14134,
+          "title": "feat(ai): add an explicit Codex flexible-credits fallback rung",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14134"
+        },
+        {
+          "number": 11282,
+          "title": "fix(todos): persist canonical state across lifecycle changes",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11282"
+        },
+        {
+          "number": 8948,
+          "title": "feat(coding-agent): add memory.backend: mnemon CLI backend",
+          "url": "https://github.com/can1357/oh-my-pi/pull/8948"
+        },
+        {
+          "number": 14487,
+          "title": "fix(coding-agent): guard repeated experimental context rollovers",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14487"
+        },
+        {
+          "number": 13655,
+          "title": "feat(computer): list open windows by app when computer.window() misses",
+          "url": "https://github.com/can1357/oh-my-pi/pull/13655"
+        },
+        {
+          "number": 12797,
+          "title": "Fix: Google-Antigravity provider doesn't work.",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12797"
+        },
+        {
+          "number": 11034,
+          "title": "perf(shell): coalesce concurrent snapshot initialization",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11034"
+        },
+        {
+          "number": 11663,
+          "title": "feat(coding-agent): add file and conversation rewind with redo",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11663"
+        },
+        {
+          "number": 12461,
+          "title": "fix(tui): cache unchanged SIXEL image renders",
+          "url": "https://github.com/can1357/oh-my-pi/pull/12461"
+        },
+        {
+          "number": 10514,
+          "title": "feat(tui): add thinking-orb voice indicators",
+          "url": "https://github.com/can1357/oh-my-pi/pull/10514"
+        },
+        {
+          "number": 11964,
+          "title": "feat(tiny): expose generic local inference separately from title policy",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11964"
+        },
+        {
+          "number": 7439,
+          "title": "feat(rpc): expose complete headless control surface",
+          "url": "https://github.com/can1357/oh-my-pi/pull/7439"
+        },
+        {
+          "number": 14925,
+          "title": "fix(coding-agent): preserve incremental yield section shapes",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14925"
+        },
+        {
+          "number": 11036,
+          "title": "feat(eval): trace nested session tool execution",
+          "url": "https://github.com/can1357/oh-my-pi/pull/11036"
+        },
+        {
+          "number": 14468,
+          "title": "feat(session): own idle maintenance (UI-over-RPC phase 3)",
+          "url": "https://github.com/can1357/oh-my-pi/pull/14468"
+        }
+      ]
+    }
+  ],
+  "prs": [
+    {
+      "n": 11203,
+      "title": "feat(lsp): add Pyrefly as built-in Python LSP server",
+      "url": "https://github.com/can1357/oh-my-pi/pull/11203",
+      "files": [
+        {
+          "path": "docs/lsp-config.md",
+          "status": "modified",
+          "sha": "932bc0428efc9492ac13b0deb48912719a0c0ac0"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "9f41d053daec2fa529fdbb1e8ddfc26296fef473"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/config.ts",
+          "status": "modified",
+          "sha": "3171afe1e6f7ce132b4f9de2a4c3df6e257c734e"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/defaults.json",
+          "status": "modified",
+          "sha": "c2fdb89f6ed7e6fa41842701167e5a82aa4451d7"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "f2044e6ff969239ee879d042c628e71a9eac881f"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 11471,
+      "title": "feat(lsp): add ansible-language-server to built-in LSP defaults",
+      "url": "https://github.com/can1357/oh-my-pi/pull/11471",
+      "files": [
+        {
+          "path": "docs/lsp-config.md",
+          "status": "modified",
+          "sha": "5cba60a8619b3bc3bec0fd64a3cdbf08933b3a91"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "02cdebf022296fd15f371c1eb74c15e5db410bde"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/config.ts",
+          "status": "modified",
+          "sha": "5341c71548d111bc47d7687130ab1f02fb926d91"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/defaults.json",
+          "status": "modified",
+          "sha": "8cd758ee9d7ff082e97e93e2106a9ea2ab35072e"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/servers.ts",
+          "status": "modified",
+          "sha": "f8beeeed3e1c0ea3947523cb1b21bdefe9e0ff76"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/tool.ts",
+          "status": "modified",
+          "sha": "a84a78cbfbe17ba570ead8410f4bc6b5d25cfe60"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/writethrough.ts",
+          "status": "modified",
+          "sha": "727de2f18ccb8cfec8892c179686d8513b03016c"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "ebeec5d115eb332fa5185cc641b3874c037bd294"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 12285,
+      "title": "fix(lsp): roll back failed reference writes",
+      "url": "https://github.com/can1357/oh-my-pi/pull/12285",
+      "files": [
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "2dc6b29fff829b5b7e6b203884051fa6773666af"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/edits.ts",
+          "status": "modified",
+          "sha": "1621384e29d2afd17c7d6c879652538d2c7c5080"
+        },
+        {
+          "path": "packages/coding-agent/test/lsp/edits.test.ts",
+          "status": "modified",
+          "sha": "251055c32acd34aeec093b2f284d07bb2a1d44f2"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 11245,
+      "title": "fix(lsp): implement dynamic watched-file registrations",
+      "url": "https://github.com/can1357/oh-my-pi/pull/11245",
+      "files": [
+        {
+          "path": "bun.lock",
+          "status": "modified",
+          "sha": "bce9e6ec683c272af6bcc0b29a40c4fd8aac1842"
+        },
+        {
+          "path": "docs/lsp-config.md",
+          "status": "modified",
+          "sha": "609c2103798b82827820e3d14ee0b6ffd45ac955"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "05e53c61638717364f8823a6f329be3f2da46991"
+        },
+        {
+          "path": "packages/coding-agent/package.json",
+          "status": "modified",
+          "sha": "2060863633f98bff1425a0cf33fd3df3e6baf03d"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/client.ts",
+          "status": "modified",
+          "sha": "426408847aa5205a0b07bed72ef3c100c481cf4d"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/mux/server.ts",
+          "status": "modified",
+          "sha": "17085c24c572094aae9f6cf2457633ea04e992be"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/watched-files.ts",
+          "status": "added",
+          "sha": "d1b01e8344a61d26148a8dc07a2abbb3d7a804a5"
+        },
+        {
+          "path": "packages/coding-agent/test/fixtures/fake-lsp-server.ts",
+          "status": "modified",
+          "sha": "76677a6fd989b5f323d8df880a92b4ce5d608469"
+        },
+        {
+          "path": "packages/coding-agent/test/lsp-mux.test.ts",
+          "status": "modified",
+          "sha": "5eba6fd47116998e9141ab07fc5a6c396ce5ddfc"
+        },
+        {
+          "path": "packages/coding-agent/test/lsp/watched-files.test.ts",
+          "status": "added",
+          "sha": "5e517f8812c742b560ef3763031596d965c75962"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "5828e9162bf7056b96d30dc946b020b3507f6455"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 14633,
+      "title": "docs(coding-agent): describe lsp.shared as per-connection servers with warm reuse",
+      "url": "https://github.com/can1357/oh-my-pi/pull/14633",
+      "files": [
+        {
+          "path": "docs/settings.md",
+          "status": "modified",
+          "sha": "3ab2decc4406064747def30e586cf5178291d4cc"
+        },
+        {
+          "path": "docs/tools/lsp.md",
+          "status": "modified",
+          "sha": "66f82f8e854a1e239c5cef4a0f2a4e83d85bb2ba"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "96aade4c97671f05581238d2b7afae43c0b96f4f"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/client.ts",
+          "status": "modified",
+          "sha": "cbda1fa0906bb2b37d022b75400bf15f36bd7435"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/settings.ts",
+          "status": "modified",
+          "sha": "41cd0ae8b496482dbccfb76e2253bc6a4deb2187"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 10661,
+      "title": "fix(lsp): bridge Volar 3 tsserver requests",
+      "url": "https://github.com/can1357/oh-my-pi/pull/10661",
+      "files": [
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "6cd2d9ae96810fd295d206f1a4725e3a94e9f214"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/client.ts",
+          "status": "modified",
+          "sha": "38a575a10d8ce8621077e5b0d8b4beb8727a89c6"
+        },
+        {
+          "path": "packages/coding-agent/test/fixtures/fake-lsp-server.ts",
+          "status": "modified",
+          "sha": "8afe9b3051881d2894f5af9ce0458c6cc87cbb2d"
+        },
+        {
+          "path": "packages/coding-agent/test/lsp/volar-bridge.test.ts",
+          "status": "added",
+          "sha": "2e89a7f03ff504d3d73ab1be7565a15b2179f2ac"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 12142,
+      "title": "fix(lsp): complete diagnostics without repeated push waits",
+      "url": "https://github.com/can1357/oh-my-pi/pull/12142",
+      "files": [
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "581998112826bc5f107d5c3749444235d272667f"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/client.ts",
+          "status": "modified",
+          "sha": "0ecec68bca859e8ac16012ce7ad5c26b7d288d07"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/diagnostics.ts",
+          "status": "modified",
+          "sha": "18704d10a5b360ed14d9ee3f0ea416dc911057f3"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/tool.ts",
+          "status": "modified",
+          "sha": "9801edce538939a0a60f808f8499d21bb65ca8e6"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/types.ts",
+          "status": "modified",
+          "sha": "e1b71a9971d059ca37a8084d57a93ed5e1a0c097"
+        },
+        {
+          "path": "packages/coding-agent/src/prompts/tools/lsp.md",
+          "status": "modified",
+          "sha": "dc9f7fe9367f3b0bd0c02b2e7540c2090e5248ca"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "c7e8fa368f2b59310196058007a3baaa54d44ef3"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 9969,
+      "title": "fix(lsp): discover nested project roots lazily",
+      "url": "https://github.com/can1357/oh-my-pi/pull/9969",
+      "files": [
+        {
+          "path": "docs/lsp-config.md",
+          "status": "modified",
+          "sha": "c7f51215d833789e16c85909df71340e1b2e2be6"
+        },
+        {
+          "path": "docs/tools/lsp.md",
+          "status": "modified",
+          "sha": "6400a9df3c20f4325060580b8ab74845ab06b9aa"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "d9cb1ad5ee03707db41fb94d980408f3aca93173"
+        },
+        {
+          "path": "packages/coding-agent/src/edit/index.ts",
+          "status": "modified",
+          "sha": "144d5402c03bce8c4d67eb08df7070c33ad85626"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/client.ts",
+          "status": "modified",
+          "sha": "d35fcf937decda467e6f5aba07f8f272e1e9c36c"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/clients/lsp-linter-client.ts",
+          "status": "modified",
+          "sha": "7df21e45d3f2ea61d96d352da43d262938c690cc"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/config.ts",
+          "status": "modified",
+          "sha": "127c682ae61c8226524432f523b59f53719e24e6"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/diagnostics.ts",
+          "status": "modified",
+          "sha": "01ed487596525b28d279a50aefa255013930727e"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/index.ts",
+          "status": "modified",
+          "sha": "739fac8386a2fcaf5b4754b99358cf3220cba77d"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/servers.ts",
+          "status": "modified",
+          "sha": "ba1f7e2c9cea5ac5562e28f6315863391ad62e2a"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/tool.ts",
+          "status": "modified",
+          "sha": "452d8b81efbe267fe6cf532adc4584ae1391d61c"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/types.ts",
+          "status": "modified",
+          "sha": "4a65fcf6ad7755841b2f1268beb98e7f15420244"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/utils.ts",
+          "status": "modified",
+          "sha": "abc1df45fd43bdf3b166533dd20996d9cc604c44"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/writethrough.ts",
+          "status": "modified",
+          "sha": "93a45df33aa7966c916cac68ec255280a9d2303d"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/controllers/command-controller.ts",
+          "status": "modified",
+          "sha": "e2ad7a73833042a32ddcaf6850800cb158005cd1"
+        },
+        {
+          "path": "packages/coding-agent/src/sdk.ts",
+          "status": "modified",
+          "sha": "23059e2f91cf8b96601a1df708dfb370434dee67"
+        },
+        {
+          "path": "packages/coding-agent/src/session/agent-session-types.ts",
+          "status": "modified",
+          "sha": "7c5d6ca756d841e36fa8861975bfd30e2147a8d4"
+        },
+        {
+          "path": "packages/coding-agent/src/session/agent-session.ts",
+          "status": "modified",
+          "sha": "e66498f548e3400a5c8ee01adc6bb6c6b9d02300"
+        },
+        {
+          "path": "packages/coding-agent/src/session/session-workspace.ts",
+          "status": "modified",
+          "sha": "8a0c364ccb5eedf0bf8143a378a4dbe9a5fe27ca"
+        },
+        {
+          "path": "packages/coding-agent/src/slash-commands/builtin-lifecycle.ts",
+          "status": "modified",
+          "sha": "94c996b5c2df098ae6e65a31be621e15a61b6792"
+        },
+        {
+          "path": "packages/coding-agent/src/tools/acp-bridge.ts",
+          "status": "modified",
+          "sha": "1ce2a30c82213271ba29544a50f8bcb80632a9b2"
+        },
+        {
+          "path": "packages/coding-agent/src/tools/index.ts",
+          "status": "modified",
+          "sha": "0cc02f78106d8bab76214e914ba1fef818d9813c"
+        },
+        {
+          "path": "packages/coding-agent/src/tools/write.ts",
+          "status": "modified",
+          "sha": "0256f41c3b8489b8cb92a633cabebc774b5830bb"
+        },
+        {
+          "path": "packages/coding-agent/test/acp-builtins.test.ts",
+          "status": "modified",
+          "sha": "51da9ad48b88ed4236e28b53a0bcf60fdc497eca"
+        },
+        {
+          "path": "packages/coding-agent/test/lsp/nested-roots.test.ts",
+          "status": "added",
+          "sha": "fd4889f16121d12f40bcae64cfad82108d5f2158"
+        },
+        {
+          "path": "packages/coding-agent/test/modes/controllers/bash-command.test.ts",
+          "status": "modified",
+          "sha": "7ae79e36cc69fb6afa065690579e0293d8332ad3"
+        },
+        {
+          "path": "packages/coding-agent/test/modes/controllers/move-command.test.ts",
+          "status": "modified",
+          "sha": "f96d86c6cc1a22bf2eeaa90574dbd22fc1bcd404"
+        },
+        {
+          "path": "packages/coding-agent/test/session-manager/workspace-directories.test.ts",
+          "status": "modified",
+          "sha": "e007975a8c4ae3babe911ce248e368bc1cc53dab"
+        },
+        {
+          "path": "packages/coding-agent/test/slash-commands/remove-dir.test.ts",
+          "status": "added",
+          "sha": "b570d9dbeaf87685b9c706ea2896fdbd44f6b9fc"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/index.test.ts",
+          "status": "modified",
+          "sha": "18628c7aa9f44a94fbd1a8ceb6f0f3e51c25a6b9"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-diagnostics-freshness.test.ts",
+          "status": "modified",
+          "sha": "394c984b5fdc4d645a53f9e361290e0b58b0b5d3"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "9e8bf908c2b50f569f81199e5bfd9e25cb5a5a25"
+        },
+        {
+          "path": "packages/utils/src/dirs.ts",
+          "status": "modified",
+          "sha": "f319bac8aa8ff50c3c62621d373b6b4ed67f3c83"
+        },
+        {
+          "path": "packages/utils/test/issue-935-repro.test.ts",
+          "status": "modified",
+          "sha": "5905fc6466a16edd0ac5edc18078cfa9edc184fa"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 11226,
+      "title": "fix(lsp): bound shutdown when server input stalls",
+      "url": "https://github.com/can1357/oh-my-pi/pull/11226",
+      "files": [
+        {
+          "path": "MODULE.bazel",
+          "status": "modified",
+          "sha": "a14470d5540da93c465c280238bc18fe2dc112b2"
+        },
+        {
+          "path": "MODULE.bazel.lock",
+          "status": "modified",
+          "sha": "10f9b92c5721df2c4cd5f89405047780949de5ed"
+        },
+        {
+          "path": "crates/pi-builtins/src/proc_snapshot.rs",
+          "status": "modified",
+          "sha": "61c7249dfd9456a96ec685f15b2bcda24c5ef5e0"
+        },
+        {
+          "path": "crates/pi-natives/src/ps.rs",
+          "status": "modified",
+          "sha": "7fb1b7b583676ea6be4ca6411f7cf400790083c2"
+        },
+        {
+          "path": "crates/pi-natives/src/pty.rs",
+          "status": "modified",
+          "sha": "13c9f68d3140847aafd4187861fb1ebc9f982235"
+        },
+        {
+          "path": "crates/pi-shell/Cargo.toml",
+          "status": "modified",
+          "sha": "5f139651740781c401835b705a638091a306c037"
+        },
+        {
+          "path": "crates/pi-shell/src/process.rs",
+          "status": "modified",
+          "sha": "0cfa3bc1e2f0914935a859953ec0b9eb2345c28e"
+        },
+        {
+          "path": "crates/pi-shell/src/shell.rs",
+          "status": "modified",
+          "sha": "84dcef5271f46c8c61ebd36cf1e8cd702ca711b0"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "c4d8c4861df0fbdce85e87024ba7f6972de819c5"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/mux/server.ts",
+          "status": "modified",
+          "sha": "99c8b60705fc859b2a1d12056b5d25e2b968b9d6"
+        },
+        {
+          "path": "packages/coding-agent/test/fixtures/fake-lsp-server.ts",
+          "status": "modified",
+          "sha": "2c35a7246035422abdea09e8458d2b2eb9f7ee8d"
+        },
+        {
+          "path": "packages/coding-agent/test/lsp-mux.test.ts",
+          "status": "modified",
+          "sha": "b3c2bbce7e5ab88b5f21e5fcca1d44f5c3f63e92"
+        },
+        {
+          "path": "packages/natives/CHANGELOG.md",
+          "status": "modified",
+          "sha": "8a615d8e18d01e976a8502c1b81f118f3231bd32"
+        },
+        {
+          "path": "packages/natives/native/index.d.ts",
+          "status": "modified",
+          "sha": "89cc3c280fc9d15f30544da53842e3405b142ed8"
+        },
+        {
+          "path": "packages/natives/native/index.js",
+          "status": "modified",
+          "sha": "029a1d861996a206e96de4b1a9209268eb560d2c"
+        },
+        {
+          "path": "packages/utils/CHANGELOG.md",
+          "status": "modified",
+          "sha": "f07c59845acb2859d3d8454a2663d43206240d25"
+        },
+        {
+          "path": "packages/utils/src/ptree.ts",
+          "status": "modified",
+          "sha": "66ec218bf118ecdbde59f6bac46353b2bf4c9143"
+        },
+        {
+          "path": "packages/utils/test/ptree-termination.test.ts",
+          "status": "added",
+          "sha": "f84178c827376c4d7154b4d8c1ae42e98762db59"
+        },
+        {
+          "path": "packages/utils/test/ptree-timeout.test.ts",
+          "status": "modified",
+          "sha": "cf2e8a704ec30084e68344de85a5e6bb64d760c8"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 12711,
+      "title": "test(lsp): lock cross-checkout absolute display for definitions",
+      "url": "https://github.com/can1357/oh-my-pi/pull/12711",
+      "files": [
+        {
+          "path": "packages/coding-agent/test/lsp-cross-checkout-path.test.ts",
+          "status": "added",
+          "sha": "8213467c73cd7227e2411025b9d99f7bb3f78d6d"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 8401,
+      "title": "feat(coding-agent): detail LSP rename previews",
+      "url": "https://github.com/can1357/oh-my-pi/pull/8401",
+      "files": [
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "14748302ee6b5dfcbb9961dad0025d0320c45079"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/utils.ts",
+          "status": "modified",
+          "sha": "a5655fce8db9d6a5607b75ad3afe41bf0d176ec7"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "48d438eabfc272d92fff24aec32c09d7c4ca87c5"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 10703,
+      "title": "fix(lsp): drop 400ms glob diagnostics batch cap",
+      "url": "https://github.com/can1357/oh-my-pi/pull/10703",
+      "files": [
+        {
+          "path": "docs/tools/lsp.md",
+          "status": "modified",
+          "sha": "650b7c85ab8dc59b5de74182bde5f3fb339c1fae"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "34256de141b6746a56d8b4f6f8785444be0551a4"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/diagnostics.ts",
+          "status": "modified",
+          "sha": "d5a770cfffde714128d5f2df7be5d67df3c07982"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/tool.ts",
+          "status": "modified",
+          "sha": "67d5a7ba7fac06f8310a73cc74d810e717f25c6b"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "7dae829140aa73c0b5acb4a7019ba884cbed232b"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 10790,
+      "title": "fix(lsp): surface push diagnostics when pull is unsupported",
+      "url": "https://github.com/can1357/oh-my-pi/pull/10790",
+      "files": [
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "32618266ac237da33e3f39fe23047fdff39eda4b"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/client.ts",
+          "status": "modified",
+          "sha": "53f47fb9f295ea28cf76f7e26845c13b7f503a83"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/diagnostics.ts",
+          "status": "modified",
+          "sha": "46743891cf742149f77c98e4b9a9463125de0927"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/tool.ts",
+          "status": "modified",
+          "sha": "03ad96b42141392275965b0a429c31f9fc1771d2"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/types.ts",
+          "status": "modified",
+          "sha": "83abb768c84b81a04e200b660958589df452fbb1"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "6472717435032b82523e1d5f8a45582d93eb5f8d"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 8017,
+      "title": "feat(coding-agent): add vala lsp definition",
+      "url": "https://github.com/can1357/oh-my-pi/pull/8017",
+      "files": [
+        {
+          "path": "docs/lsp-config.md",
+          "status": "modified",
+          "sha": "de36997c73f3dcaaf6ac2b3b0564c8c937fe6fea"
+        },
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "a7777422e02281f9d3647dd6bf27d580c0a0b77c"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/defaults.json",
+          "status": "modified",
+          "sha": "3fc90f223f3b748607718593789fc73d13496fd7"
+        },
+        {
+          "path": "packages/coding-agent/src/utils/lang-from-path.ts",
+          "status": "modified",
+          "sha": "d174e971b558a84418c62855e7f344b0b4937958"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "d7222289fe17db88bf3e51d2fc563a172472adea"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 12647,
+      "title": "fix(lsp): identify the target checkout in cross-worktree locations",
+      "url": "https://github.com/can1357/oh-my-pi/pull/12647",
+      "files": [
+        {
+          "path": "packages/coding-agent/src/lsp/diagnostics.ts",
+          "status": "modified",
+          "sha": "a0949ee981c49d626a08abd34883a248c4f5438a"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/tool.ts",
+          "status": "modified",
+          "sha": "89bca57ca18efe0628d9ae76640c35edf2d5e33a"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "ec99bde2a3cfe67f06f4915e39967403bba8fd20"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 9178,
+      "title": "feat(lsp): added dart workspace diagnostics via dart analyze",
+      "url": "https://github.com/can1357/oh-my-pi/pull/9178",
+      "files": [
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "870acabd73953682d68487e81d25623075b01a2b"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/workspace-diagnostics.ts",
+          "status": "modified",
+          "sha": "2778541bf148792873e8dfcac2be9d22da23fa4a"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/theme/symbols.ts",
+          "status": "modified",
+          "sha": "0ca1140fc1953868eb93d1d3b4c12b7d53f1e133"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/theme/theme-class.ts",
+          "status": "modified",
+          "sha": "a6a17b24c38ad88a1ad625537181fdfd3f0d5294"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "e39d27d0096af0d9e87c9c89f237489c1efd20f1"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 10702,
+      "title": "fix(lsp): glob diagnostics wait the per-file budget instead of a 400ms batch cap",
+      "url": "https://github.com/can1357/oh-my-pi/pull/10702",
+      "files": [
+        {
+          "path": "packages/coding-agent/CHANGELOG.md",
+          "status": "modified",
+          "sha": "1f5544f63a5f9192f3ad4a4a1a97ac6a990a49e5"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/diagnostics.ts",
+          "status": "modified",
+          "sha": "d5a770cfffde714128d5f2df7be5d67df3c07982"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/tool.ts",
+          "status": "modified",
+          "sha": "e0c680d3b1fe19ba2e3e69bbf88cedcbe694ea07"
+        },
+        {
+          "path": "packages/coding-agent/test/tools/lsp-regressions.test.ts",
+          "status": "modified",
+          "sha": "19377416e8c4d8cc03c716b923303c47231a5c3b"
+        }
+      ],
+      "error": false
+    },
+    {
+      "n": 8523,
+      "title": "fix(lsp): never reap a client with an in-flight request",
+      "url": "https://github.com/can1357/oh-my-pi/pull/8523",
+      "files": [
+        {
+          "path": "packages/ai/src/auth-broker/discover.ts",
+          "status": "modified",
+          "sha": "4e8539a9d9dd9cb0d12806fa1221c1df0a01b5af"
+        },
+        {
+          "path": "packages/coding-agent/src/lsp/client.ts",
+          "status": "modified",
+          "sha": "aa380f1486194a2e1afb6b68f941e1c5d3bcb1ff"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/components/cache-invalidation-marker.ts",
+          "status": "modified",
+          "sha": "0da5da27f0d8d19bda23f9d1ce259aea32c49f12"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/components/chat-transcript-builder.ts",
+          "status": "modified",
+          "sha": "3b2c818eb88e745aa5b3da11c445a3356e4d0b50"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/utils/transcript-render-helpers.ts",
+          "status": "modified",
+          "sha": "cebc2d37aa62e3bcb74ec22ad95677cb2d81b29e"
+        },
+        {
+          "path": "packages/coding-agent/src/modes/utils/ui-helpers.ts",
+          "status": "modified",
+          "sha": "0852f5bffd3b7873de551e29944d5de24d22042a"
+        },
+        {
+          "path": "packages/coding-agent/test/cache-invalidation-marker.test.ts",
+          "status": "modified",
+          "sha": "3a8a2f2cbf78b542362a278f10b4a57f99f1d5f2"
+        },
+        {
+          "path": "packages/coding-agent/test/lsp/idle.test.ts",
+          "status": "added",
+          "sha": "bb68836c9f90206fe9e48d2d8147f4cb70ab5af5"
+        },
+        {
+          "path": "packages/coding-agent/test/modes/utils/transcript-render-helpers.test.ts",
+          "status": "modified",
+          "sha": "6e83acee34e2d84ba32dbd2c5cff07026f09c71d"
+        }
+      ],
+      "error": false
+    }
+  ],
+  "coverage": "Exact source-path/editorconfig search; changed-file lists for 18 currently open LSP-titled PRs. Broad lsp/formatting search is discovery, not an exhaustive scan of every open PR.",
+  "overlaps": []
+}

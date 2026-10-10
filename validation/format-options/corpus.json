@@ -1,0 +1,455 @@
+{
+  "base": "b07a1c146d0d12cfc855a2c65d52f892ef319040",
+  "corpus": {
+    "empty": {
+      "file": "empty.txt",
+      "bytes": 0,
+      "codeUnits": 0,
+      "lines": 1,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": null,
+      "kind": "boundary"
+    },
+    "tiny-yaml": {
+      "file": "tiny-yaml.txt",
+      "bytes": 31,
+      "codeUnits": 31,
+      "lines": 4,
+      "sha256": "f3aa69266dfc279da3bf4b9c54383c87841f1a6b9d55b2c0a142149420301c30",
+      "source": null,
+      "kind": "boundary"
+    },
+    "source-4k": {
+      "file": "source-4k.txt",
+      "bytes": 4247,
+      "codeUnits": 4239,
+      "lines": 120,
+      "sha256": "04268c3e56b1c59ec831c5562bb7d5f7cd2452e32a0f944729ce2b838c3cb132",
+      "source": "packages/coding-agent/src/lsp/format-options.ts",
+      "kind": "public-source"
+    },
+    "source-41k": {
+      "file": "source-41k.txt",
+      "bytes": 41191,
+      "codeUnits": 40867,
+      "lines": 1007,
+      "sha256": "5f9e1a2784b7a0664d5f88e02f9a63f337337bdea6cc2ef5270e2a3c70b66984",
+      "source": "packages/coding-agent/src/tools/write.ts",
+      "kind": "public-source"
+    },
+    "source-174k": {
+      "file": "source-174k.txt",
+      "bytes": 173784,
+      "codeUnits": 173383,
+      "lines": 4226,
+      "sha256": "2f7ecc92411227d70e6abe5d49f57e8fa3333404a24508a20bc36ca520449113",
+      "source": "packages/tui/src/components/markdown.ts",
+      "kind": "public-source"
+    },
+    "source-193k": {
+      "file": "source-193k.txt",
+      "bytes": 193215,
+      "codeUnits": 193117,
+      "lines": 4977,
+      "sha256": "bcc6753f97e386e79c53773d6830a832011827c8135456482bfa7a833516f1ad",
+      "source": "packages/tui/src/components/editor.ts",
+      "kind": "public-source"
+    },
+    "source-558k": {
+      "file": "source-558k.txt",
+      "bytes": 570744,
+      "codeUnits": 570407,
+      "lines": 13562,
+      "sha256": "9f23125a22234cebc9283ec0da69445110349c76cc9d6f5d604b1f8504c8b3c8",
+      "source": "packages/coding-agent/src/session/agent-session.ts",
+      "kind": "public-source"
+    },
+    "stress-4m-short-lines": {
+      "file": "stress-4m-short-lines.txt",
+      "bytes": 4194304,
+      "codeUnits": 4194304,
+      "lines": 599187,
+      "sha256": "f4a4d45603a23ea49bea5bb53610834d969af356e98a9a7dc4beb25149ee4482",
+      "source": null,
+      "kind": "stress"
+    },
+    "stress-4m-single-line": {
+      "file": "stress-4m-single-line.txt",
+      "bytes": 4194304,
+      "codeUnits": 4194304,
+      "lines": 1,
+      "sha256": "baa7a6d36ffa957552df230235c2d51d735f28d49c58a5f3438a3a973a25a37d",
+      "source": null,
+      "kind": "stress"
+    },
+    "stress-1m-whitespace": {
+      "file": "stress-1m-whitespace.txt",
+      "bytes": 1048576,
+      "codeUnits": 1048576,
+      "lines": 1,
+      "sha256": "f954ac8b009f965c052519c4e1e395a9f15328596a2b1eaf373d74fe7e169a5f",
+      "source": null,
+      "kind": "stress"
+    },
+    "stress-1m-unicode": {
+      "file": "stress-1m-unicode.txt",
+      "bytes": 1514608,
+      "codeUnits": 1106830,
+      "lines": 58255,
+      "sha256": "81d42f25063ad836c46b394dae924c25600a7056935a7e0878c3d2b072fbb6bc",
+      "source": null,
+      "kind": "stress"
+    },
+    "tiny-space4": {
+      "file": "tiny-space4.txt",
+      "bytes": 37,
+      "codeUnits": 37,
+      "lines": 4,
+      "sha256": "67183044fa8df94e026e2bc07c168905ea6c4eb1b6c5ce0138b4b27cbdb76280",
+      "source": null,
+      "kind": "boundary"
+    },
+    "tiny-tabs": {
+      "file": "tiny-tabs.txt",
+      "bytes": 28,
+      "codeUnits": 28,
+      "lines": 4,
+      "sha256": "7cb5f2d6f322042e80727c2b75eb25111212f032ed8578e82c649cad9234f203",
+      "source": null,
+      "kind": "boundary"
+    }
+  },
+  "configs": {
+    "complete-space": {
+      "body": "root = true\n[*]\nindent_size = 2\nindent_style = space\n",
+      "tabSize": 2,
+      "insertSpaces": true
+    },
+    "complete-tab": {
+      "body": "root = true\n[*]\nindent_style = tab\ntab_width = 8\n",
+      "tabSize": 8,
+      "insertSpaces": false
+    },
+    "complete-inferred": {
+      "body": "root = true\n[*]\nindent_size = 4\n",
+      "tabSize": 4,
+      "insertSpaces": true
+    },
+    "partial-style": {
+      "body": "root = true\n[*]\nindent_style = tab\n",
+      "tabSize": null,
+      "insertSpaces": false
+    },
+    "partial-width": {
+      "body": "root = true\n[*]\ntab_width = 8\n",
+      "tabSize": 8,
+      "insertSpaces": null
+    },
+    "invalid": {
+      "body": "root = true\n[*]\nindent_style = invalid\nindent_size = 0\ntab_width = bad\n",
+      "tabSize": null,
+      "insertSpaces": null
+    },
+    "missing": {
+      "body": null,
+      "tabSize": null,
+      "insertSpaces": null
+    },
+    "partial-space": {
+      "body": "root = true\n[*]\nindent_style = space\n",
+      "tabSize": null,
+      "insertSpaces": true
+    },
+    "partial-tabsize": {
+      "body": "root = true\n[*]\nindent_size = tab\n",
+      "tabSize": null,
+      "insertSpaces": false
+    },
+    "unmatched": {
+      "body": "root = true\n[*.py]\nindent_size = 8\nindent_style = space\n",
+      "tabSize": null,
+      "insertSpaces": null
+    }
+  },
+  "warmCases": [
+    {
+      "id": "complete-space/empty",
+      "config": "complete-space",
+      "content": "empty",
+      "primary": false
+    },
+    {
+      "id": "complete-space/tiny-yaml",
+      "config": "complete-space",
+      "content": "tiny-yaml",
+      "primary": false
+    },
+    {
+      "id": "complete-space/source-4k",
+      "config": "complete-space",
+      "content": "source-4k",
+      "primary": true
+    },
+    {
+      "id": "complete-space/source-41k",
+      "config": "complete-space",
+      "content": "source-41k",
+      "primary": true
+    },
+    {
+      "id": "complete-space/source-174k",
+      "config": "complete-space",
+      "content": "source-174k",
+      "primary": true
+    },
+    {
+      "id": "complete-space/source-193k",
+      "config": "complete-space",
+      "content": "source-193k",
+      "primary": true
+    },
+    {
+      "id": "complete-space/source-558k",
+      "config": "complete-space",
+      "content": "source-558k",
+      "primary": true
+    },
+    {
+      "id": "complete-space/stress-4m-short-lines",
+      "config": "complete-space",
+      "content": "stress-4m-short-lines",
+      "primary": false
+    },
+    {
+      "id": "complete-space/stress-4m-single-line",
+      "config": "complete-space",
+      "content": "stress-4m-single-line",
+      "primary": false
+    },
+    {
+      "id": "complete-space/stress-1m-whitespace",
+      "config": "complete-space",
+      "content": "stress-1m-whitespace",
+      "primary": false
+    },
+    {
+      "id": "complete-space/stress-1m-unicode",
+      "config": "complete-space",
+      "content": "stress-1m-unicode",
+      "primary": false
+    },
+    {
+      "id": "complete-tab/tiny-yaml",
+      "config": "complete-tab",
+      "content": "tiny-yaml",
+      "primary": false
+    },
+    {
+      "id": "complete-tab/source-193k",
+      "config": "complete-tab",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "complete-tab/stress-4m-short-lines",
+      "config": "complete-tab",
+      "content": "stress-4m-short-lines",
+      "primary": false
+    },
+    {
+      "id": "complete-inferred/source-193k",
+      "config": "complete-inferred",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "partial-style/tiny-yaml",
+      "config": "partial-style",
+      "content": "tiny-yaml",
+      "primary": false
+    },
+    {
+      "id": "partial-style/source-193k",
+      "config": "partial-style",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "partial-width/tiny-yaml",
+      "config": "partial-width",
+      "content": "tiny-yaml",
+      "primary": false
+    },
+    {
+      "id": "partial-width/source-193k",
+      "config": "partial-width",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "invalid/tiny-yaml",
+      "config": "invalid",
+      "content": "tiny-yaml",
+      "primary": false
+    },
+    {
+      "id": "invalid/source-193k",
+      "config": "invalid",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "missing/tiny-yaml",
+      "config": "missing",
+      "content": "tiny-yaml",
+      "primary": false
+    },
+    {
+      "id": "missing/source-193k",
+      "config": "missing",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "partial-style/tiny-space4",
+      "config": "partial-style",
+      "content": "tiny-space4",
+      "primary": false
+    },
+    {
+      "id": "partial-space/tiny-space4",
+      "config": "partial-space",
+      "content": "tiny-space4",
+      "primary": false
+    },
+    {
+      "id": "partial-width/tiny-tabs",
+      "config": "partial-width",
+      "content": "tiny-tabs",
+      "primary": false
+    },
+    {
+      "id": "partial-tabsize/tiny-space4",
+      "config": "partial-tabsize",
+      "content": "tiny-space4",
+      "primary": false
+    },
+    {
+      "id": "unmatched/tiny-space4",
+      "config": "unmatched",
+      "content": "tiny-space4",
+      "primary": false
+    },
+    {
+      "id": "partial-space/source-193k",
+      "config": "partial-space",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "partial-tabsize/source-193k",
+      "config": "partial-tabsize",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "unmatched/source-193k",
+      "config": "unmatched",
+      "content": "source-193k",
+      "primary": false
+    },
+    {
+      "id": "missing/stress-4m-short-lines",
+      "config": "missing",
+      "content": "stress-4m-short-lines",
+      "primary": false
+    },
+    {
+      "id": "partial-width/stress-1m-whitespace",
+      "config": "partial-width",
+      "content": "stress-1m-whitespace",
+      "primary": false
+    }
+  ],
+  "coldCases": [
+    {
+      "id": "complete-space/tiny-yaml",
+      "config": "complete-space",
+      "content": "tiny-yaml"
+    },
+    {
+      "id": "complete-space/source-193k",
+      "config": "complete-space",
+      "content": "source-193k"
+    },
+    {
+      "id": "complete-tab/tiny-yaml",
+      "config": "complete-tab",
+      "content": "tiny-yaml"
+    },
+    {
+      "id": "complete-tab/source-193k",
+      "config": "complete-tab",
+      "content": "source-193k"
+    },
+    {
+      "id": "partial-style/tiny-yaml",
+      "config": "partial-style",
+      "content": "tiny-yaml"
+    },
+    {
+      "id": "partial-style/source-193k",
+      "config": "partial-style",
+      "content": "source-193k"
+    },
+    {
+      "id": "partial-width/tiny-yaml",
+      "config": "partial-width",
+      "content": "tiny-yaml"
+    },
+    {
+      "id": "partial-width/source-193k",
+      "config": "partial-width",
+      "content": "source-193k"
+    },
+    {
+      "id": "invalid/tiny-yaml",
+      "config": "invalid",
+      "content": "tiny-yaml"
+    },
+    {
+      "id": "invalid/source-193k",
+      "config": "invalid",
+      "content": "source-193k"
+    },
+    {
+      "id": "missing/tiny-yaml",
+      "config": "missing",
+      "content": "tiny-yaml"
+    },
+    {
+      "id": "missing/source-193k",
+      "config": "missing",
+      "content": "source-193k"
+    }
+  ],
+  "protocol": {
+    "rounds": 9,
+    "warmupCalls": 3,
+    "coldSamples": 9,
+    "loops": "max(3,min(1000,floor(1000000/max(1,UTF8Bytes))))",
+    "processReplications": 9,
+    "order": "alternating baseline/candidate pairs",
+    "gc": "Bun.gc(true) before each warm sample; not inside measured interval",
+    "cold": "Unique metadata-cache path each sample, fixture creation excluded; OS caches uncontrolled",
+    "gates": {
+      "completeInputScaling": "BOTH complete-space/stress-4m-short-lines AND complete-space/stress-4m-single-line warm median <=5 * complete-space/tiny-yaml warm median +0.05ms.",
+      "primarySpeedup": "Geometric mean of baseline/candidate warm median ratios across the fixed five public-source complete-space cases >= 1.3333333333333333 (>=25% time reduction); stress excluded.",
+      "controlsRegression": "Each partial/no/invalid/unmatched case and complete-space/empty or tiny-yaml: candidate <=1.10*baseline OR candidate-baseline <0.02ms; report every regression regardless of tolerance.",
+      "coldRegression": "all cold cases: candidate <=1.10*baseline OR candidate-baseline <0.05ms",
+      "functional": "all exact output oracles must match baseline and frozen config precedence"
+    },
+    "reportedP95": "Warm p95 is over nine per-process batched sample averages; final replication p95 is over nine process medians. Neither estimates user-operation p95.",
+    "memory": "Peak process RSS is descriptive for a process holding the whole corpus, not transient allocation evidence."
+  }
+}

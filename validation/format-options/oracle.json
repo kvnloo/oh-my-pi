@@ -1,0 +1,233 @@
+{
+  "complete-space/empty": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/tiny-yaml": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/source-4k": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/source-41k": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/source-174k": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/source-193k": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/source-558k": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/stress-4m-short-lines": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/stress-4m-single-line": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/stress-1m-whitespace": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-space/stress-1m-unicode": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-tab/tiny-yaml": {
+    "tabSize": 8,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-tab/source-193k": {
+    "tabSize": 8,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-tab/stress-4m-short-lines": {
+    "tabSize": 8,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "complete-inferred/source-193k": {
+    "tabSize": 4,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-style/tiny-yaml": {
+    "tabSize": 2,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-style/source-193k": {
+    "tabSize": 2,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-width/tiny-yaml": {
+    "tabSize": 8,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-width/source-193k": {
+    "tabSize": 8,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "invalid/tiny-yaml": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "invalid/source-193k": {
+    "tabSize": 2,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "missing/tiny-yaml": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "missing/source-193k": {
+    "tabSize": 2,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-style/tiny-space4": {
+    "tabSize": 4,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-space/tiny-space4": {
+    "tabSize": 4,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-width/tiny-tabs": {
+    "tabSize": 8,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-tabsize/tiny-space4": {
+    "tabSize": 4,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "unmatched/tiny-space4": {
+    "tabSize": 4,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-space/source-193k": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-tabsize/source-193k": {
+    "tabSize": 2,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "unmatched/source-193k": {
+    "tabSize": 2,
+    "insertSpaces": false,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "missing/stress-4m-short-lines": {
+    "tabSize": 2,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  },
+  "partial-width/stress-1m-whitespace": {
+    "tabSize": 8,
+    "insertSpaces": true,
+    "trimTrailingWhitespace": true,
+    "insertFinalNewline": true,
+    "trimFinalNewlines": true
+  }
+}

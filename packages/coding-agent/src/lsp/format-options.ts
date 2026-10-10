@@ -109,7 +109,10 @@ function gcd(a: number, b: number): number {
  */
 export function resolveFormatOptions(filePath: string, content: string): LspFormattingOptions {
 	const fromConfig = getEditorConfigFormatting(filePath);
-	const detected = detectIndentFromContent(content);
+	// Content cannot affect the request when both indentation fields are pinned.
+	// Keep sniffing partial overrides, including a configured tab style without width.
+	const detected: DetectedIndent =
+		fromConfig.tabSize !== undefined && fromConfig.insertSpaces !== undefined ? {} : detectIndentFromContent(content);
 
 	return {
 		tabSize: fromConfig.tabSize ?? detected.tabSize ?? FALLBACK_TAB_SIZE,
