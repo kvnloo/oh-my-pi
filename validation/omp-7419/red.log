@@ -1,0 +1,5 @@
+{"mode":"regression","corpus":12,"rows":1000,"payload_bytes_total":1025024,"input_json_bytes":1166952,"generic_allocated_bytes":4861047,"generic_allocations":35191,"output_bytes":548}
+
+thread 'main' (9) panicked at src/main.rs:82:31:
+generic fallback allocated 4861047 bytes for capped output with 1,025,024 unrendered payload bytes (limit 262144)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

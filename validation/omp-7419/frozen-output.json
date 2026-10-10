@@ -1,0 +1,50 @@
+[
+  {
+    "generic": "Name\tStatus\tid\tArn\nvisible\tready\t{...}\t2 item(s)\n",
+    "filter": "Name\tStatus\tid\tArn\nvisible\tready\t{...}\t2 item(s)\n"
+  },
+  {
+    "generic": "Name\tStatus\nfirst\t-\nsecond\ttrue\n",
+    "filter": "Name\tStatus\nfirst\t-\nsecond\ttrue\n"
+  },
+  {
+    "generic": null,
+    "filter": "{\"A\":[{},null,{}],\"B\":[{\"Name\":\"wrong\"}]}"
+  },
+  {
+    "generic": null,
+    "filter": "{\"Things\":[{\"other\":\"unknown\",\"Password\":\"SECRET\"}]}"
+  },
+  {
+    "generic": "Name\tStatus\tArn\ttype\tengine\tversion\n-\t7\tfalse\t0 item(s)\t{...}\tv\n",
+    "filter": "Name\tStatus\tArn\ttype\tengine\tversion\n-\t7\tfalse\t0 item(s)\t{...}\tv\n"
+  },
+  {
+    "generic": "Name\tId\tArn\tStatus\tState\tCreated\na\tid\tarn\ts\tst\ttoday\n",
+    "filter": "Name\tId\tArn\tStatus\tState\tCreated\na\tid\tarn\ts\tst\ttoday\n"
+  },
+  {
+    "generic": "Status\tName\n-\t-\nlate\t-\n-\tlast\n",
+    "filter": "Status\tName\n-\t-\nlate\t-\n-\tlast\n"
+  },
+  {
+    "generic": "Name\nsafe\n",
+    "filter": "Name\nsafe\n"
+  },
+  {
+    "generic": null,
+    "filter": "[{\"Name\":\"root-array\"}]"
+  },
+  {
+    "generic": null,
+    "filter": "{}"
+  },
+  {
+    "generic": "name\tstate\n2 item(s)\t{...}\n",
+    "filter": "name\tstate\n2 item(s)\t{...}\n"
+  },
+  {
+    "generic": "Name\tStatus\nrow-0\t-\nrow-1\t-\nrow-2\t-\nrow-3\t-\nrow-4\t-\nrow-5\t-\nrow-6\t-\nrow-7\t-\nrow-8\t-\nrow-9\t-\nrow-10\t-\nrow-11\t-\nrow-12\t-\nrow-13\t-\nrow-14\t-\nrow-15\t-\nrow-16\t-\nrow-17\t-\nrow-18\t-\nrow-19\t-\nrow-20\t-\nrow-21\t-\nrow-22\t-\nrow-23\t-\nrow-24\t-\nrow-25\t-\nrow-26\t-\nrow-27\t-\nrow-28\t-\nrow-29\t-\nrow-30\t-\nrow-31\t-\nrow-32\t-\nrow-33\t-\nrow-34\t-\nrow-35\t-\nrow-36\t-\nrow-37\t-\nrow-38\t-\nrow-39\t-\n[…5 Things elided…]\n",
+    "filter": "Name\tStatus\nrow-0\t-\nrow-1\t-\nrow-2\t-\nrow-3\t-\nrow-4\t-\nrow-5\t-\nrow-6\t-\nrow-7\t-\nrow-8\t-\nrow-9\t-\nrow-10\t-\nrow-11\t-\nrow-12\t-\nrow-13\t-\nrow-14\t-\nrow-15\t-\nrow-16\t-\nrow-17\t-\nrow-18\t-\nrow-19\t-\nrow-20\t-\nrow-21\t-\nrow-22\t-\nrow-23\t-\nrow-24\t-\nrow-25\t-\nrow-26\t-\nrow-27\t-\nrow-28\t-\nrow-29\t-\nrow-30\t-\nrow-31\t-\nrow-32\t-\nrow-33\t-\nrow-34\t-\nrow-35\t-\nrow-36\t-\nrow-37\t-\nrow-38\t-\nrow-39\t-\n[…5 Things elided…]\n"
+  }
+]
