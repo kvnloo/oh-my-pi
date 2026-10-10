@@ -188,7 +188,7 @@ Ownership strata (see `src/compat/rules/README.md`):
 
 - `taxonomy/*.kdl` — identity: class membership, families, revision extraction, reviewed overrides, suffix collapse.
 - `classes/*.kdl` — model-lineage truths (behavior inherent to a model line, on any host).
-- `providers/*.kdl` — deployment contracts (behavior a host imposes), plus documented exact-id residue.
+- `providers/<id>.kdl` — a provider's catalog entry (default model, env keys, discovery wiring, optional authored seed rows) plus its deployment contract (behavior a host imposes) and documented exact-id residue.
 - `runtime/behavior.kdl` — heuristics that run before/outside exact model lookup (`api-routes`, `model-limits`, `exclude-models`, `pricing-peer`, hosted defaults).
 
 Rules for TS code:
@@ -206,7 +206,7 @@ Rules for TS code:
 To change an entry, fix the source:
 
 - **Model/provider policy** (identity, thinking ladders, wire quirks, modality/limit/pricing corrections, API routing, roster exclusions) → the KDL tree in `packages/catalog/src/compat/rules/` (see the section above).
-- **Provider catalog entries** (default model, discovery factory/flags) → the `CATALOG_PROVIDERS` table in `packages/catalog/src/provider-models/descriptors.ts`.
+- **Provider catalog entries** (default model, env keys, discovery flags, optional seed rows) → the `provider "<id>"` node in `packages/catalog/src/compat/rules/providers/<id>.kdl`; runtime model-manager factories stay in `packages/catalog/src/provider-models/descriptors.ts` (`MODEL_MANAGER_FACTORIES`).
 - **Discovery/request plumbing** (endpoint shapes, auth, response parsing) → the mappers in `packages/catalog/src/provider-models/openai-compat.ts`.
 - **Generator wiring** (upstream merges, premium multipliers, post-processing order) → `packages/catalog/scripts/generate-models.ts`.
 
