@@ -1,0 +1,17 @@
+date=2026-10-10T05:51:28Z
+bun=$BUN_BIN
+bun_version=1.4.2
+outer_timeout=30s; kill_after=5s
+9aaaae1ff40221d1b7d5c8e4570c0b086206a38232e64f974b74cf16700258bd  ../plugin-validation-lifecycle-review.test.ts
+9aaaae1ff40221d1b7d5c8e4570c0b086206a38232e64f974b74cf16700258bd  $OWNER_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts
+9aaaae1ff40221d1b7d5c8e4570c0b086206a38232e64f974b74cf16700258bd  $BASE_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts
+
+role=base
+cwd=$BASE_CHECKOUT
+head=b07a1c146d0d12cfc855a2c65d52f892ef319040
+command=timeout --signal=TERM --kill-after=5s 30s $BUN_BIN test packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts
+
+role=owner
+cwd=$OWNER_CHECKOUT
+head=388d101eba56aeee9afd56c787f51f53e0db4105
+command=timeout --signal=TERM --kill-after=5s 30s $BUN_BIN test packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts

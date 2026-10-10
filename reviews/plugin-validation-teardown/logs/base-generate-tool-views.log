@@ -1,0 +1,3 @@
+$ bun --cwd=packages/collab-web run gen:tool-views
+$ bun scripts/build-tool-views.ts
+Generated ../coding-agent/src/export/html/tool-views.generated.js (276.1 KiB)

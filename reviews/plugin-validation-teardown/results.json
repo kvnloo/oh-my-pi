@@ -1,0 +1,79 @@
+{
+  "supplemental_scenarios": [
+    {
+      "scenario": "missing manifest sibling",
+      "base": "FAIL: child still running when install settles; harness then kills/reaps it",
+      "owner": "PASS: delayed async handler reads plugin resource, kills/awaits child before settlement. Managed timer fired:false observation is diagnostic-only."
+    },
+    {
+      "scenario": "sibling import failure",
+      "base": "FAIL: child still running when install settles; harness then kills/reaps it",
+      "owner": "PASS: delayed async handler reads plugin resource, kills/awaits child before settlement. Managed timer fired:false observation is diagnostic-only."
+    },
+    {
+      "scenario": "one shutdown handler throws while another performs async cleanup",
+      "base": "FAIL: child still running when install settles; harness then kills/reaps it",
+      "owner": "PASS: delayed async handler reads plugin resource, kills/awaits child before settlement. Managed timer fired:false observation is diagnostic-only."
+    }
+  ],
+  "regression": {
+    "base": {
+      "pass": 0,
+      "fail": 3,
+      "exit": 1
+    },
+    "owner": {
+      "pass": 3,
+      "fail": 0,
+      "exit": 0
+    }
+  },
+  "adjacent_controls": {
+    "base": {
+      "pass": 43,
+      "fail": 0,
+      "exit": 0
+    },
+    "owner": {
+      "pass": 45,
+      "fail": 0,
+      "exit": 0
+    },
+    "difference": "Two owner-authored preexisting cleanup cases added by this PR; not included in three supplemental scenarios."
+  },
+  "runner_controls": {
+    "base": {
+      "pass": 5,
+      "filtered_out": 95,
+      "fail": 0,
+      "exit": 0
+    },
+    "owner": {
+      "pass": 5,
+      "filtered_out": 95,
+      "fail": 0,
+      "exit": 0
+    }
+  },
+  "test_lint": {
+    "exit": 0
+  },
+  "test_format": {
+    "exit": 0
+  },
+  "owner_package_types": {
+    "exit": 137,
+    "result": "SIGKILL (Forced quit); no TypeScript diagnostics; cause unverified; no peak RSS captured; not a typecheck pass."
+  },
+  "residual_children": "All six final replay children reaped; PID-specific signal-0 probe returned ESRCH for each. No /bin/sleep 60 observed before, between or after runs. PID namespace numbers are local to this execution environment.",
+  "timer_diagnostic": {
+    "acceptance_gate": false,
+    "owner_fired_observations": [
+      false,
+      false,
+      false
+    ],
+    "caveat": "200ms timer may fire while a heavily stalled teardown is still in progress; observation alone does not qualify cancellation."
+  },
+  "review_test_sha256": "9aaaae1ff40221d1b7d5c8e4570c0b086206a38232e64f974b74cf16700258bd"
+}

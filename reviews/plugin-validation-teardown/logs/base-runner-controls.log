@@ -1,0 +1,14 @@
+bun test v1.4.2 (744846f84)
+
+packages/coding-agent/test/extensions-runner.test.ts:
+(pass) ExtensionRunner > handler timeouts > keeps a stalled registration inside the session_shutdown deadline [35.80ms]
+(pass) ExtensionRunner > managed timers (ctx.setInterval / ctx.setTimeout) > contains a throwing interval callback instead of letting it escape as uncaughtException [0.58ms]
+(pass) ExtensionRunner > managed timers (ctx.setInterval / ctx.setTimeout) > contains a throwing timeout callback and reports it once [0.56ms]
+(pass) ExtensionRunner > managed timers (ctx.setInterval / ctx.setTimeout) > clearTimer stops a managed interval from firing again [0.16ms]
+(pass) ExtensionRunner > managed timers (ctx.setInterval / ctx.setTimeout) > clearManagedTimers cancels every outstanding timer on teardown [0.17ms]
+
+ 5 pass
+ 95 filtered out
+ 0 fail
+ 17 expect() calls
+Ran 5 tests across 1 file. [1032.00ms]

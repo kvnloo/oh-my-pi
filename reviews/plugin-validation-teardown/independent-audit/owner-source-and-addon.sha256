@@ -1,0 +1,5 @@
+098fd31743881f22b4057e94b0604d22622ea908e12107bdd7d4581bb30d5ce4  packages/coding-agent/src/extensibility/plugins/manager.ts
+17abf269fec6c51c694403f7f40dab28dd0b0c452826a7092d8580018fc80284  packages/coding-agent/src/extensibility/extensions/loader.ts
+cdf3f8b2d80da336a443c6cbd5616f84859624b8d73fd5b8347b5572fed5f28c  packages/coding-agent/src/extensibility/extensions/runner.ts
+13e7a6e926767ff2f3c5cdc9b1313bb25dfc2f45fb548ff312360b4857007dc8  packages/utils/src/index.ts
+fa226e95db498db0b72c4c494a43d13670ffc4f4effdd559668afa4d4c6f7403  packages/natives/native/pi_natives.linux-x64-baseline.node

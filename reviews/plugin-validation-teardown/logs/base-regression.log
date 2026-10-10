@@ -1,0 +1,56 @@
+bun test v1.4.2 (744846f84)
+
+packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:
+108 | 		}`;
+109 | 	}
+110 | 
+111 | 	async function expectCleanupSettled(): Promise<void> {
+112 | 		expect(children).toHaveLength(1);
+113 | 		expect(children[0].exitCode !== null || children[0].signalCode !== null).toBe(true);
+                                                                                 ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at expectCleanupSettled ($BASE_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:113:76)
+      at <anonymous> ($BASE_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:144:9)
+{"reviewChild":42,"beforeHarnessCleanup":{"exitCode":null,"signalCode":null},"exited":143,"aliveAfterReaping":false}
+(fail) install validation teardown lifecycle owner review > awaits child teardown before rollback after missing manifest entry [22.83ms]
+108 | 		}`;
+109 | 	}
+110 | 
+111 | 	async function expectCleanupSettled(): Promise<void> {
+112 | 		expect(children).toHaveLength(1);
+113 | 		expect(children[0].exitCode !== null || children[0].signalCode !== null).toBe(true);
+                                                                                 ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at expectCleanupSettled ($BASE_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:113:76)
+      at <anonymous> ($BASE_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:144:9)
+{"reviewChild":43,"beforeHarnessCleanup":{"exitCode":null,"signalCode":null},"exited":143,"aliveAfterReaping":false}
+(fail) install validation teardown lifecycle owner review > awaits child teardown before rollback after sibling import failure [6.15ms]
+108 | 		}`;
+109 | 	}
+110 | 
+111 | 	async function expectCleanupSettled(): Promise<void> {
+112 | 		expect(children).toHaveLength(1);
+113 | 		expect(children[0].exitCode !== null || children[0].signalCode !== null).toBe(true);
+                                                                                 ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at expectCleanupSettled ($BASE_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:113:76)
+      at <anonymous> ($BASE_CHECKOUT/packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:155:9)
+{"reviewChild":44,"beforeHarnessCleanup":{"exitCode":null,"signalCode":null},"exited":143,"aliveAfterReaping":false}
+(fail) install validation teardown lifecycle owner review > a throwing shutdown handler cannot skip another handler's child teardown [4.01ms]
+
+ 0 pass
+ 3 fail
+ 17 expect() calls
+Ran 3 tests across 1 file. [986.00ms]

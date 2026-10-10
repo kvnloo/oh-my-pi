@@ -1,0 +1,18 @@
+{
+  "cwd": "$BASE_CHECKOUT",
+  "bunVersion": "1.4.2",
+  "resolution": {
+    "@oh-my-pi/pi-coding-agent/extensibility/plugins/manager": "file://$BASE_CHECKOUT/packages/coding-agent/src/extensibility/plugins/manager.ts",
+    "@oh-my-pi/pi-coding-agent/extensibility/extensions/loader": "file://$BASE_CHECKOUT/packages/coding-agent/src/extensibility/extensions/loader.ts",
+    "@oh-my-pi/pi-coding-agent/extensibility/extensions/runner": "file://$BASE_CHECKOUT/packages/coding-agent/src/extensibility/extensions/runner.ts",
+    "@oh-my-pi/pi-utils": "file://$BASE_CHECKOUT/packages/utils/src/index.ts",
+    "@oh-my-pi/pi-natives": "file://$BASE_CHECKOUT/packages/natives/native/index.js"
+  },
+  "nativeAddon": {
+    "path": "$BASE_CHECKOUT/packages/natives/native/pi_natives.linux-x64-baseline.node",
+    "version": "18.8.7",
+    "packageVersion": "18.8.7",
+    "stale": false
+  },
+  "nativeCountTokensAvailable": true
+}

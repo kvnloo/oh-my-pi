@@ -1,0 +1,2 @@
+$ tsgo -p tsconfig.json --noEmit
+error: script "check:types" was terminated by signal SIGKILL (Forced quit)

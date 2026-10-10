@@ -1,0 +1,65 @@
+bun test v1.4.2 (744846f84)
+
+packages/coding-agent/test/extension-prepared-rebind.test.ts:
+(pass) prepared extension rebinding > binds a fresh session extension without evaluating the module again [39.07ms]
+
+packages/coding-agent/test/plugin-install-npm-dedupe.test.ts:
+(pass) PluginManager.install npm idempotency > reinstalling the same npm spec leaves exactly one manifest key [4.37ms]
+(pass) PluginManager.install npm idempotency > a pre-duplicated manifest collapses to one key [1.29ms]
+(pass) PluginManager.install npm idempotency > a malformed full-spec key from an earlier upgrade is removed [1.34ms]
+
+packages/coding-agent/test/extension-loader-process-exit.test.ts:
+(pass) extension/hook loader process.exit guard (#3680) > converts extension and hook exits into load errors without blocking siblings [2.75ms]
+(pass) extension/hook loader process.exit guard (#3680) > restores process.exit after a synchronous throw inside the guarded callback [0.17ms]
+(pass) extension/hook loader process.exit guard (#3680) > raises ExtensionExitError when the guarded callback calls process.exit [0.14ms]
+(pass) extension/hook loader process.exit guard (#3680) > keeps postmortem.quit behind the extension exit guard [485.28ms]
+(pass) extension/hook loader process.exit guard (#3680) > lets host SIGINT exit once while a guarded callback remains pending [435.17ms]
+(pass) extension/hook loader process.exit guard (#3680) > lets fatal cleanup exit once while a guarded callback remains pending [486.62ms]
+(pass) extension/hook loader process.exit guard (#3680) > exits cleanly on host SIGHUP when postmortem initialized inside a guard window (#7393) [36.77ms]
+(pass) extension/hook loader process.exit guard (#3680) > only the outermost guard restores process.exit when guards nest [0.39ms]
+
+packages/coding-agent/test/extension-loader-concurrency.test.ts:
+(pass) extension loader concurrency (#7615) > imports modules concurrently but binds factories in path order [1.57ms]
+(pass) extension loader concurrency (#7615) > isolates per-extension import failures without blocking the batch [0.94ms]
+
+packages/coding-agent/test/extension-provider-registration-rollback.test.ts:
+(pass) extension provider registration rollback > replaces a queued provider after unregistering it [0.23ms]
+(pass) extension provider registration rollback > preserves provider registrations from earlier successful extensions [0.17ms]
+(pass) extension provider registration rollback > restores an earlier registration when unregistering extension fails [0.17ms]
+(pass) extension provider registration rollback > applies provider replacement after runtime initialization [164.41ms]
+(pass) extension provider registration rollback > uses extension usage providers and restores built-in resolution on unregister [104.26ms]
+(pass) extension provider registration rollback > rolls back every provider added by the failed extension [2.50ms]
+
+packages/coding-agent/test/plugin-install-git.test.ts:
+(pass) PluginManager.install with git sources > installs from github: shorthand and resolves real package name from deps diff [1.75ms]
+(pass) PluginManager.install with git sources > normalizes non-GitHub shorthand before invoking bun install [1.21ms]
+(pass) PluginManager.install with git sources > refreshes Bun's git cache before updating a re-installed github plugin (#3063) [4.54ms]
+(pass) PluginManager.install with git sources > removes an existing pinned git dependency before installing the unpinned source (#4960) [2.18ms]
+(pass) PluginManager.install with git sources > first-time github install does NOT run `bun update` (no existing pin to refresh) [0.98ms]
+(pass) PluginManager.install with git sources > drains stdout/stderr concurrently with proc.exited (pipe-buffer deadlock, #4230) [1.00ms]
+(pass) PluginManager.install with git sources > refreshes Bun's cached git clone before updating an existing plugin (#5401) [117.24ms]
+(pass) PluginManager.install with git sources > rejects git specs containing shell metacharacters [0.70ms]
+(pass) PluginManager.install with git sources > still rejects invalid npm names with the original error [0.36ms]
+(pass) PluginManager.install with git sources > upgrades a git plugin by bare name from its recorded source, keeping it disabled [8.55ms]
+(pass) PluginManager.install with git sources > reports a git plugin on a moving ref as changed when only the bun.lock pin moves [2.25ms]
+(pass) PluginManager.install with git sources > refuses to upgrade a plugin that is not installed [0.72ms]
+
+packages/coding-agent/test/plugin-install-validation.test.ts:
+(pass) PluginManager.install load validation > installs npm protocol specs with the resolved package name [6.35ms]
+(pass) PluginManager.install load validation > bypasses bun's manifest cache for npm installs so new versions resolve [4.85ms]
+(pass) PluginManager.install load validation > forces bun to replace an existing scoped npm plugin [7.17ms]
+(pass) PluginManager.install load validation > rejects and rolls back an install when the extension factory throws [6.12ms]
+(pass) PluginManager.install load validation > shuts down validated extensions when the factory succeeds [8.61ms]
+(pass) PluginManager.install load validation > shuts down validated extensions when the factory throws after starting work [5.99ms]
+(pass) PluginManager.install load validation > rejects an install whose extension entry cannot resolve its dependencies [4.12ms]
+(pass) PluginManager.install load validation > restores the previous package tree when reinstall validation fails [6.28ms]
+(pass) PluginManager.install load validation > restores the previous git plugin tree when reinstalling a different ref fails validation [5.61ms]
+(pass) PluginManager.install load validation > rejects an install whose manifest declares a missing extension entry [6.13ms]
+(pass) PluginManager.install load validation > restores bun.lock when a git reinstall fails validation (#3069 follow-up) [9.57ms]
+(pass) PluginManager.install load validation > removes bun.lock on rollback when it did not exist before install [2.74ms]
+(pass) PluginManager.install load validation > rolls back when an unknown feature is requested after a git reinstall [4.59ms]
+
+ 45 pass
+ 0 fail
+ 191 expect() calls
+Ran 45 tests across 7 files. [3.01s]

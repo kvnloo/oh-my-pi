@@ -1,0 +1,60 @@
+{
+  "base": {
+    "head": "b07a1c146d0d12cfc855a2c65d52f892ef319040",
+    "tracked_diff_empty": true,
+    "files": {
+      "AGENTS.md": "97de0a21491374f3ade276fdbe6e0fd0ccccc39917b22c270865292ca0b9886f",
+      "CONTRIBUTING.md": "d041d3f164eb0b5eedddd4d089e3ccd1d409e4f24f01e8aa138dba64094172ee",
+      "packages/coding-agent/DEVELOPMENT.md": "62b8a43fe1db5c6fd3b31dc1b40dad978e8cf77d9b9707dd33cd3dc384f5bcfa",
+      "packages/coding-agent/src/extensibility/plugins/manager.ts": "87b4151effc4dfa3a8a7800d6ec44a85c59959122de7c309ada035c1eaf24ddb",
+      "packages/coding-agent/src/extensibility/extensions/loader.ts": "6ce3fcecb30caca84738683af80677638a9b6aa51b285709f32f5fad56bcd2c2",
+      "packages/coding-agent/src/extensibility/extensions/types.ts": "c0b78c9414ec34ead5617b14a48b4750df0e1d2204eca002a9032c558b20c0ba",
+      "packages/coding-agent/src/extensibility/extensions/runner.ts": "cdf3f8b2d80da336a443c6cbd5616f84859624b8d73fd5b8347b5572fed5f28c",
+      "packages/coding-agent/src/extensibility/extensions/managed-timers.ts": "562a1583c180bd1606f0bb980dc96094c85908c86ec78270e4f4aef7548ee79c",
+      "packages/utils/src/index.ts": "13e7a6e926767ff2f3c5cdc9b1313bb25dfc2f45fb548ff312360b4857007dc8",
+      "packages/natives/native/index.js": "e4ee6f849c4e34a648d773c9090a84cfa5f8219c4a1db582532fba0cfc9daccb",
+      "packages/collab-web/scripts/build-tool-views.ts": "6fa73f1889896b7dd3a51fabf6c3a331eb0354065bb35d72207c99a56dbd0c52",
+      "packages/coding-agent/src/export/html/tool-views.generated.js": "f63d8bbed089cb1fccc11187e81543041e9dfa20dbc74a5dfd2fb82f90a7e50b",
+      "packages/coding-agent/test/plugin-install-validation.test.ts": "a04f5aad571af1d9e051e2c0430ab4eea72e7d6eae986ad5ce49a233da53c84d",
+      "packages/coding-agent/test/plugin-install-git.test.ts": "1ad587f08792b6363140b77d64dd3a8e6d4b123b4b7419a42db03558220dea8f",
+      "packages/coding-agent/test/plugin-install-npm-dedupe.test.ts": "7b11964e6e8f57d1b0b1330ff2dcf8411beac4dc0719f9c6ca34d7dfb628bbb6",
+      "packages/coding-agent/test/extension-loader-process-exit.test.ts": "82c6f8c188e472bbc17167e0fc56a739a791e975da0cb8816673ae7532d6a223",
+      "packages/coding-agent/test/extension-loader-concurrency.test.ts": "121994da2879bb8fbabeedd31d6a0f1f500c0d2ac420fde706f06ab58bfa0bfa",
+      "packages/coding-agent/test/extension-prepared-rebind.test.ts": "822ed43e11ee5e5fe6a5301806892b26bebac9e6b0ab730438e3233aae863dc8",
+      "packages/coding-agent/test/extension-provider-registration-rollback.test.ts": "1c3af3149d0511adc077b2e383942cb7e5a5e3600c8265fa4204a548311570e7",
+      "packages/coding-agent/test/extensions-runner.test.ts": "8f0e2a3fb1b0667cbd5b7057041cb3922e7236c12015a7fd5b8dd44c4eac9370",
+      "docs/extensions.md": "f81bbf1d479f71fbac24e4083f527b0829ddfeb828b839a493d5d01e4037d67a",
+      "docs/extension-loading.md": "1565e0cec22bca53bec1e7a2921e048a166dfd55cbeefb0101fdf481c0bd0cdd"
+    },
+    "review_test_sha256": "9aaaae1ff40221d1b7d5c8e4570c0b086206a38232e64f974b74cf16700258bd"
+  },
+  "owner": {
+    "head": "388d101eba56aeee9afd56c787f51f53e0db4105",
+    "tracked_diff_empty": true,
+    "files": {
+      "AGENTS.md": "97de0a21491374f3ade276fdbe6e0fd0ccccc39917b22c270865292ca0b9886f",
+      "CONTRIBUTING.md": "d041d3f164eb0b5eedddd4d089e3ccd1d409e4f24f01e8aa138dba64094172ee",
+      "packages/coding-agent/DEVELOPMENT.md": "62b8a43fe1db5c6fd3b31dc1b40dad978e8cf77d9b9707dd33cd3dc384f5bcfa",
+      "packages/coding-agent/src/extensibility/plugins/manager.ts": "098fd31743881f22b4057e94b0604d22622ea908e12107bdd7d4581bb30d5ce4",
+      "packages/coding-agent/src/extensibility/extensions/loader.ts": "17abf269fec6c51c694403f7f40dab28dd0b0c452826a7092d8580018fc80284",
+      "packages/coding-agent/src/extensibility/extensions/types.ts": "b9f76cc5f1eedd2ae5284ec4e295b8f141a0241383cca1da599bcdb3332a0327",
+      "packages/coding-agent/src/extensibility/extensions/runner.ts": "cdf3f8b2d80da336a443c6cbd5616f84859624b8d73fd5b8347b5572fed5f28c",
+      "packages/coding-agent/src/extensibility/extensions/managed-timers.ts": "562a1583c180bd1606f0bb980dc96094c85908c86ec78270e4f4aef7548ee79c",
+      "packages/utils/src/index.ts": "13e7a6e926767ff2f3c5cdc9b1313bb25dfc2f45fb548ff312360b4857007dc8",
+      "packages/natives/native/index.js": "e4ee6f849c4e34a648d773c9090a84cfa5f8219c4a1db582532fba0cfc9daccb",
+      "packages/collab-web/scripts/build-tool-views.ts": "6fa73f1889896b7dd3a51fabf6c3a331eb0354065bb35d72207c99a56dbd0c52",
+      "packages/coding-agent/src/export/html/tool-views.generated.js": "f63d8bbed089cb1fccc11187e81543041e9dfa20dbc74a5dfd2fb82f90a7e50b",
+      "packages/coding-agent/test/plugin-install-validation.test.ts": "1e2a662b79e557cc08da82e27480173174e30b8ddcd1017148b35f66407380b8",
+      "packages/coding-agent/test/plugin-install-git.test.ts": "1ad587f08792b6363140b77d64dd3a8e6d4b123b4b7419a42db03558220dea8f",
+      "packages/coding-agent/test/plugin-install-npm-dedupe.test.ts": "7b11964e6e8f57d1b0b1330ff2dcf8411beac4dc0719f9c6ca34d7dfb628bbb6",
+      "packages/coding-agent/test/extension-loader-process-exit.test.ts": "82c6f8c188e472bbc17167e0fc56a739a791e975da0cb8816673ae7532d6a223",
+      "packages/coding-agent/test/extension-loader-concurrency.test.ts": "121994da2879bb8fbabeedd31d6a0f1f500c0d2ac420fde706f06ab58bfa0bfa",
+      "packages/coding-agent/test/extension-prepared-rebind.test.ts": "822ed43e11ee5e5fe6a5301806892b26bebac9e6b0ab730438e3233aae863dc8",
+      "packages/coding-agent/test/extension-provider-registration-rollback.test.ts": "1c3af3149d0511adc077b2e383942cb7e5a5e3600c8265fa4204a548311570e7",
+      "packages/coding-agent/test/extensions-runner.test.ts": "8f0e2a3fb1b0667cbd5b7057041cb3922e7236c12015a7fd5b8dd44c4eac9370",
+      "docs/extensions.md": "f81bbf1d479f71fbac24e4083f527b0829ddfeb828b839a493d5d01e4037d67a",
+      "docs/extension-loading.md": "1565e0cec22bca53bec1e7a2921e048a166dfd55cbeefb0101fdf481c0bd0cdd"
+    },
+    "review_test_sha256": "9aaaae1ff40221d1b7d5c8e4570c0b086206a38232e64f974b74cf16700258bd"
+  }
+}

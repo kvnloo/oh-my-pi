@@ -1,0 +1,17 @@
+bun test v1.4.2 (744846f84)
+
+packages/coding-agent/test/plugin-validation-lifecycle-review.test.ts:
+{"managedTimerDiagnostic":{"delayMs":200,"observationAfterSettlementMs":250,"fired":false}}
+{"reviewChild":82,"beforeHarnessCleanup":{"exitCode":null,"signalCode":"SIGTERM"},"exited":143,"aliveAfterReaping":false}
+(pass) install validation teardown lifecycle owner review > awaits child teardown before rollback after missing manifest entry [321.13ms]
+{"managedTimerDiagnostic":{"delayMs":200,"observationAfterSettlementMs":250,"fired":false}}
+{"reviewChild":83,"beforeHarnessCleanup":{"exitCode":null,"signalCode":"SIGTERM"},"exited":143,"aliveAfterReaping":false}
+(pass) install validation teardown lifecycle owner review > awaits child teardown before rollback after sibling import failure [288.58ms]
+{"managedTimerDiagnostic":{"delayMs":200,"observationAfterSettlementMs":250,"fired":false}}
+{"reviewChild":84,"beforeHarnessCleanup":{"exitCode":null,"signalCode":"SIGTERM"},"exited":143,"aliveAfterReaping":false}
+(pass) install validation teardown lifecycle owner review > a throwing shutdown handler cannot skip another handler's child teardown [287.29ms]
+
+ 3 pass
+ 0 fail
+ 25 expect() calls
+Ran 3 tests across 1 file. [1.85s]
