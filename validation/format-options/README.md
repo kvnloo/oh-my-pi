@@ -28,6 +28,7 @@ This applies to configured `lsp.formatOnWrite` and consumers invoking the format
 - Corpus SHA-256: `4c62f2a40ce2886adbf0ba2f240d1ca7d4cd3d6e00231788332422f141bd0cfc`.
 - Oracle SHA-256: `56aa5fea114f405b23bfd585b8e7f139baf7c5eed257c0aa9af68fa74275f8e5`.
 - `ownership.json` records exact source/editorconfig searches and changed-file coverage for 18 open LSP-titled PRs. No relevant overlap was found. This is bounded relevant-owner coverage, not an exhaustive diff scan of every open PR.
+- Narrow three-file promotion carrier of the SAME optimization: [`7fe16cd34e5b7a595e470ae54917f250360d78a1`](https://github.com/kvnloo/oh-my-pi/commit/7fe16cd34e5b7a595e470ae54917f250360d78a1); helper/test/changelog blobs are identical to this evidence branch.
 - Project MIT licensing is unchanged. Publication is downstream-only; no upstream PR or comment is created by this receipt.
 
 ## Frozen methodology
@@ -51,7 +52,8 @@ Whole-corpus process peak RSS medians were 247,448→258,000 KiB (**+4.26%**); r
 - Changed helper, benchmark, and tests: focused TypeScript check passed through the package's `check:types` script.
 - Entire coding-agent package lint and formatting checks passed (3,208 matched files).
 - Diff whitespace check passed.
-- **Full package/workspace types, full native-backed suite, and remote CI: HOLD.** The whole coding-agent type graph had already hit the sandbox memory limit in prior work; it was not rerun. The existing native-addon baseline is unsuitable for claiming the full native suite passed. No clean CI or merge readiness is asserted.
+- **Full coding-agent package types: PASS**, first actual formatting-tree attempt on 2026-10-10, exit 0 in 45.57 seconds, using the unchanged full `check:types` script. A material memory cleanup enabled the fresh bounded validation window; the earlier formatting HOLD was unrun, and historical SIGKILLs belonged to another runner-identity tree. See [the exact-source portable receipt](full-package-types-20261010/README.md).
+- **Aggregate root/full-workspace types, full native-backed suite, Windows execution and hosted CI remain unverified/HOLD.** The existing native-addon baseline is unsuitable for claiming the full native suite passed. No clean CI or merge readiness is asserted.
 
 The published branch contains the guard, contract tests, benchmark, changelog line, and this compact receipt. Raw process results and resources are in `raw/`; all source fixtures can be reconstructed from the public baseline instead of duplicating 12 MB of source/stress data.
 

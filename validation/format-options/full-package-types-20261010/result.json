@@ -1,0 +1,36 @@
+{
+  "label": "formatting",
+  "started_at": "2026-10-10T05:13:31.178115+00:00",
+  "finished_at": "2026-10-10T05:14:16.806982+00:00",
+  "cwd": "packages/coding-agent",
+  "command": [
+    "bun",
+    "run",
+    "check:types"
+  ],
+  "script": "tsgo -p tsconfig.json --noEmit",
+  "resource_env": {
+    "GOMAXPROCS": "2",
+    "GOMEMLIMIT": "2GiB"
+  },
+  "timeout_seconds": 240,
+  "initial_available_kib": 6088788,
+  "minimum_available_kib": 1639276,
+  "peak_sampled_process_group_rss_kib": 4224452,
+  "wait4_max_child_rss_kib": 4246732,
+  "elapsed_seconds": 45.565921302997594,
+  "exit_code": 0,
+  "shell_equivalent_exit_code": 0,
+  "stop_reason": null,
+  "source_and_ownership_unchanged": true,
+  "published_identity": "eabb97c9274f8d0e4354989538442d2d9d7aa1bb",
+  "verified_source_tree": "debc8d98f6b29e4e67c640a80107d7cf74d332ff",
+  "result_scope": "First actual full coding-agent package typecheck for the exact formatting source tree; no narrowed project override.",
+  "limits": [
+    "aggregate root/full-workspace check not run",
+    "full native-backed/Rust suite not run",
+    "Windows execution not run",
+    "hosted CI not run",
+    "not a merge-readiness claim"
+  ]
+}

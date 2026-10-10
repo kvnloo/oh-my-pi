@@ -1,0 +1,2 @@
+$ GOMAXPROCS=2 GOMEMLIMIT=2GiB bun run check:types
+$ tsgo -p tsconfig.json --noEmit

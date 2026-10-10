@@ -1,0 +1,11 @@
+{
+  "purpose": "Original verifier receipt hashes before documented portability sanitization. Originals retained; no formatting OOM failure is claimed.",
+  "sha256": {
+    "full-typecheck.log": "1219f3f40f3516617be4817042aa015276ee9f0a32139ba025c29924312b64f0",
+    "result.json": "90b0690b20b237ea0156b6d14e2040d584f28cf920fdcb153cb8fd489e86d449",
+    "before.json": "011ad0f9b362119a27eb2a6e88893bdb9ad96495ad76d0b4520096c6fca3d6d1",
+    "after.json": "011ad0f9b362119a27eb2a6e88893bdb9ad96495ad76d0b4520096c6fca3d6d1",
+    "resources.jsonl": "22bcb4eec1f8089d733eae413647f2fdbccf291778d81c4c7892217f481409ac",
+    "run_full_gate.py": "12362a6f4900acd18dfe6f9e3b27b6a5ec267e7bae951532c100af0ea60f9606"
+  }
+}
