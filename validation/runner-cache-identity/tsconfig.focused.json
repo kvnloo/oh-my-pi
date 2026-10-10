@@ -1,0 +1,14 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"include": [
+		"../../packages/coding-agent/src/eval/runner-cache.ts",
+		"../../packages/coding-agent/src/utils/owner-private-dir.ts",
+		"../../packages/coding-agent/test/runner-cache-restage.test.ts",
+		"../../types/assets/index.d.ts"
+	],
+	"compilerOptions": {
+		"noEmit": true,
+		"types": ["bun"],
+		"typeRoots": ["../../node_modules/@types"]
+	}
+}

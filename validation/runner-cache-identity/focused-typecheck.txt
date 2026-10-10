@@ -1,0 +1,1 @@
+$ tsgo -p tsconfig.json --noEmit -p ../../validation/runner-cache-identity/tsconfig.focused.json

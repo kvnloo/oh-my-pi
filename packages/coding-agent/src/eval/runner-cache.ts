@@ -28,23 +28,25 @@ const stagedPaths = new Map<string, string>();
  * runner file (whose name is a deterministic hash) for us to execute. A
  * squatted path falls back to a fresh `mkdtemp` directory for this process.
  *
- * The staged path is memoized per `dirName` but re-checked with `fs.existsSync`
- * before reuse, so a runner deleted mid-session is re-written on the next call
- * instead of handing back a path to a missing file (issue #8140).
+ * The staged path is memoized per `dirName`, but reuse requires the requested
+ * source hash and extension to match. It is also re-checked with `fs.existsSync`,
+ * so a runner deleted mid-session is re-written on the next call instead of
+ * handing back a path to a missing file (issue #8140).
  *
  * @param dirName Cache subdirectory prefix under the OS temp dir (unique per language).
  * @param ext Runner file extension without the dot (e.g. `py`).
  * @param script Runner source, hashed to key the cached file per version.
  */
 export async function stageRunnerScript(dirName: string, ext: string, script: string): Promise<string> {
+	const hash = Bun.hash(script).toString(36);
+	const filename = `runner-${hash}.${ext}`;
 	const memoized = stagedPaths.get(dirName);
 	if (memoized) {
-		if (isReusableStagedPath(memoized)) return memoized;
+		if (path.basename(memoized) === filename && isReusableStagedPath(memoized)) return memoized;
 		stagedPaths.delete(dirName);
 	}
 	const dir = await resolveStagingDir(dirName);
-	const hash = Bun.hash(script).toString(36);
-	const target = path.join(dir, `runner-${hash}.${ext}`);
+	const target = path.join(dir, filename);
 	if (!fs.existsSync(target)) {
 		await Bun.write(target, script);
 	}

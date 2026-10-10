@@ -1,0 +1,7 @@
+$ GOMAXPROCS=2 GOMEMLIMIT=512MiB bun run check:types
+$ tsgo -p tsconfig.json --noEmit
+error: script "check:types" was terminated by signal SIGKILL (Forced quit)
+
+exit_code=-9
+elapsed_seconds=40.55
+shell_equivalent_exit_code=137

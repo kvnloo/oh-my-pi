@@ -1,0 +1,17 @@
+bun test v1.4.2 (744846f84)
+
+validation/runner-cache-identity/independent-probes.test.ts:
+(pass) independent runner-cache identity controls > returns the requested executable for A to B to A source changes [21.39ms]
+(pass) independent runner-cache identity controls > keeps extension identity through A to B to A alternation [12.84ms]
+(pass) independent runner-cache identity controls > reuses equal content without rewriting the staged file [4.61ms]
+(pass) independent runner-cache identity controls > isolates directory keys even with equal runner basenames [4.01ms]
+(pass) independent runner-cache identity controls > restages file-only deletion after switching source identity [8.14ms]
+(pass) independent runner-cache identity controls > returns each requested identity when staging calls overlap [12.24ms]
+(pass) independent runner-cache identity controls > revalidates and repairs directory permissions on both warm and changed identity paths [4.95ms]
+(pass) independent runner-cache identity controls > rejects a planted changed runner after the predictable directory is replaced by a symlink [17.81ms]
+(pass) independent runner-cache identity controls > retains the owner/private guard rejection matrix [0.08ms]
+
+ 9 pass
+ 0 fail
+ 50 expect() calls
+Ran 9 tests across 1 file. [408.00ms]

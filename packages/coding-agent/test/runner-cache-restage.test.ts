@@ -66,6 +66,33 @@ describe("stageRunnerScript re-validation", () => {
 		expect(fs.existsSync(second)).toBe(true);
 	});
 
+	it("executes the requested runner after its source changes in the same staging directory", async () => {
+		const dirName = uniqueDir();
+		const first = await stageRunnerScript(dirName, "js", "console.log('original');\n");
+		const updated = await stageRunnerScript(dirName, "js", "console.log('updated');\n");
+
+		const originalRun = Bun.spawnSync([process.execPath, first]);
+		const updatedRun = Bun.spawnSync([process.execPath, updated]);
+
+		expect([originalRun.exitCode, updatedRun.exitCode]).toEqual([0, 0]);
+		expect([originalRun.stdout.toString().trim(), updatedRun.stdout.toString().trim()]).toEqual([
+			"original",
+			"updated",
+		]);
+	});
+
+	it("stages the requested extension when identical source was cached with another extension", async () => {
+		const dirName = uniqueDir();
+		const script = "const value: string = 'typed'; console.log(value);\n";
+		await stageRunnerScript(dirName, "js", script);
+		const typed = await stageRunnerScript(dirName, "ts", script);
+
+		expect(path.extname(typed)).toBe(".ts");
+		const run = Bun.spawnSync([process.execPath, typed]);
+		expect(run.exitCode).toBe(0);
+		expect(run.stdout.toString().trim()).toBe("typed");
+	});
+
 	// The shared, un-suffixed tmpdir name may be owned by another account (e.g.
 	// root created it 0755 first); staging must not write into it, or every other
 	// user's Python eval fails with EACCES. A non-writable dir stands in for the

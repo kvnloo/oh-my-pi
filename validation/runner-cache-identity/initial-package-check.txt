@@ -1,0 +1,8 @@
+$ oxlint . && oxfmt --check --no-error-on-unmatched-pattern 'src/**/*.{ts,tsx}' '{test,bench,examples,scripts}/**/*.ts' '*.ts' && bun run check:types
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 280ms on 3206 files using 9 threads.
+$ tsgo -p tsconfig.json --noEmit
+error: script "check:types" was terminated by signal SIGKILL (Forced quit)
+error: script "check" was terminated by signal SIGKILL (Forced quit)

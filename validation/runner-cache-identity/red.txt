@@ -1,0 +1,48 @@
+bun test v1.4.2 (744846f84)
+
+packages/coding-agent/test/runner-cache-restage.test.ts:
+(pass) stageRunnerScript re-validation > re-stages the runner after the cached file is deleted mid-session [1.69ms]
+(pass) stageRunnerScript re-validation > reuses the memoized path while the file still exists [0.51ms]
+73 |
+74 | 		const originalRun = Bun.spawnSync([process.execPath, first]);
+75 | 		const updatedRun = Bun.spawnSync([process.execPath, updated]);
+76 |
+77 | 		expect([originalRun.exitCode, updatedRun.exitCode]).toEqual([0, 0]);
+78 | 		expect([originalRun.stdout.toString().trim(), updatedRun.stdout.toString().trim()]).toEqual([
+                                                                                           ^
+error: expect(received).toEqual(expected)
+
+  [
+    "original",
+-   "updated",
++   "original",
+  ]
+
+- Expected  - 1
++ Received  + 1
+
+      at <anonymous> (<repo>/packages/coding-agent/test/runner-cache-restage.test.ts:78:87)
+(fail) stageRunnerScript re-validation > executes the requested runner after its source changes in the same staging directory [8.10ms]
+85 | 		const dirName = uniqueDir();
+86 | 		const script = "const value: string = 'typed'; console.log(value);\n";
+87 | 		await stageRunnerScript(dirName, "js", script);
+88 | 		const typed = await stageRunnerScript(dirName, "ts", script);
+89 |
+90 | 		expect(path.extname(typed)).toBe(".ts");
+                                   ^
+error: expect(received).toBe(expected)
+
+Expected: ".ts"
+Received: ".js"
+
+      at <anonymous> (<repo>/packages/coding-agent/test/runner-cache-restage.test.ts:90:31)
+(fail) stageRunnerScript re-validation > stages the requested extension when identical source was cached with another extension [0.50ms]
+(pass) stageRunnerScript re-validation > stages outside a shared dir the current user cannot write [1.86ms]
+(pass) stageRunnerScript re-validation > refuses a runner planted behind a symlinked staging dir [6.17ms]
+(pass) stageRunnerScript re-validation > re-validates the staging dir before reusing the memo [0.77ms]
+(pass) stageRunnerScript re-validation > stages when the per-uid name is a squatted file [0.58ms]
+
+ 6 pass
+ 2 fail
+ 22 expect() calls
+Ran 8 tests across 1 file. [154.00ms]
