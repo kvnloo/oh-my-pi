@@ -94,6 +94,22 @@ function parseHtmlResults(html: string): ParsedResult[] {
  */
 const MOJEEK_QUERY_SYNTAX: QuerySyntax = { phrases: true, negation: true, site: true };
 
+/** Map recency onto Mojeek's documented `since` vocabulary.
+ *  Mojeek documents `since` as accepting `day`|`month`|`year`|`YYYYMMDD` only
+ *  (mojeek.de/support/search-operators.html, mojeek.com/support/api/...); it
+ *  does NOT accept `week`. So `week` is emitted as a concrete YYYYMMDD date
+ *  7 days ago — exact week semantics via a documented value rather than
+ *  forwarding an undocumented token. Dates reflect crawl or last-modification
+ *  time per Mojeek's operator docs. */
+function recencyToSince(recency: NonNullable<SearchParams["recency"]>): string {
+	if (recency === "week") {
+		const d = new Date();
+		d.setUTCDate(d.getUTCDate() - 7);
+		return d.toISOString().slice(0, 10).replace(/-/g, "");
+	}
+	return recency;
+}
+
 function buildSearchUrl(params: SearchParams, numResults: number): string {
 	const url = new URL(MOJEEK_SEARCH_URL);
 	url.searchParams.set("q", formatScraperQuery(params.query, params.parsedQuery, MOJEEK_QUERY_SYNTAX));
@@ -102,11 +118,7 @@ function buildSearchUrl(params: SearchParams, numResults: number): string {
 	url.searchParams.set("lang", "en");
 	url.searchParams.set("lb", "en");
 	url.searchParams.set("theme", "dark");
-	// Mojeek's `since` filter accepts the relative tokens day/week/month/year
-	// verbatim — the same vocabulary as `recency` (verified live: each window
-	// returns a near-disjoint, fresher result set). Dates reflect crawl or
-	// last-modification time per Mojeek's operator docs.
-	if (params.recency) url.searchParams.set("since", params.recency);
+	if (params.recency) url.searchParams.set("since", recencyToSince(params.recency));
 	return url.href;
 }
 
