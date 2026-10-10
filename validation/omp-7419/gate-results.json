@@ -1,0 +1,144 @@
+{
+  "production_source_sha256": "d9cbd2c6fa130898cb33d15061bafcfef55ec1069e92647f2f77f6e3eeeb9490",
+  "full_gates_toolchain": "nightly-2026-10-06 (rustc 1.101.0-nightly ea137335b 2026-10-05)",
+  "final_full_gates_configuration": {
+    "cargo_jobs": 2,
+    "build_target": "disk-backed",
+    "cmake": "4.4.4, scoped official PyPI distribution",
+    "ninja": "1.13.2, scoped official PyPI distribution"
+  },
+  "attempts": [
+    {
+      "gate": "full-check-interrupted",
+      "command": "bun run check:rs",
+      "exit_code": 130,
+      "result": "Interrupted for shared resource pressure; not a pass.",
+      "raw_log_sha256": "d4beb57e53f9c77debec1d8330ea0249d8fc15ca0d472cdf2266f6cd2c81b278",
+      "raw_log_retained_locally": true
+    },
+    {
+      "gate": "full-test-interrupted",
+      "command": "bun run test:rs",
+      "exit_code": 130,
+      "result": "Waiting for the build-directory lock, then interrupted; not a pass.",
+      "raw_log_sha256": "382dc9557699a97d5a988123199962aac8e7557b3ecead800197186cabdfe84e",
+      "raw_log_retained_locally": true
+    },
+    {
+      "gate": "full-check-tmpfs-interrupted",
+      "command": "CARGO_BUILD_JOBS=2 bun run check:rs",
+      "exit_code": 130,
+      "result": "Interrupted to move its build target from tmpfs to disk; not a pass.",
+      "raw_log_sha256": "ac95753b78c453d4a2cc588956f90e89ca41b57a9da9446cd7cbba7146527d9a",
+      "raw_log_retained_locally": true
+    },
+    {
+      "gate": "full-check-cmake-blocked",
+      "command": "CARGO_BUILD_JOBS=2 bun run check:rs",
+      "exit_code": 101,
+      "result": "wasmtime-c-api-impl 29.0.1 could not spawn cmake; environment failure.",
+      "raw_log_sha256": "b4ad5a3af461b9dcd09653fcd0c2f2eca7bf46f78001b49211fc970afdfab4c3",
+      "raw_log_retained_locally": true
+    },
+    {
+      "gate": "full-check-passed",
+      "command": "CI=1 CARGO_BUILD_JOBS=2 bun run check:rs",
+      "exit_code": 0,
+      "result": "Repository rustfmt check and workspace Clippy/typecheck with -D warnings passed; documented vendored forks excluded.",
+      "raw_log_sha256": "505acafddb22d0fc477006a2fb27aab6e783af35c9be7755f542f6450433e09b",
+      "raw_log_retained_locally": true
+    },
+    {
+      "gate": "full-test-final",
+      "command": "CI=1 CARGO_BUILD_JOBS=2 NEXTEST_TEST_THREADS=2 CMAKE_BUILD_PARALLEL_LEVEL=2 bun run test:rs",
+      "exit_code": 100,
+      "result": "Nextest: 3279 run, 3268 passed, 11 failed, 6 skipped. Script stopped before doctests. Full test gate did not pass.",
+      "raw_log_sha256": "4029721ad1cdf3b9b03557294cfbff8d466db4dd6383fd1be6dcfc9389d0539c",
+      "raw_log_retained_locally": true,
+      "failed_tests": [
+        "pi-natives desktop::linux::wayland::tests::desktop_input_connects_to_libei_lazily",
+        "pi-natives desktop::linux::wayland::tests::failed_input_request_allows_another_connection_attempt",
+        "pi-natives desktop::linux::wayland::tests::readonly_backend_creation_does_not_connect_to_libei",
+        "pi-natives oauth_callback::tests::activation_failure_restores_even_after_mutating_os_state",
+        "pi-natives oauth_callback::tests::prepare_failure_releases_lease_and_removes_private_artifacts",
+        "pi-natives oauth_callback::tests::lease_excludes_competing_receivers_in_same_process",
+        "pi-natives oauth_callback::tests::stale_journal_is_recovered_before_successor_activation",
+        "pi-natives oauth_callback::tests::uncertain_restore_retains_journal_and_ownership",
+        "pi-shell::vfs cross_device_mv_keeps_a_tree_with_an_entry_it_could_not_copy",
+        "pi-walker tests::collect_entries_ignores_parent_gitignore_above_non_repo_root",
+        "pi-walker tests::parent_ignore_outside_repo_does_not_filter_explicit_root"
+      ],
+      "failure_scope": "All eleven failures reproduced on the exact measured baseline. Nine are Wayland/OAuth/VFS socket/setup-related, including secondary assertions; two are pi-walker parent-ignore assertions."
+    },
+    {
+      "gate": "exact-head-focused-package-selection-interrupted",
+      "command": "cargo nextest run --locked --offline -p pi-shell -E 'test(minimizer::filters::cloud::tests) or test(minimizer::primitives::tests)'",
+      "exit_code": 130,
+      "result": "Build interrupted before tests because reduced package selection changed feature unification; replaced with the normal workspace package set and the same test filter. Not a pass.",
+      "raw_log_sha256": "4fcfeef6e1c8c4d1fbcfe5d3852548d3c4757619e49734f14a5c06ab043f0f23",
+      "raw_log_retained_locally": true
+    },
+    {
+      "gate": "exact-head-focused-workspace",
+      "command": "cargo nextest run --locked --offline --workspace --exclude brush-core --exclude brush-parser --exclude cfg_aliases --exclude napi -E 'test(minimizer::filters::cloud::tests) or test(minimizer::primitives::tests)'",
+      "exit_code": 0,
+      "result": "43 tests passed, 0 failed, 3242 explicitly excluded by the filter. Real pi-shell module tests, including both new contract tests, under the normal workspace feature graph and pinned nightly.",
+      "raw_log_sha256": "2953304edf4930db2150f9f684beabec24c01ef37e7eea6860f3747fcedf75ed",
+      "raw_log_retained_locally": true
+    },
+    {
+      "gate": "separate-repository-doctest-phase",
+      "command": "cargo test --locked --offline --doc --workspace --exclude brush-core --exclude brush-parser --exclude cfg_aliases --exclude napi",
+      "exit_code": 0,
+      "result": "One runnable doctest passed, 18 ignored, 0 failed. pi-natives cdylib doctests are unsupported. This is the normal script doctest command executed separately after its nextest phase failed.",
+      "raw_log_sha256": "883801662eca8f9a2c6027296f0e4810e736330cb9931b0a3f8d92a8b3fd2919",
+      "raw_log_retained_locally": true
+    }
+  ],
+  "baseline_comparison": {
+    "source_revision": "46ad32961a96aef21cd35fe615374f4b3675ca58",
+    "method": "Separate execution from a clean exact-baseline checkout; same pinned toolchain, sandbox, scoped tools, jobs/thread limits and locked dependencies. Dependency artifacts may be reused; candidate source is not substituted.",
+    "identical_failed_modules_and_inputs_sha256": {
+      "Cargo.toml": "494fa11f4c821ce59b18283bcbd7df6c2e36b0665377c506635a690f0118c09a",
+      "Cargo.lock": "7c861dc499fbd4959b6598a5ae7111d72f6d0ae8c0b7e25e592a4efcea6a134e",
+      ".cargo/config.toml": "99ad6a0fa0ab71c9e8aa7925d4507331c43bfc501862622e85bb3f24e229d986",
+      "rust-toolchain.toml": "1a03b373c096a3f475e2bf3bd9ad975a85c4e54927c0c5603053cf048cb06c1e",
+      "crates/pi-natives/Cargo.toml": "faa3dcadce206da1ea0f58697d94526232d4015d0d9c639db0ee474e94d0ba75",
+      "crates/pi-shell/Cargo.toml": "72c370d1d8e7965fba58de8d8a24ab719eb7b3bcf1ebdb4e701b8386faafe197",
+      "crates/pi-walker/Cargo.toml": "13f96ebecb39479adc4c229e72739d802036d9324e8fdfa0d582c5eecc51e54b",
+      "crates/pi-natives/src/desktop/linux/wayland/mod.rs": "f180513708ea71122aeb4e2f93b0f34dd7249ceca53abfb9a0bf1c10cc48f22a",
+      "crates/pi-natives/src/oauth_callback/tests.rs": "f17b79a2d76dda8c77aeb3961237d294d52a067a524fa315f23a77d1ea45637f",
+      "crates/pi-shell/tests/vfs.rs": "f855dffe4f704c9e4b273609c3471883d80640c7f43344f51694c1188fc3635a",
+      "crates/pi-walker/src/lib.rs": "f6d1d91762042e49602820909defb182527ec5ae47f40ba4b394cd73c941cc2b"
+    },
+    "status": "all_11_failures_reproduced",
+    "exit_code": 100,
+    "tests_run": 11,
+    "passed": 0,
+    "failed": 11,
+    "excluded_tests": 1493,
+    "failed_tests": [
+      "pi-natives desktop::linux::wayland::tests::desktop_input_connects_to_libei_lazily",
+      "pi-natives desktop::linux::wayland::tests::failed_input_request_allows_another_connection_attempt",
+      "pi-natives desktop::linux::wayland::tests::readonly_backend_creation_does_not_connect_to_libei",
+      "pi-natives oauth_callback::tests::activation_failure_restores_even_after_mutating_os_state",
+      "pi-natives oauth_callback::tests::lease_excludes_competing_receivers_in_same_process",
+      "pi-natives oauth_callback::tests::prepare_failure_releases_lease_and_removes_private_artifacts",
+      "pi-natives oauth_callback::tests::stale_journal_is_recovered_before_successor_activation",
+      "pi-natives oauth_callback::tests::uncertain_restore_retains_journal_and_ownership",
+      "pi-shell::vfs cross_device_mv_keeps_a_tree_with_an_entry_it_could_not_copy",
+      "pi-walker tests::collect_entries_ignores_parent_gitignore_above_non_repo_root",
+      "pi-walker tests::parent_ignore_outside_repo_does_not_filter_explicit_root"
+    ],
+    "raw_log_sha256": "a1ff740025f0fa4ea18814a16bb6f5a330332ead80a0014479bdd545a32290d8",
+    "raw_log_retained_locally": true,
+    "outcome": "All eleven full-workspace failing test identities reproduced on the exact measured baseline, with matching assertion/EPERM signatures. This is a failure-isolation comparison, not a passing gate or a retry toward success.",
+    "command": "cargo nextest run --locked --offline -p pi-natives -p pi-shell -p pi-walker -E 'test(/desktop_input_connects_to_libei_lazily|failed_input_request_allows_another_connection_attempt|readonly_backend_creation_does_not_connect_to_libei|activation_failure_restores_even_after_mutating_os_state|prepare_failure_releases_lease_and_removes_private_artifacts|lease_excludes_competing_receivers_in_same_process|stale_journal_is_recovered_before_successor_activation|uncertain_restore_retains_journal_and_ownership|cross_device_mv_keeps_a_tree_with_an_entry_it_could_not_copy|collect_entries_ignores_parent_gitignore_above_non_repo_root|parent_ignore_outside_repo_does_not_filter_explicit_root/)' --status-level=fail --final-status-level=fail"
+  },
+  "focused_module_clippy": {
+    "command": "python3 validation/omp-7419/run.py lint",
+    "exit_code": 0,
+    "scope": "Strict isolated exact-source module Clippy, all targets, -D warnings; lint-clean measurement facade."
+  },
+  "full_test_gate_status": "FAILED, all 11 failures reproduced on exact baseline; focused tests and separate doctests do not convert this result into a full pass."
+}

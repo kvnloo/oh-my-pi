@@ -1,0 +1,63 @@
+   Compiling memchr v2.8.3
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling equivalent v1.0.2
+   Compiling hashbrown v0.17.1
+   Compiling regex-syntax v0.8.11
+   Compiling serde_json v1.0.151
+   Compiling itoa v1.0.18
+   Compiling aho-corasick v1.1.5
+   Compiling indexmap v2.14.2
+   Compiling regex-automata v0.4.18
+   Compiling regex v1.13.1
+   Compiling omp-perf-validation v0.1.0 (<validation-workspace>)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.13s
+────────────
+ Nextest run ID 5407dbbc-7fec-4746-ae55-06722e99de10 with nextest profile: default
+    Starting 43 tests across 1 binary
+        PASS [   0.004s] ( 1/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::aws_unknown_json_uses_generic_safe_table
+        PASS [   0.004s] ( 2/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::aws_json_parse_failure_falls_back_to_progress_strip
+        PASS [   0.006s] ( 3/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::compacts_ec2_describe_instances_json
+        PASS [   0.006s] ( 4/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::compacts_new_aws_service_shapes
+        PASS [   0.006s] ( 5/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::aws_s3_cp_to_stdout_preserves_body
+        PASS [   0.006s] ( 6/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::compacts_dynamodb_typed_json
+        PASS [   0.006s] ( 7/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::aws_s3_cp_to_stdout_with_trailing_options_preserves_body
+        PASS [   0.006s] ( 8/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::compacts_cloudwatch_log_events_json
+        PASS [   0.006s] ( 9/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::compacts_psql_expanded_dashed_records_and_preserves_footer
+        PASS [   0.004s] (10/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::curl_silent_preserves_body_lines_that_look_like_progress
+        PASS [   0.005s] (11/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::compacts_s3_text_ls
+        PASS [   0.005s] (12/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::generic_aws_skips_sensitive_arrays_and_hides_nested_values
+        PASS [   0.005s] (13/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::preserves_psql_table_row_count_and_errors
+        PASS [   0.005s] (14/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::malformed_new_aws_service_json_passthroughs
+        PASS [   0.006s] (15/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::generic_aws_counts_object_rows_and_keeps_columns_found_after_the_cap
+        PASS [   0.005s] (16/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::psql_messages_quoting_pipes_after_a_table_stay_verbatim
+        PASS [   0.004s] (17/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::psql_messages_quoting_pipes_after_expanded_records_stay_verbatim
+        PASS [   0.006s] (18/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::s3_cp_output_is_not_parsed_as_listing
+        PASS [   0.009s] (19/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::preserves_long_aws_json_output
+        PASS [   0.004s] (20/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::s3_ls_common_prefix_with_spaces_is_preserved
+        PASS [   0.005s] (21/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::sensitive_aws_keys_never_leak_from_generic
+        PASS [   0.006s] (22/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::wget_quiet_preserves_body_lines_that_look_like_progress
+        PASS [   0.006s] (23/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::strips_wget_progress_and_preserves_body_percent_line
+        PASS [   0.007s] (24/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::s3_ls_summarize_footer_is_not_parsed_as_row
+        PASS [   0.006s] (25/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::strips_curl_progress_and_preserves_long_multiline_body
+        PASS [   0.004s] (26/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::dedups_consecutive_lines
+        PASS [   0.004s] (27/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::groups_file_diagnostics
+        PASS [   0.005s] (28/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::filter_lines_regex_combines_keep_and_strip
+        PASS [   0.005s] (29/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::head_tail_cap_uses_named_budget
+        PASS [   0.004s] (30/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::strip_ansi_preserves_carriage_returns
+        PASS [   0.004s] (31/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::test_command_has_any_token_equals_form
+        PASS [   0.005s] (32/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::named_caps_have_nonzero_reductions
+        PASS [   0.005s] (33/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::head_tail_marks_omitted_lines
+        PASS [   0.005s] (34/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::strips_ansi_sequences
+        PASS [   0.004s] (35/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::test_command_has_ordered_tokens_basic
+        PASS [   0.003s] (36/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::test_command_has_ordered_tokens_first_equals_second
+        PASS [   0.004s] (37/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::truncate_line_appends_dropped_char_tally
+        PASS [   0.004s] (38/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::test_horizontal_rule_requires_non_space
+        PASS [   0.004s] (39/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::truncate_line_at_exact_length_emits_no_marker
+        PASS [   0.003s] (40/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::truncate_line_short_passes_through
+        PASS [   0.021s] (41/43) omp-perf-validation::bin/omp-perf-validation minimizer::cloud::tests::psql_message_like_data_rows_stay_under_the_row_cap
+        PASS [   0.004s] (42/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::truncate_line_counts_unicode_scalars_not_bytes
+        PASS [   0.004s] (43/43) omp-perf-validation::bin/omp-perf-validation minimizer::primitives::tests::truncate_line_max_zero_yields_empty
+────────────
+     Summary [   0.028s] 43 tests run: 43 passed, 0 skipped
+Validation workspace: <validation-workspace>

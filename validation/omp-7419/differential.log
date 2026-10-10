@@ -1,0 +1,1 @@
+PASS: 3181 adversarial fixtures, 34991 exact baseline/candidate generic and public-filter comparisons; all 15 sensitive keys tested at nested depths 0..7.

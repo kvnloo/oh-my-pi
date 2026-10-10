@@ -1,0 +1,41 @@
+[
+  {
+    "rows": 10,
+    "input_json_bytes": 1790,
+    "baseline_generic_us": 14.912,
+    "candidate_generic_us": 2.10565,
+    "generic_speedup": 7.081898701113672,
+    "baseline_filter_us": 42.49265,
+    "candidate_filter_us": 24.31915,
+    "filter_speedup": 1.7472917433380688,
+    "baseline_allocated_bytes": 31407,
+    "candidate_allocated_bytes": 1814,
+    "samples_per_variant_per_path": 62
+  },
+  {
+    "rows": 1000,
+    "input_json_bytes": 1166952,
+    "baseline_generic_us": 1817.3641499999999,
+    "candidate_generic_us": 104.5752,
+    "generic_speedup": 17.37853860188649,
+    "baseline_filter_us": 7567.2967,
+    "candidate_filter_us": 5835.66885,
+    "filter_speedup": 1.2967316848350638,
+    "baseline_allocated_bytes": 4861047,
+    "candidate_allocated_bytes": 38678,
+    "samples_per_variant_per_path": 62
+  },
+  {
+    "rows": 4000,
+    "input_json_bytes": 2619440,
+    "baseline_generic_us": 7332.33,
+    "candidate_generic_us": 411.19820000000004,
+    "generic_speedup": 17.831619885495606,
+    "baseline_filter_us": 26686.9595,
+    "candidate_filter_us": 17160.1826,
+    "filter_speedup": 1.555167571468616,
+    "baseline_allocated_bytes": 15333903,
+    "candidate_allocated_bytes": 138830,
+    "samples_per_variant_per_path": 62
+  }
+]

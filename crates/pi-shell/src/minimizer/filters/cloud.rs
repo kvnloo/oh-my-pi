@@ -455,8 +455,7 @@ fn extract_array<'a>(root: &'a Value, keys: &[&str]) -> Option<Vec<&'a Map<Strin
 }
 
 fn compact_aws_generic(root: &Value) -> Option<String> {
-	let pruned = prune_aws_sensitive(root);
-	if let Some((name, rows)) = first_object_array(&pruned) {
+	if let Some((name, rows)) = first_object_array(root) {
 		let columns = generic_columns(&rows);
 		if columns.is_empty() {
 			return None;
@@ -481,34 +480,18 @@ fn compact_aws_generic(root: &Value) -> Option<String> {
 	None
 }
 
-fn prune_aws_sensitive(value: &Value) -> Value {
-	match value {
-		Value::Object(map) => Value::Object(
-			map.iter()
-				.filter_map(|(key, value)| {
-					if SENSITIVE_AWS_KEYS.iter().any(|sensitive| sensitive == key) {
-						None
-					} else {
-						Some((key.clone(), prune_aws_sensitive(value)))
-					}
-				})
-				.collect(),
-		),
-		Value::Array(values) => Value::Array(values.iter().map(prune_aws_sensitive).collect()),
-		_ => value.clone(),
-	}
-}
-
-fn first_object_array(root: &Value) -> Option<(&str, Vec<Map<String, Value>>)> {
+fn first_object_array(root: &Value) -> Option<(&str, Vec<&Map<String, Value>>)> {
 	let map = root.as_object()?;
 	for (key, value) in map {
+		if SENSITIVE_AWS_KEYS.contains(&key.as_str()) {
+			continue;
+		}
 		let Some(values) = value.as_array() else {
 			continue;
 		};
 		let rows = values
 			.iter()
 			.filter_map(Value::as_object)
-			.cloned()
 			.collect::<Vec<_>>();
 		if !rows.is_empty() {
 			return Some((key.as_str(), rows));
@@ -517,10 +500,15 @@ fn first_object_array(root: &Value) -> Option<(&str, Vec<Map<String, Value>>)> {
 	None
 }
 
-fn generic_columns(rows: &[Map<String, Value>]) -> Vec<String> {
+fn generic_columns(rows: &[&Map<String, Value>]) -> Vec<String> {
 	let mut columns = Vec::new();
 	for row in rows {
 		for key in row.keys() {
+			// Nested values need no copied redaction tree: value_to_cell emits
+			// only "{...}" for objects and the unchanged outer length for arrays.
+			if SENSITIVE_AWS_KEYS.contains(&key.as_str()) {
+				continue;
+			}
 			let lower = key.to_ascii_lowercase();
 			if (matches!(
 				lower.as_str(),
@@ -1786,6 +1774,37 @@ mod tests {
 		let out = filter(&ctx, &input, 0);
 		assert!(out.text.contains("safe"));
 		assert!(!out.text.contains("LEAK_SENTINEL"));
+	}
+
+	#[test]
+	fn generic_aws_skips_sensitive_arrays_and_hides_nested_values() {
+		let cfg = MinimizerConfig { enabled: true, ..Default::default() };
+		let ctx = ctx("aws", &cfg);
+		let input = r#"{"Policy":[{"Name":"LEAK_SENTINEL"}],"Things":[{"Name":{"Password":"LEAK_SENTINEL"},"Status":[{"Token":"LEAK_SENTINEL"},null],"Credentials":{"Name":"LEAK_SENTINEL"}}]}"#;
+		let out = filter(&ctx, input, 0);
+		assert_eq!(out.text, "Name\tStatus\n{...}\t2 item(s)\n");
+	}
+
+	#[test]
+	fn generic_aws_counts_object_rows_and_keeps_columns_found_after_the_cap() {
+		let mut rows = vec![Value::Null, Value::Bool(false)];
+		for index in 0..45 {
+			let mut row = serde_json::json!({ "Name": format!("row-{index}") });
+			if index == 44 {
+				row["Status"] = Value::String("late-column".to_string());
+			}
+			rows.push(row);
+		}
+		let input = serde_json::json!({ "Empty": [], "Scalars": [null, false], "Things": rows });
+		let cfg = MinimizerConfig { enabled: true, ..Default::default() };
+		let ctx = ctx("aws", &cfg);
+		let out = filter(&ctx, &input.to_string(), 0);
+		let mut expected = String::from("Name\tStatus\n");
+		for index in 0..MAX_AWS_ROWS {
+			let _ = writeln!(expected, "row-{index}\t-");
+		}
+		expected.push_str("[…5 Things elided…]\n");
+		assert_eq!(out.text, expected);
 	}
 
 	fn assert_output_pure(out: &str) {

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Reduced memory allocations when summarizing generic AWS JSON output ([#7419](https://github.com/can1357/oh-my-pi/issues/7419)).
+
 ## [18.8.7] - 2026-10-09
 
 ### Added
