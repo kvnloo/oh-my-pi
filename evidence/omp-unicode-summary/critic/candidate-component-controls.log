@@ -1,0 +1,25 @@
+bun test v1.3.14 (0d9b296a)
+
+../critic/component-controls.test.ts:
+(pass) independent collapsed summary controls > renders a complete technologist at the original failing boundary [11.05ms]
+(pass) independent collapsed summary controls > keeps ZWJ technologist whole at every nearby clipping boundary [0.38ms]
+(pass) independent collapsed summary controls > keeps ZWJ family whole at every nearby clipping boundary [0.49ms]
+(pass) independent collapsed summary controls > keeps skin-tone modifier whole at every nearby clipping boundary [0.15ms]
+(pass) independent collapsed summary controls > keeps regional indicator flag whole at every nearby clipping boundary [0.13ms]
+(pass) independent collapsed summary controls > keeps combining acute accent whole at every nearby clipping boundary [0.32ms]
+(pass) independent collapsed summary controls > keeps emoji variation selector whole at every nearby clipping boundary [0.54ms]
+(pass) independent collapsed summary controls > keeps keycap sequence whole at every nearby clipping boundary [0.57ms]
+(pass) independent collapsed summary controls > keeps CJK wide character whole at every nearby clipping boundary [0.10ms]
+(pass) independent collapsed summary controls > retains the ASCII and CJK fixed clipping controls [0.33ms]
+(pass) independent collapsed summary controls > keeps ANSI SGR sequences complete around a clipped grapheme [0.31ms]
+(pass) independent collapsed summary controls > keeps the full untruncated label and metadata [0.10ms]
+(pass) independent collapsed summary controls > renders empty and no-heading input with the fallback summary [0.10ms]
+(pass) independent collapsed summary controls > does not conflate the fix with the existing small-width floor [0.12ms]
+(pass) independent collapsed summary controls > survives resize, cache invalidation, release, expansion and recollapse [19.94ms]
+
+ 15 pass
+ 0 fail
+ 122 expect() calls
+Ran 15 tests across 1 file. [703.00ms]
+
+CANDIDATE_EXIT=0

@@ -1,0 +1,7 @@
+$ oxlint . && oxfmt --check --no-error-on-unmatched-pattern 'src/**/*.{ts,tsx}' '{test,bench,examples,scripts}/**/*.ts' '*.ts' && bun run check:types
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 143ms on 728 files using 9 threads.
+$ tsgo -p tsconfig.json --noEmit
+TUI_CHECK_FINAL_EXIT=0

@@ -1,0 +1,10 @@
+{
+  "remote_ref": "refs/heads/fix/omp-synthetic-summary-grapheme-20261010",
+  "remote_commit": "e5dd9aa5012095c7f722ee7199e440ec289052ee",
+  "reviewed_tree": "f10057bd50ee1ac386269babea15d88e01598d4d",
+  "exact_parent": "1534f1a33954da73fc3c234cb0d146e6d6942f89",
+  "remote_root_tree_entries_match_local": true,
+  "both_remote_blobs_match_local_bytes": true,
+  "credit_and_ai_disclosure_verified": true,
+  "readback_time_utc": "2026-10-10T16:32:23Z"
+}

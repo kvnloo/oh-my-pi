@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "content": "{\"ref\":\"refs/heads/fix/omp-synthetic-summary-grapheme-20261010\",\"node_id\":\"REF_kwDOTW8s4NoANnJlZnMvaGVhZHMvZml4L29tcC1zeW50aGV0aWMtc3VtbWFyeS1ncmFwaGVtZS0yMDI2MTAxMA\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/refs/heads/fix/omp-synthetic-summary-grapheme-20261010\",\"object\":{\"sha\":\"e5dd9aa5012095c7f722ee7199e440ec289052ee\",\"type\":\"commit\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/e5dd9aa5012095c7f722ee7199e440ec289052ee\"}}",
+    "title": "omp-synthetic-summary-grapheme-20261010",
+    "modified_date": null,
+    "url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/ref/heads/fix/omp-synthetic-summary-grapheme-20261010",
+    "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/ref/heads/fix/omp-synthetic-summary-grapheme-20261010",
+    "display_title": "omp-synthetic-summary-grapheme-20261010",
+    "structuredContent": {
+      "title": "omp-synthetic-summary-grapheme-20261010",
+      "content": "{\"ref\":\"refs/heads/fix/omp-synthetic-summary-grapheme-20261010\",\"node_id\":\"REF_kwDOTW8s4NoANnJlZnMvaGVhZHMvZml4L29tcC1zeW50aGV0aWMtc3VtbWFyeS1ncmFwaGVtZS0yMDI2MTAxMA\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/refs/heads/fix/omp-synthetic-summary-grapheme-20261010\",\"object\":{\"sha\":\"e5dd9aa5012095c7f722ee7199e440ec289052ee\",\"type\":\"commit\",\"url\":\"https://api.github.com/repos/kvnloo/oh-my-pi/git/commits/e5dd9aa5012095c7f722ee7199e440ec289052ee\"}}",
+      "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/ref/heads/fix/omp-synthetic-summary-grapheme-20261010"
+    }
+  },
+  "isError": false
+}

@@ -1,0 +1,10 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/tui/test/synthetic-summary-grapheme.test.ts:
+(pass) collapsed synthetic summary > keeps a joined emoji intact at the truncation boundary [18.58ms]
+
+ 1 pass
+ 0 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [690.00ms]
+GREEN_EXIT=0

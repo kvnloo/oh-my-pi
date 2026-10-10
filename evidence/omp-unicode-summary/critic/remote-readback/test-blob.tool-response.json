@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "content": "import { beforeAll, describe, expect, it } from \"bun:test\";\nimport { CollapsedSyntheticMessageComponent } from \"@oh-my-pi/pi-tui/chat/user-message\";\nimport { initTheme } from \"@oh-my-pi/pi-tui/theme\";\n\nbeforeAll(async () => {\n\tawait initTheme(false);\n});\n\ndescribe(\"collapsed synthetic summary\", () => {\n\tit(\"keeps a joined emoji intact at the truncation boundary\", () => {\n\t\tconst summary = new CollapsedSyntheticMessageComponent(\"# abcdef👩‍💻tail\\nbody\");\n\t\tconst row = summary.render(11)[0]!;\n\t\texpect(Bun.stripANSI(row)).toBe(\" abcdef👩‍💻t…\");\n\t});\n});\n",
+    "title": "4cf42ae64001ebf3c984f98d3b918a633ca018e5",
+    "modified_date": null,
+    "url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/blobs/4cf42ae64001ebf3c984f98d3b918a633ca018e5",
+    "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/blobs/4cf42ae64001ebf3c984f98d3b918a633ca018e5",
+    "display_title": "4cf42ae64001ebf3c984f98d3b918a633ca018e5",
+    "structuredContent": {
+      "title": "4cf42ae64001ebf3c984f98d3b918a633ca018e5",
+      "content": "import { beforeAll, describe, expect, it } from \"bun:test\";\nimport { CollapsedSyntheticMessageComponent } from \"@oh-my-pi/pi-tui/chat/user-message\";\nimport { initTheme } from \"@oh-my-pi/pi-tui/theme\";\n\nbeforeAll(async () => {\n\tawait initTheme(false);\n});\n\ndescribe(\"collapsed synthetic summary\", () => {\n\tit(\"keeps a joined emoji intact at the truncation boundary\", () => {\n\t\tconst summary = new CollapsedSyntheticMessageComponent(\"# abcdef👩‍💻tail\\nbody\");\n\t\tconst row = summary.render(11)[0]!;\n\t\texpect(Bun.stripANSI(row)).toBe(\" abcdef👩‍💻t…\");\n\t});\n});\n",
+      "display_url": "https://api.github.com/repos/kvnloo/oh-my-pi/git/blobs/4cf42ae64001ebf3c984f98d3b918a633ca018e5"
+    }
+  },
+  "isError": false
+}

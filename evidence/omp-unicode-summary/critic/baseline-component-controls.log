@@ -1,0 +1,142 @@
+bun test v1.3.14 (0d9b296a)
+
+../critic/baseline-component-controls.test.ts:
+49 | 	["CJK wide character", "界"],
+50 | ] as const;
+51 | 
+52 | describe("independent collapsed summary controls", () => {
+53 | 	it("renders a complete technologist at the original failing boundary", () => {
+54 | 		expect(visible(component("abcdef👩‍💻tail"), 11)).toBe(" abcdef👩‍💻t…");
+                                                        ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdef👩‍💻t…"
+Received: " abcdef👩‍…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:54:52)
+(fail) independent collapsed summary controls > renders a complete technologist at the original failing boundary [3.91ms]
+58 | 		it(`keeps ${name} whole at every nearby clipping boundary`, () => {
+59 | 			const heading = `abcdefgh${cluster}${"tail".repeat(10)}`;
+60 | 			const c = component(heading);
+61 | 			for (const width of [11, 12, 13, 14, 15]) {
+62 | 				const actual = visible(c, width);
+63 | 				expect(actual).toBe(expectedHeading(heading, width));
+                        ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdefgh👩‍💻…"
+Received: " abcdefgh👩‍…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:63:20)
+(fail) independent collapsed summary controls > keeps ZWJ technologist whole at every nearby clipping boundary [0.82ms]
+58 | 		it(`keeps ${name} whole at every nearby clipping boundary`, () => {
+59 | 			const heading = `abcdefgh${cluster}${"tail".repeat(10)}`;
+60 | 			const c = component(heading);
+61 | 			for (const width of [11, 12, 13, 14, 15]) {
+62 | 				const actual = visible(c, width);
+63 | 				expect(actual).toBe(expectedHeading(heading, width));
+                        ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdefgh👨‍👩‍👧‍👦…"
+Received: " abcdefgh👨‍…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:63:20)
+(fail) independent collapsed summary controls > keeps ZWJ family whole at every nearby clipping boundary [0.31ms]
+58 | 		it(`keeps ${name} whole at every nearby clipping boundary`, () => {
+59 | 			const heading = `abcdefgh${cluster}${"tail".repeat(10)}`;
+60 | 			const c = component(heading);
+61 | 			for (const width of [11, 12, 13, 14, 15]) {
+62 | 				const actual = visible(c, width);
+63 | 				expect(actual).toBe(expectedHeading(heading, width));
+                        ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdefgh👍🏽…"
+Received: " abcdefgh👍…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:63:20)
+(fail) independent collapsed summary controls > keeps skin-tone modifier whole at every nearby clipping boundary [0.65ms]
+58 | 		it(`keeps ${name} whole at every nearby clipping boundary`, () => {
+59 | 			const heading = `abcdefgh${cluster}${"tail".repeat(10)}`;
+60 | 			const c = component(heading);
+61 | 			for (const width of [11, 12, 13, 14, 15]) {
+62 | 				const actual = visible(c, width);
+63 | 				expect(actual).toBe(expectedHeading(heading, width));
+                        ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdefgh…"
+Received: " abcdefgh🇺…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:63:20)
+(fail) independent collapsed summary controls > keeps regional indicator flag whole at every nearby clipping boundary [0.06ms]
+(pass) independent collapsed summary controls > keeps combining acute accent whole at every nearby clipping boundary [0.80ms]
+58 | 		it(`keeps ${name} whole at every nearby clipping boundary`, () => {
+59 | 			const heading = `abcdefgh${cluster}${"tail".repeat(10)}`;
+60 | 			const c = component(heading);
+61 | 			for (const width of [11, 12, 13, 14, 15]) {
+62 | 				const actual = visible(c, width);
+63 | 				expect(actual).toBe(expectedHeading(heading, width));
+                        ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdefgh…"
+Received: " abcdefgh❤️…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:63:20)
+(fail) independent collapsed summary controls > keeps emoji variation selector whole at every nearby clipping boundary [0.21ms]
+58 | 		it(`keeps ${name} whole at every nearby clipping boundary`, () => {
+59 | 			const heading = `abcdefgh${cluster}${"tail".repeat(10)}`;
+60 | 			const c = component(heading);
+61 | 			for (const width of [11, 12, 13, 14, 15]) {
+62 | 				const actual = visible(c, width);
+63 | 				expect(actual).toBe(expectedHeading(heading, width));
+                        ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdefgh…"
+Received: " abcdefgh1️…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:63:20)
+(fail) independent collapsed summary controls > keeps keycap sequence whole at every nearby clipping boundary [0.17ms]
+(pass) independent collapsed summary controls > keeps CJK wide character whole at every nearby clipping boundary [0.38ms]
+(pass) independent collapsed summary controls > retains the ASCII and CJK fixed clipping controls [0.37ms]
+79 | 			"abcdefgh\x1b[31m👩‍💻tailtailtail\x1b[0m",
+80 | 		]) {
+81 | 			const c = component(heading);
+82 | 			for (const width of [11, 12, 13, 14]) {
+83 | 				const raw = c.render(width)[0]!;
+84 | 				expect(Bun.stripANSI(raw)).toBe(visible(plain, width));
+                                    ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdefgh…"
+Received: " abcde…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:84:32)
+(fail) independent collapsed summary controls > keeps ANSI SGR sequences complete around a clipped grapheme [0.53ms]
+(pass) independent collapsed summary controls > keeps the full untruncated label and metadata [0.15ms]
+(pass) independent collapsed summary controls > renders empty and no-heading input with the fallback summary [0.48ms]
+(pass) independent collapsed summary controls > does not conflate the fix with the existing small-width floor [0.35ms]
+115 | 	});
+116 | 
+117 | 	it("survives resize, cache invalidation, release, expansion and recollapse", () => {
+118 | 		const c = component("abcdef👩‍💻tail");
+119 | 		const wide = visible(c, 120);
+120 | 		expect(visible(c, 11)).toBe(" abcdef👩‍💻t…");
+                               ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdef👩‍💻t…"
+Received: " abcdef👩‍…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/critic/baseline-component-controls.test.ts:120:26)
+(fail) independent collapsed summary controls > survives resize, cache invalidation, release, expansion and recollapse [0.45ms]
+
+ 6 pass
+ 9 fail
+ 53 expect() calls
+Ran 15 tests across 1 file. [853.00ms]
+
+BASELINE_EXIT=1

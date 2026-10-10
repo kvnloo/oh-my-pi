@@ -1,0 +1,78 @@
+From d8ecb464dc83c12ad68700fc182f9e8d9ed42a9a Mon Sep 17 00:00:00 2001
+From: dot <dot@users.invalid>
+Date: Sat, 10 Oct 2026 11:26:17 -0500
+Subject: [PATCH] fix(tui): preserve graphemes in collapsed summaries
+
+Reuse the existing grapheme-aware terminal-width truncator for collapsed synthetic summary rows so joined emoji remain whole at the clipping boundary.
+
+Fun10165 reported the advisor transcript problem and proposed the collapsed-summary context in #6308; roboomp implemented that original feature in #6313. This patch corrects its fallback row renderer.
+---
+ packages/tui/src/chat/user-message.ts          | 18 ++----------------
+ .../test/synthetic-summary-grapheme.test.ts    | 15 +++++++++++++++
+ 2 files changed, 17 insertions(+), 16 deletions(-)
+ create mode 100644 packages/tui/test/synthetic-summary-grapheme.test.ts
+
+diff --git a/packages/tui/src/chat/user-message.ts b/packages/tui/src/chat/user-message.ts
+index f9d4263e3..1132033e2 100644
+--- a/packages/tui/src/chat/user-message.ts
++++ b/packages/tui/src/chat/user-message.ts
+@@ -1,4 +1,4 @@
+-import { applyBackgroundToLine, padding, visibleWidth } from "../utils";
++import { applyBackgroundToLine, padding, truncateToWidth, visibleWidth } from "../utils";
+ import { type Component, Container } from "../tui";
+ import { Disclosure } from "../components/disclosure";
+ import { Markdown } from "../components/markdown";
+@@ -355,7 +355,7 @@ class SyntheticSummary implements Component {
+ 		width = Math.max(1, width);
+ 		if (this.#cache?.width === width) return this.#cache.lines;
+ 		const hint = `${theme.sep.dot.trim()} ${expandKeyHint()}`;
+-		const lines = [` ${theme.fg("dim", truncateSummary(`${this.#summary} ${hint}`, Math.max(10, width - 1)))}`];
++		const lines = [` ${theme.fg("dim", truncateToWidth(`${this.#summary} ${hint}`, Math.max(10, width - 1)))}`];
+ 		this.#cache = { width, lines };
+ 		return lines;
+ 	}
+@@ -448,20 +448,6 @@ export class CollapsedSyntheticMessageComponent implements Component {
+ 	}
+ }
+ 
+-/** Truncate a plain summary label to `maxWidth` display columns, appending `…`. */
+-function truncateSummary(text: string, maxWidth: number): string {
+-	if (Bun.stringWidth(text, { countAnsiEscapeCodes: false }) <= maxWidth) return text;
+-	let out = "";
+-	let w = 0;
+-	for (const ch of text) {
+-		const cw = Bun.stringWidth(ch, { countAnsiEscapeCodes: false });
+-		if (w + cw > maxWidth - 1) break;
+-		out += ch;
+-		w += cw;
+-	}
+-	return `${out}…`;
+-}
+-
+ /**
+  * One-line summary for a collapsed synthetic input: `<label> · <size> · <n>
+  * lines`. The label is the first Markdown heading's text (e.g. `Session
+diff --git a/packages/tui/test/synthetic-summary-grapheme.test.ts b/packages/tui/test/synthetic-summary-grapheme.test.ts
+new file mode 100644
+index 000000000..4cf42ae64
+--- /dev/null
++++ b/packages/tui/test/synthetic-summary-grapheme.test.ts
+@@ -0,0 +1,15 @@
++import { beforeAll, describe, expect, it } from "bun:test";
++import { CollapsedSyntheticMessageComponent } from "@oh-my-pi/pi-tui/chat/user-message";
++import { initTheme } from "@oh-my-pi/pi-tui/theme";
++
++beforeAll(async () => {
++	await initTheme(false);
++});
++
++describe("collapsed synthetic summary", () => {
++	it("keeps a joined emoji intact at the truncation boundary", () => {
++		const summary = new CollapsedSyntheticMessageComponent("# abcdef👩‍💻tail\nbody");
++		const row = summary.render(11)[0]!;
++		expect(Bun.stripANSI(row)).toBe(" abcdef👩‍💻t…");
++	});
++});
+-- 
+2.52.0
+

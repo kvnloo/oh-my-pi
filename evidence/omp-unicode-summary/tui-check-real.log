@@ -1,0 +1,8 @@
+$ oxlint . && oxfmt --check --no-error-on-unmatched-pattern 'src/**/*.{ts,tsx}' '{test,bench,examples,scripts}/**/*.ts' '*.ts' && bun run check:types
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 176ms on 728 files using 9 threads.
+/usr/bin/bash: line 1: bun: command not found
+error: script "check" exited with code 127
+TUI_CHECK_REAL_EXIT=127

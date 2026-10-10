@@ -1,0 +1,23 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/tui/test/synthetic-summary-grapheme.test.ts:
+ 8 | 
+ 9 | describe("collapsed synthetic summary", () => {
+10 | 	it("keeps a joined emoji intact at the truncation boundary", () => {
+11 | 		const summary = new CollapsedSyntheticMessageComponent("# abcdef👩‍💻tail\nbody");
+12 | 		const row = summary.render(11)[0]!;
+13 | 		expect(Bun.stripANSI(row)).toBe(" abcdef👩‍💻t…");
+                                  ^
+error: expect(received).toBe(expected)
+
+Expected: " abcdef👩‍💻t…"
+Received: " abcdef👩‍…"
+
+      at <anonymous> (/workspace/scratch/df37e4e44cce/public-oss-wave-20261010-1411/omp-unicode-summary/source/packages/tui/test/synthetic-summary-grapheme.test.ts:13:30)
+(fail) collapsed synthetic summary > keeps a joined emoji intact at the truncation boundary [2.52ms]
+
+ 0 pass
+ 1 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [758.00ms]
+RED_EXIT=1

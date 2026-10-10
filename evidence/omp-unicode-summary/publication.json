@@ -1,0 +1,15 @@
+{
+  "repository": "kvnloo/oh-my-pi",
+  "branch": "fix/omp-synthetic-summary-grapheme-20261010",
+  "remote_commit": "e5dd9aa5012095c7f722ee7199e440ec289052ee",
+  "remote_tree": "f10057bd50ee1ac386269babea15d88e01598d4d",
+  "remote_parent": "1534f1a33954da73fc3c234cb0d146e6d6942f89",
+  "local_source_commit": "d8ecb464dc83c12ad68700fc182f9e8d9ed42a9a",
+  "files": {
+    "packages/tui/src/chat/user-message.ts": "1132033e2d1df1b96bbd91b1d067a6b237139a91",
+    "packages/tui/test/synthetic-summary-grapheme.test.ts": "4cf42ae64001ebf3c984f98d3b918a633ca018e5"
+  },
+  "verification": "Read remote branch, raw commit parent/tree, both blob IDs, and both full base64 file contents; each matched local exactly.",
+  "authorship": "Connected GitHub tool assigned Kevin Rajan as commit author/committer. Commit body explicitly states Authored by dot (AI assistant) and credits Fun10165 and roboomp for the original feature context.",
+  "publication_scope": "Fork feature branch only; no pull request or upstream post."
+}

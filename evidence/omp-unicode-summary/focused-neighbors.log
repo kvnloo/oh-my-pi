@@ -1,0 +1,79 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/tui/test/synthetic-summary-grapheme.test.ts:
+(pass) collapsed synthetic summary > keeps a joined emoji intact at the truncation boundary [9.40ms]
+
+packages/tui/test/truncate-to-width.test.ts:
+(pass) truncateToWidth > keeps output within width for very large unicode input [15.36ms]
+(pass) truncateToWidth > preserves ANSI styling for kept text [0.21ms]
+(pass) truncateToWidth > handles malformed ANSI escape prefixes without hanging [0.06ms]
+(pass) truncateToWidth > returns the original text when it already fits [0.03ms]
+(pass) truncateToWidth > pads truncated output to requested width [0.17ms]
+(pass) truncateToWidth > adds a trailing reset when truncating without an ellipsis [0.07ms]
+(pass) visibleWidth > counts tabs inline and skips ANSI inline [0.16ms]
+
+packages/tui/test/visible-width.test.ts:
+(pass) visibleWidth — parity with the native width engine > empty [0.07ms]
+(pass) visibleWidth — parity with the native width engine > ascii [0.02ms]
+(pass) visibleWidth — parity with the native width engine > styled [0.02ms]
+(pass) visibleWidth — parity with the native width engine > styled-truecolor
+(pass) visibleWidth — parity with the native width engine > nested-sgr
+(pass) visibleWidth — parity with the native width engine > osc8-st
+(pass) visibleWidth — parity with the native width engine > osc8-bel
+(pass) visibleWidth — parity with the native width engine > cjk
+(pass) visibleWidth — parity with the native width engine > cjk-mixed
+(pass) visibleWidth — parity with the native width engine > hangul-syllables [0.06ms]
+(pass) visibleWidth — parity with the native width engine > compat-jamo [0.03ms]
+(pass) visibleWidth — parity with the native width engine > compat-jamo-filler
+(pass) visibleWidth — parity with the native width engine > styled-cjk [0.20ms]
+(pass) visibleWidth — parity with the native width engine > emoji [0.02ms]
+(pass) visibleWidth — parity with the native width engine > emoji-zwj [0.02ms]
+(pass) visibleWidth — parity with the native width engine > emoji-flag
+(pass) visibleWidth — parity with the native width engine > styled-zwj [0.02ms]
+(pass) visibleWidth — parity with the native width engine > variation-selector [0.01ms]
+(pass) visibleWidth — parity with the native width engine > combining
+(pass) visibleWidth — parity with the native width engine > ambiguous [0.01ms]
+(pass) visibleWidth — parity with the native width engine > box-drawing
+(pass) visibleWidth — parity with the native width engine > fullwidth
+(pass) visibleWidth — parity with the native width engine > halfwidth-kana
+(pass) visibleWidth — parity with the native width engine > rtl-arabic
+(pass) visibleWidth — parity with the native width engine > thai [0.03ms]
+(pass) visibleWidth — parity with the native width engine > tabs [0.02ms]
+(pass) visibleWidth — parity with the native width engine > leading-tabs [0.01ms]
+(pass) visibleWidth — parity with the native width engine > osc66-scale [0.08ms]
+(pass) visibleWidth — parity with the native width engine > osc66-explicit-w [0.02ms]
+(pass) visibleWidth — parity with the native width engine > osc66-scale-and-w [0.01ms]
+(pass) visibleWidth — parity with the native width engine > osc66-cjk [0.06ms]
+(pass) visibleWidth — parity with the native width engine > osc66-inline [0.05ms]
+(pass) visibleWidth — parity with the native width engine > osc66-multi [0.02ms]
+(pass) visibleWidth — parity with the native width engine > osc66-with-tabs [0.08ms]
+(pass) visibleWidth — parity with the native width engine > apc-st [0.04ms]
+(pass) visibleWidth — parity with the native width engine > apc-bel [0.01ms]
+(pass) visibleWidth — parity with the native width engine > apc-multi
+(pass) visibleWidth — parity with the native width engine > strips ANSI (styled text measures as its plain content) [0.05ms]
+(pass) visibleWidth — parity with the native width engine > expands each tab to the configured tab width [0.04ms]
+(pass) visibleWidth — parity with the native width engine > scales OSC 66 text-sizing payloads by `s=` [0.04ms]
+(pass) visibleWidth — parity with the native width engine > measures APC payloads as zero cells (Kitty placement prefix on placeholder rows) [0.06ms]
+(pass) visibleWidth — runtime Hangul Compatibility Jamo profile > forces jamo narrow or wide independent of the OS default [0.22ms]
+(pass) visibleWidth — runtime Hangul Compatibility Jamo profile > opts back into Unicode width for compatibility jamo [0.03ms]
+(pass) visibleWidth — runtime Hangul Compatibility Jamo profile > never widens the zero-width filler (U+3164) past the narrow correction [0.03ms]
+(pass) visibleWidth — runtime Hangul Compatibility Jamo profile > leaves composed Hangul syllables at 2 cells under any profile [0.03ms]
+(pass) visibleWidth — runtime Hangul Compatibility Jamo profile > stays in parity with the native width engine under each profile [0.07ms]
+(pass) native text helpers — runtime Hangul Compatibility Jamo profile > sliceWithWidth and truncateToWidth follow the jamo width profile [0.16ms]
+
+packages/tui/test/native/transcript-native.test.ts:
+(pass) native transcript > streams assistant text as appends to one md node that stops streaming when final [170.83ms]
+(pass) native transcript > hands the terminal session-resolved targets for relative links once the segment closes [16.98ms]
+(pass) native transcript > mirrors a native toggle into the tool card and re-collapses it on a transcript-wide collapse [33.90ms]
+(pass) native transcript > keeps a streaming write open until it settles, then folds it like a finished thought [8.66ms]
+(pass) native transcript > keeps a finished todo call's checklist open [1.91ms]
+(pass) native transcript > describes a custom tool (MCP) through the tool's own describe hooks [3.96ms]
+(pass) native transcript > settles finalized blocks and still delivers later changes to them [4.37ms]
+(pass) native transcript > schedules no repaint timers for spinners or the thinking pulse while a surface is live [2.05ms]
+(pass) native transcript > describes every transcript block semantically: no rows fallback, ANSI styling or box glyphs [42.35ms]
+
+ 64 pass
+ 0 fail
+ 101 expect() calls
+Ran 64 tests across 4 files. [1292.00ms]
+FOCUSED_EXIT=0
