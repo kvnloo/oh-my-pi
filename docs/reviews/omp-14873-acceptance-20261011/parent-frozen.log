@@ -1,0 +1,181 @@
+IDENTITY parent robomp and tests from selected exact archive; omp_rpc from byte-verified local source
+VERSIONS 3.12.14 pytest 9.1.1 pytest_asyncio 1.4.0
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_queued_event_survives_two_claim_errors __________________
+
+fut = <coroutine object Event.wait at 0x7ff5f24d6880>, timeout = 4
+
+    async def wait_for(fut, timeout):
+        """Wait for the single Future or coroutine to complete, with timeout.
+    
+        Coroutine will be wrapped in Task.
+    
+        Returns result of the Future or coroutine.  When a timeout occurs,
+        it cancels the task and raises TimeoutError.  To avoid the task
+        cancellation, wrap it in shield().
+    
+        If the wait is cancelled, the task is also cancelled.
+    
+        If the task suppresses the cancellation and returns a value instead,
+        that value is returned.
+    
+        This function is a coroutine.
+        """
+        # The special case for timeout <= 0 is for the following case:
+        #
+        # async def test_waitfor():
+        #     func_started = False
+        #
+        #     async def func():
+        #         nonlocal func_started
+        #         func_started = True
+        #
+        #     try:
+        #         await asyncio.wait_for(func(), 0)
+        #     except asyncio.TimeoutError:
+        #         assert not func_started
+        #     else:
+        #         assert False
+        #
+        # asyncio.run(test_waitfor())
+    
+    
+        if timeout is not None and timeout <= 0:
+            fut = ensure_future(fut)
+    
+            if fut.done():
+                return fut.result()
+    
+            await _cancel_and_wait(fut)
+            try:
+                return fut.result()
+            except exceptions.CancelledError as exc:
+                raise TimeoutError from exc
+    
+        async with timeouts.timeout(timeout):
+>           return await fut
+                   ^^^^^^^^^
+
+<python-runtime>/lib/python3.12/asyncio/tasks.py:520: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <asyncio.locks.Event object at 0x7ff5f256a0c0 [unset]>
+
+    async def wait(self):
+        """Block until the internal flag is true.
+    
+        If the internal flag is true on entry, return True
+        immediately.  Otherwise, block until another coroutine calls
+        set() to set the flag to true, then return True.
+        """
+        if self._value:
+            return True
+    
+        fut = self._get_loop().create_future()
+        self._waiters.append(fut)
+        try:
+>           await fut
+E           asyncio.exceptions.CancelledError
+
+<python-runtime>/lib/python3.12/asyncio/locks.py:212: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+settings = Settings(github_token=None, github_webhook_secret=SecretStr('**********'), bot_login='robomp-bot', git_author_name='ro...er_repo=8, natives_cache_max_bytes=4294967296, natives_cache_gc_interval_seconds=3600.0, reclaim_workspace_caches=True)
+db = <robomp.db.Database object at 0x7ff5f263b8c0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7ff5f2569250>
+
+    @pytest.mark.asyncio
+    async def test_queued_event_survives_two_claim_errors(
+        settings: Settings, db: Database, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        assert db.record_event(
+            delivery_id="accepted-before-lock",
+            event_type="issues",
+            repo="octo/widget",
+            issue_key="octo/widget#1",
+            payload={"action": "opened", "issue": {"number": 1}},
+        )
+        attempts = 0
+        real_claim = db.claim_next_event
+        dispatched = asyncio.Event()
+    
+        def fail_twice():
+            nonlocal attempts
+            attempts += 1
+            if attempts <= 2:
+                raise sqlite3.OperationalError("database is locked")
+            return real_claim()
+    
+        async def record_triage(**kwargs):
+            dispatched.set()
+    
+        monkeypatch.setattr(db, "claim_next_event", fail_twice)
+        monkeypatch.setattr(tasks, "triage_issue", record_triage)
+        pool = _make_pool(settings, db)
+        try:
+            await pool.start()
+>           await asyncio.wait_for(dispatched.wait(), timeout=4)
+
+tests/test_independent_claim_recovery.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<python-runtime>/lib/python3.12/asyncio/tasks.py:519: in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Timeout [expired]>
+exc_type = <class 'asyncio.exceptions.CancelledError'>
+exc_val = CancelledError(), exc_tb = <traceback object at 0x7ff5f2533b80>
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() <= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+>               raise TimeoutError from exc_val
+E               TimeoutError
+
+<python-runtime>/lib/python3.12/asyncio/timeouts.py:115: TimeoutError
+------------------------------ Captured log call -------------------------------
+ERROR    robomp.queue:queue.py:214 dispatch loop crashed
+Traceback (most recent call last):
+  File "<parent-archive>/imports/robomp/queue.py", line 199, in _dispatch_loop
+    row = await self._claim_next_unique()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<parent-archive>/imports/robomp/queue.py", line 221, in _claim_next_unique
+    row = await asyncio.to_thread(self.db.claim_next_event)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<python-runtime>/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<python-runtime>/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<parent-archive>/python/robomp/tests/test_independent_claim_recovery.py", line 39, in fail_twice
+    raise sqlite3.OperationalError("database is locked")
+sqlite3.OperationalError: database is locked
+=============================== warnings summary ===============================
+<dependency-file>:864
+  <dependency-file>:864: PytestAssertRewriteWarning: Module already imported so cannot be rewritten; pytest_asyncio.plugin
+    self.import_plugin(arg, consider_entry_points=True)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_independent_claim_recovery.py::test_queued_event_survives_two_claim_errors
+1 failed, 1 warning in 4.09s
+ISOLATION PASS outbound_socket_attempts 0

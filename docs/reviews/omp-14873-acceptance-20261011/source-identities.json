@@ -1,0 +1,19 @@
+{
+  "candidate": "5159214780de85b8aee65a39a7b30760f3313a57",
+  "direct_parent": "3e3c488a58d294e3a10051da588628e2cfb9d35c",
+  "parent_relationship": "verified from local Git commit object",
+  "checks_after_final_run": [
+    {
+      "commit": "5159214780de85b8aee65a39a7b30760f3313a57",
+      "tracked_robomp_files_matched": 135,
+      "rpc_source_files_matched": 9,
+      "tracked_source_mismatches": 0
+    },
+    {
+      "commit": "3e3c488a58d294e3a10051da588628e2cfb9d35c",
+      "tracked_robomp_files_matched": 134,
+      "rpc_source_files_matched": 9,
+      "tracked_source_mismatches": 0
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+IDENTITY parent robomp and tests from selected exact archive; omp_rpc from byte-verified local source
+VERSIONS 3.12.14 pytest 9.1.1 pytest_asyncio 1.4.0
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_retry_delivers_one_real_claim_and_one_task_call _____________
+
+predicate = <function test_retry_delivers_one_real_claim_and_one_task_call.<locals>.<lambda> at 0x7f9ed1549f80>
+timeout = 4.0
+
+    async def _until(predicate, timeout: float = 4.0) -> None:
+        async with asyncio.timeout(timeout):
+            while not predicate():
+>               await asyncio.sleep(0.01)
+
+tests/test_critic_acceptance.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+delay = 0.01, result = None
+
+    async def sleep(delay, result=None):
+        """Coroutine that completes after a given time (in seconds)."""
+        if delay <= 0:
+            await __sleep0()
+            return result
+    
+        loop = events.get_running_loop()
+        future = loop.create_future()
+        h = loop.call_later(delay,
+                            futures._set_result_unless_cancelled,
+                            future, result)
+        try:
+>           return await future
+                   ^^^^^^^^^^^^
+E           asyncio.exceptions.CancelledError
+
+<python-runtime>/lib/python3.12/asyncio/tasks.py:665: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+settings = Settings(github_token=None, github_webhook_secret=SecretStr('**********'), bot_login='robomp-bot', git_author_name='ro...er_repo=8, natives_cache_max_bytes=4294967296, natives_cache_gc_interval_seconds=3600.0, reclaim_workspace_caches=True)
+db = <robomp.db.Database object at 0x7f9ed19ef1a0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f9ed172a690>
+
+    @pytest.mark.asyncio
+    async def test_retry_delivers_one_real_claim_and_one_task_call(
+        settings: Settings, db: Database, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Prequeued work survives two failures without a duplicate claim or task call."""
+        delivery = "critic-prequeued"
+        assert _enqueue(db, delivery)
+        calls = 0
+        claimed: list[str] = []
+        side_effects: list[int] = []
+        real_claim = db.claim_next_event
+    
+        def fail_twice_then_claim():
+            nonlocal calls
+            calls += 1
+            if calls <= 2:
+                raise sqlite3.OperationalError("database is locked")
+            row = real_claim()
+            if row is not None:
+                claimed.append(row.delivery_id)
+            return row
+    
+        async def record_triage(*, payload, **_kwargs):
+            side_effects.append(payload["issue"]["number"])
+    
+        monkeypatch.setattr(db, "claim_next_event", fail_twice_then_claim)
+        monkeypatch.setattr(tasks, "triage_issue", record_triage)
+        pool = _make_pool(settings, db)
+        try:
+            await pool.start()
+>           await _until(lambda: db.get_event(delivery).state == "done")
+
+tests/test_critic_acceptance.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_critic_acceptance.py:30: in _until
+    async with asyncio.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Timeout [expired]>
+exc_type = <class 'asyncio.exceptions.CancelledError'>
+exc_val = CancelledError(), exc_tb = <traceback object at 0x7f9ed1570bc0>
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() <= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+>               raise TimeoutError from exc_val
+E               TimeoutError
+
+<python-runtime>/lib/python3.12/asyncio/timeouts.py:115: TimeoutError
+------------------------------ Captured log call -------------------------------
+ERROR    robomp.queue:queue.py:214 dispatch loop crashed
+Traceback (most recent call last):
+  File "<parent-archive>/imports/robomp/queue.py", line 199, in _dispatch_loop
+    row = await self._claim_next_unique()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<parent-archive>/imports/robomp/queue.py", line 221, in _claim_next_unique
+    row = await asyncio.to_thread(self.db.claim_next_event)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<python-runtime>/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<python-runtime>/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<parent-archive>/python/robomp/tests/test_critic_acceptance.py", line 51, in fail_twice_then_claim
+    raise sqlite3.OperationalError("database is locked")
+sqlite3.OperationalError: database is locked
+=============================== warnings summary ===============================
+<dependency-file>:864
+  <dependency-file>:864: PytestAssertRewriteWarning: Module already imported so cannot be rewritten; pytest_asyncio.plugin
+    self.import_plugin(arg, consider_entry_points=True)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_critic_acceptance.py::test_retry_delivers_one_real_claim_and_one_task_call
+1 failed, 1 warning in 4.11s
+ISOLATION PASS outbound_socket_attempts 0

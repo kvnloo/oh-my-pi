@@ -1,0 +1,11 @@
+IDENTITY head robomp and tests from selected exact archive; omp_rpc from byte-verified local source
+VERSIONS 3.12.14 pytest 9.1.1 pytest_asyncio 1.4.0
+...                                                                      [100%]
+=============================== warnings summary ===============================
+<dependency-file>:864
+  <dependency-file>:864: PytestAssertRewriteWarning: Module already imported so cannot be rewritten; pytest_asyncio.plugin
+    self.import_plugin(arg, consider_entry_points=True)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 1 warning in 4.31s
+ISOLATION PASS outbound_socket_attempts 0

@@ -1,0 +1,11 @@
+SOURCE 5159214780de85b8aee65a39a7b30760f3313a57: 135 tracked robomp files and 9 RPC source files match local Git blobs
+VERSIONS Python 3.12.14, pytest 9.1.1, pytest-asyncio 1.4.0
+....................                                                     [100%]
+=============================== warnings summary ===============================
+../../../../../../..<python-runtime>/lib/python3.12/site-packages/fastapi/testclient.py:1
+  <python-runtime>/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+20 passed, 1 warning in 8.36s
+ISOLATION PASS; outbound socket attempts: 0
