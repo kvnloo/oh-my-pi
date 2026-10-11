@@ -1,0 +1,5 @@
+d662f31007ee88e226b00d59a09ee986f716b1a373ad20a24503d1329601ef1e  packages/coding-agent/examples/extensions/pii-redact.ts
+7d933827b72ee2970797bda9fff3e066c5ad60b055036c7f5f41923fd580acc2  packages/coding-agent/test/pii-redact-literal-placeholder.test.ts
+c6c57a18c336de52133d6d4d3eba6040ede504cee3929e558d32eccb40575d03  packages/coding-agent/CHANGELOG.md
+2ea5df1816916d7ebac404535e80db713fe48ecd60bbe1ebbfdf7fb361912f53  evidence/pii-literal-placeholder/node-source-loader.mjs
+1e53aaff129db92a95b8993cc87e98d5203b5189f4c4bbb2e4b4194b05529f53  evidence/pii-literal-placeholder/README.md

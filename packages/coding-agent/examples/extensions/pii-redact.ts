@@ -30,7 +30,10 @@ const SSN = /\b\d{3}-\d{2}-\d{4}\b/g;
 const PAW_TIMEOUT_MS = 5_000;
 
 export function regexRedact(text: string, placeholder: string): string {
-	return text.replace(EMAIL, placeholder).replace(PHONE, placeholder).replace(SSN, placeholder);
+	return text
+		.replace(EMAIL, () => placeholder)
+		.replace(PHONE, () => placeholder)
+		.replace(SSN, () => placeholder);
 }
 
 /** Build argv for the linked paw-pii CLI (`--placeholder` is a root option). */
