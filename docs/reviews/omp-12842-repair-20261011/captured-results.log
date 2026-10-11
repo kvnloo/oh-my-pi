@@ -1,0 +1,81 @@
+Captured prior execution output; no new test runs. Absolute sandbox paths parameterized as OWNER_CHECKOUT and PACKET. Adjacent suite shows only its retained summary; complete original output was reviewed by critic. Commands in README.md.
+
+regression-new.log
+test_control_front_eviction_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_control_front_eviction_does_not_replay_old_terminal) ... ok
+test_control_oversized_first_frame_reports_overflow (__main__.ByteHistoryBoundaryTests.test_control_oversized_first_frame_reports_overflow) ... ok
+test_control_small_new_event_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_control_small_new_event_does_not_replay_old_terminal) ... ok
+test_oversized_after_old_terminal_keeps_turn_boundary (__main__.ByteHistoryBoundaryTests.test_oversized_after_old_terminal_keeps_turn_boundary) ... ok
+test_oversized_then_new_small_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_oversized_then_new_small_does_not_replay_old_terminal) ... ok
+test_second_turn_waiter_never_returns_old_terminal (__main__.ByteHistoryBoundaryTests.test_second_turn_waiter_never_returns_old_terminal) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.023s
+
+OK
+
+caller-new.log
+test_byte_budget_never_returns_previous_terminal (__main__.PublicCallerProbe.test_byte_budget_never_returns_previous_terminal) ... ok
+test_control_unlimited_history_waits_for_new_terminal (__main__.PublicCallerProbe.test_control_unlimited_history_waits_for_new_terminal) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.103s
+
+OK
+
+strict-new.log
+test_oversized_event_never_replays_previous_turn_terminal (tests.test_client.RpcClientTests.test_oversized_event_never_replays_previous_turn_terminal) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.021s
+
+OK
+
+adjacent-new.log
+
+----------------------------------------------------------------------
+Ran 72 tests in 2.709s
+
+OK
+
+critic-runpy-regression-new.log
+test_control_front_eviction_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_control_front_eviction_does_not_replay_old_terminal) ... ok
+test_control_oversized_first_frame_reports_overflow (__main__.ByteHistoryBoundaryTests.test_control_oversized_first_frame_reports_overflow) ... ok
+test_control_small_new_event_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_control_small_new_event_does_not_replay_old_terminal) ... ok
+test_oversized_after_old_terminal_keeps_turn_boundary (__main__.ByteHistoryBoundaryTests.test_oversized_after_old_terminal_keeps_turn_boundary) ... ok
+test_oversized_then_new_small_does_not_replay_old_terminal (__main__.ByteHistoryBoundaryTests.test_oversized_then_new_small_does_not_replay_old_terminal) ... ok
+test_second_turn_waiter_never_returns_old_terminal (__main__.ByteHistoryBoundaryTests.test_second_turn_waiter_never_returns_old_terminal) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.021s
+
+OK
+IMPORT omp_rpc owner/python/omp-rpc/src/omp_rpc/__init__.py
+IMPORT omp_rpc.client owner/python/omp-rpc/src/omp_rpc/client.py
+IMPORT omp_rpc.host_tools owner/python/omp-rpc/src/omp_rpc/host_tools.py
+IMPORT omp_rpc.host_uris owner/python/omp-rpc/src/omp_rpc/host_uris.py
+IMPORT omp_rpc.protocol owner/python/omp-rpc/src/omp_rpc/protocol.py
+PROVENANCE: all omp_rpc modules loaded from exact owner checkout
+
+critic-runpy-caller-new.log
+test_byte_budget_never_returns_previous_terminal (__main__.PublicCallerProbe.test_byte_budget_never_returns_previous_terminal) ... ok
+test_control_unlimited_history_waits_for_new_terminal (__main__.PublicCallerProbe.test_control_unlimited_history_waits_for_new_terminal) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.089s
+
+OK
+SCRIPT_INSERTED_SHADOW: absent
+IMPORT omp_rpc owner/python/omp-rpc/src/omp_rpc/__init__.py
+IMPORT omp_rpc.client owner/python/omp-rpc/src/omp_rpc/client.py
+IMPORT omp_rpc.host_tools owner/python/omp-rpc/src/omp_rpc/host_tools.py
+IMPORT omp_rpc.host_uris owner/python/omp-rpc/src/omp_rpc/host_uris.py
+IMPORT omp_rpc.protocol owner/python/omp-rpc/src/omp_rpc/protocol.py
+PROVENANCE: actual caller script resolves all omp_rpc modules to exact owner checkout
+
+critic-strict-new.log
+test_oversized_event_never_replays_previous_turn_terminal (tests.test_client.RpcClientTests.test_oversized_event_never_replays_previous_turn_terminal) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.020s
+
+OK
