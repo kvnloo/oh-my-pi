@@ -55,10 +55,12 @@ export function mapTextBlocks(content: unknown, redact: (text: string) => string
 	});
 }
 
-/** Shape-preserving walk of provider request objects; redacts every string leaf. */
+/** Walk provider request string leaves; opaque bytes are preserved, not scrubbed. */
 export function redactStructuredPayload(value: unknown, placeholder: string, seen = new WeakSet<object>()): unknown {
 	if (typeof value === "string") return regexRedact(value, placeholder);
 	if (value == null || typeof value !== "object") return value;
+	// Cursor protobuf fields carry blob IDs and binary data, including subviews.
+	if (value instanceof Uint8Array) return value;
 	if (seen.has(value)) return value;
 	seen.add(value);
 	if (Array.isArray(value)) {
