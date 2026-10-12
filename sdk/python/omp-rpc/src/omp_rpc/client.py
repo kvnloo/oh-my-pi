@@ -385,6 +385,7 @@ TodoPhaseSeed = TodoPhase | Mapping[str, object]
 class _PendingRequest:
     command: str
     response_queue: queue.Queue[JsonObject | BaseException]
+    host_uris_before: tuple[HostUri[Any], ...] | None = None
 
 
 @dataclass(slots=True)
@@ -527,6 +528,7 @@ class RpcClient(WireClient):
         self._ready = threading.Event()
         self._write_lock = threading.Lock()
         self._state_lock = threading.Lock()
+        self._host_uri_registration_lock = threading.Lock()
         self._event_condition = threading.Condition()
         self._pending: dict[str, _PendingRequest] = {}
         self._pending_host_tool_calls: dict[str, _PendingHostToolCall] = {}
@@ -1045,28 +1047,36 @@ class RpcClient(WireClient):
         )
 
     def set_host_uris(self, host_uris: Sequence[HostUri[Any]]) -> tuple[str, ...]:
-        self._host_uris = tuple(host_uris)
-        if self._process is None:
-            return tuple(uri.scheme for uri in self._host_uris)
+        with self._host_uri_registration_lock:
+            previous = self._host_uris
+            # Publish before sending: the server can request a URI before replying.
+            self._host_uris = tuple(host_uris)
+            if self._process is None:
+                return tuple(uri.scheme for uri in self._host_uris)
 
-        schemes_payload: list[JsonObject] = []
-        for uri in self._host_uris:
-            entry: JsonObject = {
-                "scheme": uri.scheme,
-                "writable": uri.writable,
-                "immutable": uri.immutable,
-            }
-            if uri.description is not None:
-                entry["description"] = uri.description
-            schemes_payload.append(entry)
+            schemes_payload: list[JsonObject] = []
+            for uri in self._host_uris:
+                entry: JsonObject = {
+                    "scheme": uri.scheme,
+                    "writable": uri.writable,
+                    "immutable": uri.immutable,
+                }
+                if uri.description is not None:
+                    entry["description"] = uri.description
+                schemes_payload.append(entry)
 
-        data = self._command("set_host_uri_schemes", {"schemes": schemes_payload})
-        return required(
-            expect_object(data, "set_host_uri_schemes"),
-            "schemes",
-            array(decode_str),
-            "set_host_uri_schemes",
-        )
+            data = self._request_data(
+                "set_host_uri_schemes",
+                self._next_request_id(),
+                {"schemes": schemes_payload},
+                host_uris_before=previous,
+            )
+            return required(
+                expect_object(data, "set_host_uri_schemes"),
+                "schemes",
+                array(decode_str),
+                "set_host_uri_schemes",
+            )
 
     def prompt(
         self,
@@ -1435,6 +1445,7 @@ class RpcClient(WireClient):
         *,
         drop_none: bool = True,
         timeout: float | None = None,
+        host_uris_before: tuple[HostUri[Any], ...] | None = None,
     ) -> JsonObject | None:
         """Send one command and return its `data`, None when absent or null.
 
@@ -1449,7 +1460,9 @@ class RpcClient(WireClient):
         response_queue: queue.Queue[JsonObject | BaseException] = queue.Queue(maxsize=1)
         with self._state_lock:
             self._pending[request_id] = _PendingRequest(
-                command=command_type, response_queue=response_queue
+                command=command_type,
+                response_queue=response_queue,
+                host_uris_before=host_uris_before,
             )
 
         try:
@@ -2059,6 +2072,14 @@ class RpcClient(WireClient):
         if isinstance(request_id, str):
             with self._state_lock:
                 pending = self._pending.pop(request_id, None)
+                if (
+                    pending is not None
+                    and pending.host_uris_before is not None
+                    and not bool(payload.get("success", False))
+                ):
+                    # Rejection leaves the server's previous schemes intact. Restore
+                    # before the reader dispatches any subsequent URI callback.
+                    self._host_uris = pending.host_uris_before
             if pending is not None:
                 pending.response_queue.put(payload)
                 return
@@ -2104,6 +2125,9 @@ class RpcClient(WireClient):
                 return False
 
             pending = self._pending.pop(target_id)
+            if pending.host_uris_before is not None and not isinstance(payload.get("id"), str):
+                # An unmatched explicit id is not this registration's outcome.
+                self._host_uris = pending.host_uris_before
 
         pending.response_queue.put(payload)
         return True
