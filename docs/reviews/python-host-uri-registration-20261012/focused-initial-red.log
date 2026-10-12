@@ -1,0 +1,29 @@
+test_host_uri_helper_normalizes_scheme (tests.test_host_uris.HostUriHelperTests.test_host_uri_helper_normalizes_scheme) ... ok
+test_host_uri_writable_when_write_supplied (tests.test_host_uris.HostUriHelperTests.test_host_uri_writable_when_write_supplied) ... ok
+test_normalize_read_result_accepts_full_mapping (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_full_mapping) ... ok
+test_normalize_read_result_accepts_string (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_string) ... ok
+test_normalize_read_result_rejects_invalid_content_type (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_rejects_invalid_content_type) ... ok
+test_normalize_read_result_requires_content (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_requires_content) ... ok
+test_handler_exception_is_surfaced_as_error (tests.test_host_uris.RpcHostUriBridgeTests.test_handler_exception_is_surfaced_as_error) ... ok
+test_read_handler_can_return_structured_result (tests.test_host_uris.RpcHostUriBridgeTests.test_read_handler_can_return_structured_result) ... ok
+test_registration_handler_available_before_acknowledgement (tests.test_host_uris.RpcHostUriBridgeTests.test_registration_handler_available_before_acknowledgement) ... ok
+test_rejected_replacement_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_rejected_replacement_preserves_registered_handler) ... FAIL
+test_set_host_uris_registers_schemes_on_start (tests.test_host_uris.RpcHostUriBridgeTests.test_set_host_uris_registers_schemes_on_start) ... ok
+test_successful_replacement_removes_previous_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_successful_replacement_removes_previous_handler) ... ok
+test_timeout_does_not_imply_rejected_registration (tests.test_host_uris.RpcHostUriBridgeTests.test_timeout_does_not_imply_rejected_registration) ... ok
+test_unknown_scheme_is_rejected_with_error (tests.test_host_uris.RpcHostUriBridgeTests.test_unknown_scheme_is_rejected_with_error) ... ok
+test_write_handler_receives_content_and_succeeds (tests.test_host_uris.RpcHostUriBridgeTests.test_write_handler_receives_content_and_succeeds) ... ok
+test_write_rejected_for_read_only_scheme (tests.test_host_uris.RpcHostUriBridgeTests.test_write_rejected_for_read_only_scheme) ... ok
+
+======================================================================
+FAIL: test_rejected_replacement_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_rejected_replacement_preserves_registered_handler)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<fixed-worktree>/sdk/python/omp-rpc/tests/test_host_uris.py", line 194, in test_rejected_replacement_preserves_registered_handler
+    self.assertEqual(self._await_echo(client).get("content"), "accepted")
+AssertionError: None != 'accepted'
+
+----------------------------------------------------------------------
+Ran 16 tests in 1.241s
+
+FAILED (failures=1)
