@@ -670,28 +670,28 @@ class RpcClient(WireClient):
                 f"Timed out waiting for RPC ready signal. Stderr: {stderr}"
             )
 
-        ready_event = self._ready_event
-        if (
-            ready_event is not None
-            and ready_event.supported_protocol_versions is not None
-            and 2 in ready_event.supported_protocol_versions
-            and ready_event.max_frame_bytes == _MAX_RPC_FRAME_BYTES
-            and ready_event.max_reassembled_frame_bytes == _MAX_RPC_REASSEMBLED_BYTES
-        ):
-            try:
+        try:
+            ready_event = self._ready_event
+            if (
+                ready_event is not None
+                and ready_event.supported_protocol_versions is not None
+                and 2 in ready_event.supported_protocol_versions
+                and ready_event.max_frame_bytes == _MAX_RPC_FRAME_BYTES
+                and ready_event.max_reassembled_frame_bytes == _MAX_RPC_REASSEMBLED_BYTES
+            ):
                 self._protocol_v2_enabled = True
                 negotiation = self._request("negotiate_protocol", protocolVersion=2)
                 if negotiation.get("protocolVersion") != 2:
                     raise RpcError("RPC protocol v2 negotiation failed")
                 self._protocol_version = 2
-            except BaseException:
-                self.stop()
-                raise
 
-        if self._custom_tools:
-            self.set_custom_tools(self._custom_tools)
-        if self._host_uris:
-            self.set_host_uris(self._host_uris)
+            if self._custom_tools:
+                self.set_custom_tools(self._custom_tools)
+            if self._host_uris:
+                self.set_host_uris(self._host_uris)
+        except BaseException:
+            self.stop()
+            raise
         return self
 
     def stop(self) -> bool:
