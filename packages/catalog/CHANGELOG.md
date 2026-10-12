@@ -47,6 +47,9 @@
 ### Added
 
 - Added the `honors-claude-code-beta-kill-switch` axis (`compat.honorsClaudeCodeBetaKillSwitch`), on for the `anthropic` provider, so a rule or `models.yml` override decides which providers honor `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` ([#15458](https://github.com/can1357/oh-my-pi/pull/15458) by [@H4vC](https://github.com/H4vC))
+### Breaking Changes
+
+- Removed the unused `routingVariantPlain`, `hasRoutingVariants`, `recoversCanonicalParams`, `responsesHintGroup`, `responsesRouteModels`, `supportsDynamicEffortSiblings`, `effortFamiliesFor`, and `stripEffortLane` exports from `@oh-my-pi/pi-catalog/compat/taxonomy`.
 
 ## [18.10.0] - 2026-10-12
 
@@ -74,12 +77,6 @@
 - Fixed OpenRouter Decisions endpoint derivation when the chat base URL has a trailing slash.
 - Fixed GPT-6.1 Sol Ultrafast usage pricing to apply OpenAI's published premium rates for the OpenAI API and Codex included usage.
 - Fixed GPT-6 Sol, GPT-6.1 Sol, and GPT-6 Luna so changing reasoning effort preserves prompt caching.
-- Fixed `openrouterDecisionsBaseUrl` deriving a malformed OpenRouter Decisions root when the chat `baseUrl` has a trailing slash (such as `.../api/v1/`); it now strips trailing slashes before mapping `/v1` to `/alpha`, and is exported so provider-wide `baseUrl` overrides can reuse it ([#14848](https://github.com/can1357/oh-my-pi/pull/14848) by [@jerryfane](https://github.com/jerryfane))
-- Fixed GPT-6.1 Sol Ultrafast usage being priced at the Standard rate; it now applies OpenAI's published premium: 6x on the OpenAI API and 8x included usage on Codex ([#15000](https://github.com/can1357/oh-my-pi/pull/15000) by [@eggpeat](https://github.com/eggpeat)).
-- Fixed GPT-6 Sol, GPT-6.1 Sol and GPT-6 Luna losing the prompt cache on every reasoning-effort change: like GPT-6 Astra they now carry the change as a `configuration_update` item (OpenRouter's GPT-6 rows keep request-level effort changes)
-### Breaking Changes
-
-- Removed the unused `routingVariantPlain`, `hasRoutingVariants`, `recoversCanonicalParams`, `responsesHintGroup`, `responsesRouteModels`, `supportsDynamicEffortSiblings`, `effortFamiliesFor`, and `stripEffortLane` exports from `@oh-my-pi/pi-catalog/compat/taxonomy`.
 
 ## [18.8.8] - 2026-10-10
 
