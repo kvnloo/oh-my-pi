@@ -1,0 +1,9 @@
+{
+  "ruff_version": "0.17.0",
+  "base_diagnostics": 43,
+  "fixed_diagnostics": 42,
+  "new_diagnostics": [],
+  "sdk_format_base": "7 files would be reformatted, 7 files already formatted",
+  "sdk_format_fixed": "7 files would be reformatted, 7 files already formatted",
+  "test_host_uris": "ruff check and ruff format --check PASS"
+}
