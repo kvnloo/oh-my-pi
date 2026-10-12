@@ -1,0 +1,64 @@
+{
+  "base": "3a9b01d06c118d56e035dda4e99caa272d6f646c",
+  "tested_commit": "a18e610c6b2e03f49726ba630a06147bdb71fc26",
+  "components": [
+    {
+      "original": "7c560ff37f292455def20c931a753f629158e758",
+      "composed_commit": "9d8699ecfefd2e11837d015562dc8ef2fff2c15c",
+      "author_and_date": [
+        "Kevin Rajan",
+        "2026-10-12T08:06:05Z"
+      ]
+    },
+    {
+      "original": "65cbf8ed6d71d318fb317236de404e35182a0cf4",
+      "composed_commit": "80acca62c76a56bd7627a07d85a16ae99e8c3f9b",
+      "author_and_date": [
+        "Kevin Rajan",
+        "2026-10-12T08:06:34Z"
+      ]
+    },
+    {
+      "original": "5d3c6869a23b6fe6d3aa8ec6f9dbb173973d189b",
+      "composed_commit": "e3117b6c1c57bcdbc23f99e9ad5a4f6c6356b0d3",
+      "author_and_date": [
+        "Kevin Rajan",
+        "2026-10-12T10:30:14Z"
+      ]
+    },
+    {
+      "original": "6126e9fc9deae12b2bbad8539cedc8ba063944d2",
+      "composed_commit": "17d427498d3cdef3990e3838b8c76947f5d776f0",
+      "author_and_date": [
+        "Kevin Rajan",
+        "2026-10-12T10:33:33Z"
+      ]
+    }
+  ],
+  "variants": {
+    "base": {
+      "commit": "3a9b01d06c118d56e035dda4e99caa272d6f646c",
+      "client_blob": "93375fc12a2e8cb981363535addea9fd6d3baafc"
+    },
+    "only151": {
+      "commit": "837273f9cdc927809ef3d8b49bc1fad07881ab21",
+      "client_blob": "c6b23368d7019d21b8ab9da44b3fef313371fe55"
+    },
+    "only152": {
+      "commit": "6c71a7b580a9b486b77b875483ffd791d0f19dae",
+      "client_blob": "0f041bd7dd86ffc54e84dd5ee89e3542343d0b33"
+    },
+    "combined": {
+      "commit": "a18e610c6b2e03f49726ba630a06147bdb71fc26",
+      "client_blob": "78132603421be9f218e4dc1b6674ee247c4e2d94"
+    }
+  },
+  "frozen_test_sha256": {
+    "test_user_group.py": "9eb9beb993d3d68c9d4e2af37fe906a3b598644a71486119ad63201975631661",
+    "test_protocol.py": "6db0127079c9927aa1db829e2cf01c257e71619a7ff888d6458b15c4c9040520",
+    "test_client.py": "da12fd53f19ce772596fc61812f6ace075c1e2b559a4f6105adac29111e0903a",
+    "test_registration_composition.py": "deb75e49bda53c0e2af81ca1d5108c780f00b669ceef5fb119c0d42249ebaba4",
+    "test_host_uris.py": "5966c614dc380225f2b7019249265627b4eac6d75ad4a79aada8ceded57e77cf",
+    "__init__.py": "36f1ef41d54c7d83eb4f77ddf86bbfe4a6d92cad116f87c7860e53f4dceab43e"
+  }
+}

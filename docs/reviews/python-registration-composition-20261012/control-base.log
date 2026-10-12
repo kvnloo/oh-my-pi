@@ -1,0 +1,180 @@
+test_host_uri_helper_normalizes_scheme (tests.test_host_uris.HostUriHelperTests.test_host_uri_helper_normalizes_scheme) ... ok
+test_host_uri_writable_when_write_supplied (tests.test_host_uris.HostUriHelperTests.test_host_uri_writable_when_write_supplied) ... ok
+test_normalize_read_result_accepts_full_mapping (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_full_mapping) ... ok
+test_normalize_read_result_accepts_string (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_string) ... ok
+test_normalize_read_result_rejects_invalid_content_type (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_rejects_invalid_content_type) ... ok
+test_normalize_read_result_requires_content (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_requires_content) ... ok
+test_concurrent_rejection_does_not_undo_successful_registration (tests.test_host_uris.RpcHostUriBridgeTests.test_concurrent_rejection_does_not_undo_successful_registration) ... FAIL
+test_handler_exception_is_surfaced_as_error (tests.test_host_uris.RpcHostUriBridgeTests.test_handler_exception_is_surfaced_as_error) ... ok
+test_idless_rejection_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_idless_rejection_preserves_registered_handler) ... FAIL
+test_late_identified_failure_does_not_roll_back_newer_handlers (tests.test_host_uris.RpcHostUriBridgeTests.test_late_identified_failure_does_not_roll_back_newer_handlers) ... ok
+test_read_handler_can_return_structured_result (tests.test_host_uris.RpcHostUriBridgeTests.test_read_handler_can_return_structured_result) ... ok
+test_registration_handler_available_before_acknowledgement (tests.test_host_uris.RpcHostUriBridgeTests.test_registration_handler_available_before_acknowledgement) ... ok
+test_rejected_replacement_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_rejected_replacement_preserves_registered_handler) ... FAIL
+test_set_host_uris_registers_schemes_on_start (tests.test_host_uris.RpcHostUriBridgeTests.test_set_host_uris_registers_schemes_on_start) ... ok
+test_successful_replacement_removes_previous_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_successful_replacement_removes_previous_handler) ... ok
+test_timeout_does_not_imply_rejected_registration (tests.test_host_uris.RpcHostUriBridgeTests.test_timeout_does_not_imply_rejected_registration) ... ok
+test_unknown_scheme_is_rejected_with_error (tests.test_host_uris.RpcHostUriBridgeTests.test_unknown_scheme_is_rejected_with_error) ... ok
+test_write_handler_receives_content_and_succeeds (tests.test_host_uris.RpcHostUriBridgeTests.test_write_handler_receives_content_and_succeeds) ... ok
+test_write_rejected_for_read_only_scheme (tests.test_host_uris.RpcHostUriBridgeTests.test_write_rejected_for_read_only_scheme) ... ok
+test_failed_context_entry_reaps_child_and_readers_v1 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v1) ... FAIL
+test_failed_context_entry_reaps_child_and_readers_v2 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v2) ... FAIL
+test_retry_after_failed_entry_starts_fresh_worker (tests.test_client.StartupRegistrationTests.test_retry_after_failed_entry_starts_fresh_worker) ... ERROR
+test_successful_startup_serves_callback_before_registration_ack (tests.test_client.StartupRegistrationTests.test_successful_startup_serves_callback_before_registration_ack) ... ok
+test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v1 (tests.test_registration_composition.RegistrationCompositionTests.test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v1) ... FAIL
+test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v2 (tests.test_registration_composition.RegistrationCompositionTests.test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v2) ... FAIL
+test_rejection_retry_restart_preserves_handlers_v1 (tests.test_registration_composition.RegistrationCompositionTests.test_rejection_retry_restart_preserves_handlers_v1) ... FAIL
+test_rejection_retry_restart_preserves_handlers_v2 (tests.test_registration_composition.RegistrationCompositionTests.test_rejection_retry_restart_preserves_handlers_v2) ... FAIL
+
+======================================================================
+ERROR: test_retry_after_failed_entry_starts_fresh_worker (tests.test_client.StartupRegistrationTests.test_retry_after_failed_entry_starts_fresh_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_client.py", line 1269, in test_retry_after_failed_entry_starts_fresh_worker
+    with client:
+         ^^^^^^
+  File "<base-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py", line 574, in __enter__
+    return self.start()
+           ^^^^^^^^^^^^
+  File "<base-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py", line 600, in start
+    raise RpcError("RPC client is already started")
+omp_rpc.client.RpcError: RPC client is already started
+
+======================================================================
+FAIL: test_concurrent_rejection_does_not_undo_successful_registration (tests.test_host_uris.RpcHostUriBridgeTests.test_concurrent_rejection_does_not_undo_successful_registration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_host_uris.py", line 390, in test_concurrent_rejection_does_not_undo_successful_registration
+    self.assertEqual(self._await_echo(client).get("content"), "first accepted")
+AssertionError: None != 'first accepted'
+
+======================================================================
+FAIL: test_idless_rejection_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_idless_rejection_preserves_registered_handler)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_host_uris.py", line 296, in test_idless_rejection_preserves_registered_handler
+    self.assertEqual(self._await_echo(client).get("content"), "accepted")
+AssertionError: None != 'accepted'
+
+======================================================================
+FAIL: test_rejected_replacement_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_rejected_replacement_preserves_registered_handler)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_host_uris.py", line 232, in test_rejected_replacement_preserves_registered_handler
+    self.assertEqual(self._await_echo(client).get("content"), "accepted")
+AssertionError: None != 'accepted'
+
+======================================================================
+FAIL: test_failed_context_entry_reaps_child_and_readers_v1 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_client.py", line 1257, in test_failed_context_entry_reaps_child_and_readers_v1
+    self._assert_failed_entry_reaps(protocol_v2=False)
+  File "<frozen-tests>/tests/test_client.py", line 1242, in _assert_failed_entry_reaps
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True) : failed context entry must reap worker and stop both readers
+
+======================================================================
+FAIL: test_failed_context_entry_reaps_child_and_readers_v2 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v2)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_client.py", line 1260, in test_failed_context_entry_reaps_child_and_readers_v2
+    self._assert_failed_entry_reaps(protocol_v2=True)
+  File "<frozen-tests>/tests/test_client.py", line 1242, in _assert_failed_entry_reaps
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True) : failed context entry must reap worker and stop both readers
+
+======================================================================
+FAIL: test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v1 (tests.test_registration_composition.RegistrationCompositionTests.test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_registration_composition.py", line 203, in test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v1
+    self._exercise_timeout_lifetimes(protocol_v2=False)
+  File "<frozen-tests>/tests/test_registration_composition.py", line 186, in _exercise_timeout_lifetimes
+    self._assert_stopped(client, resources[0])
+  File "<frozen-tests>/tests/test_registration_composition.py", line 103, in _assert_stopped
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True)
+
+======================================================================
+FAIL: test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v2 (tests.test_registration_composition.RegistrationCompositionTests.test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v2)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_registration_composition.py", line 206, in test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v2
+    self._exercise_timeout_lifetimes(protocol_v2=True)
+  File "<frozen-tests>/tests/test_registration_composition.py", line 186, in _exercise_timeout_lifetimes
+    self._assert_stopped(client, resources[0])
+  File "<frozen-tests>/tests/test_registration_composition.py", line 103, in _assert_stopped
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True)
+
+======================================================================
+FAIL: test_rejection_retry_restart_preserves_handlers_v1 (tests.test_registration_composition.RegistrationCompositionTests.test_rejection_retry_restart_preserves_handlers_v1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_registration_composition.py", line 172, in test_rejection_retry_restart_preserves_handlers_v1
+    self._exercise_rejection_retry_restart(protocol_v2=False)
+  File "<frozen-tests>/tests/test_registration_composition.py", line 141, in _exercise_rejection_retry_restart
+    self._assert_stopped(client, resources[0])
+  File "<frozen-tests>/tests/test_registration_composition.py", line 103, in _assert_stopped
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True)
+
+======================================================================
+FAIL: test_rejection_retry_restart_preserves_handlers_v2 (tests.test_registration_composition.RegistrationCompositionTests.test_rejection_retry_restart_preserves_handlers_v2)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<frozen-tests>/tests/test_registration_composition.py", line 175, in test_rejection_retry_restart_preserves_handlers_v2
+    self._exercise_rejection_retry_restart(protocol_v2=True)
+  File "<frozen-tests>/tests/test_registration_composition.py", line 141, in _exercise_rejection_retry_restart
+    self._assert_stopped(client, resources[0])
+  File "<frozen-tests>/tests/test_registration_composition.py", line 103, in _assert_stopped
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True)
+
+----------------------------------------------------------------------
+Ran 27 tests in 2.142s
+
+FAILED (failures=9, errors=1)

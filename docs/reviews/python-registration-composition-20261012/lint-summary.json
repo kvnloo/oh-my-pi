@@ -1,0 +1,11 @@
+{
+  "ruff": "0.17.0",
+  "base_diagnostics": 43,
+  "combined_diagnostics": 42,
+  "new_diagnostics": [],
+  "base_format": "7 files would be reformatted, 7 files already formatted",
+  "combined_format": "7 files would be reformatted, 8 files already formatted",
+  "new_test_lint_format": "PASS",
+  "sdk_diff_check": "PASS",
+  "historical_receipt_diff_check": "8 trailing-whitespace warnings in unchanged original #151 pytest logs; preserved"
+}

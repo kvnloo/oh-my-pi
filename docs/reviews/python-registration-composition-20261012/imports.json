@@ -1,0 +1,26 @@
+{
+  "base": {
+    "client": "<base-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py",
+    "uri_tests": "<frozen-tests>/tests/test_host_uris.py",
+    "startup_tests": "<frozen-tests>/tests/test_client.py",
+    "composition_tests": "<frozen-tests>/tests/test_registration_composition.py"
+  },
+  "only151": {
+    "client": "<only151-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py",
+    "uri_tests": "<frozen-tests>/tests/test_host_uris.py",
+    "startup_tests": "<frozen-tests>/tests/test_client.py",
+    "composition_tests": "<frozen-tests>/tests/test_registration_composition.py"
+  },
+  "only152": {
+    "client": "<only152-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py",
+    "uri_tests": "<frozen-tests>/tests/test_host_uris.py",
+    "startup_tests": "<frozen-tests>/tests/test_client.py",
+    "composition_tests": "<frozen-tests>/tests/test_registration_composition.py"
+  },
+  "combined": {
+    "client": "<combined-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py",
+    "uri_tests": "<frozen-tests>/tests/test_host_uris.py",
+    "startup_tests": "<frozen-tests>/tests/test_client.py",
+    "composition_tests": "<frozen-tests>/tests/test_registration_composition.py"
+  }
+}

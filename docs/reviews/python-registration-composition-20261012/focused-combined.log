@@ -1,0 +1,32 @@
+test_host_uri_helper_normalizes_scheme (tests.test_host_uris.HostUriHelperTests.test_host_uri_helper_normalizes_scheme) ... ok
+test_host_uri_writable_when_write_supplied (tests.test_host_uris.HostUriHelperTests.test_host_uri_writable_when_write_supplied) ... ok
+test_normalize_read_result_accepts_full_mapping (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_full_mapping) ... ok
+test_normalize_read_result_accepts_string (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_accepts_string) ... ok
+test_normalize_read_result_rejects_invalid_content_type (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_rejects_invalid_content_type) ... ok
+test_normalize_read_result_requires_content (tests.test_host_uris.HostUriHelperTests.test_normalize_read_result_requires_content) ... ok
+test_concurrent_rejection_does_not_undo_successful_registration (tests.test_host_uris.RpcHostUriBridgeTests.test_concurrent_rejection_does_not_undo_successful_registration) ... ok
+test_handler_exception_is_surfaced_as_error (tests.test_host_uris.RpcHostUriBridgeTests.test_handler_exception_is_surfaced_as_error) ... ok
+test_idless_rejection_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_idless_rejection_preserves_registered_handler) ... ok
+test_late_identified_failure_does_not_roll_back_newer_handlers (tests.test_host_uris.RpcHostUriBridgeTests.test_late_identified_failure_does_not_roll_back_newer_handlers) ... ok
+test_read_handler_can_return_structured_result (tests.test_host_uris.RpcHostUriBridgeTests.test_read_handler_can_return_structured_result) ... ok
+test_registration_handler_available_before_acknowledgement (tests.test_host_uris.RpcHostUriBridgeTests.test_registration_handler_available_before_acknowledgement) ... ok
+test_rejected_replacement_preserves_registered_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_rejected_replacement_preserves_registered_handler) ... ok
+test_set_host_uris_registers_schemes_on_start (tests.test_host_uris.RpcHostUriBridgeTests.test_set_host_uris_registers_schemes_on_start) ... ok
+test_successful_replacement_removes_previous_handler (tests.test_host_uris.RpcHostUriBridgeTests.test_successful_replacement_removes_previous_handler) ... ok
+test_timeout_does_not_imply_rejected_registration (tests.test_host_uris.RpcHostUriBridgeTests.test_timeout_does_not_imply_rejected_registration) ... ok
+test_unknown_scheme_is_rejected_with_error (tests.test_host_uris.RpcHostUriBridgeTests.test_unknown_scheme_is_rejected_with_error) ... ok
+test_write_handler_receives_content_and_succeeds (tests.test_host_uris.RpcHostUriBridgeTests.test_write_handler_receives_content_and_succeeds) ... ok
+test_write_rejected_for_read_only_scheme (tests.test_host_uris.RpcHostUriBridgeTests.test_write_rejected_for_read_only_scheme) ... ok
+test_failed_context_entry_reaps_child_and_readers_v1 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v1) ... ok
+test_failed_context_entry_reaps_child_and_readers_v2 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v2) ... ok
+test_retry_after_failed_entry_starts_fresh_worker (tests.test_client.StartupRegistrationTests.test_retry_after_failed_entry_starts_fresh_worker) ... ok
+test_successful_startup_serves_callback_before_registration_ack (tests.test_client.StartupRegistrationTests.test_successful_startup_serves_callback_before_registration_ack) ... ok
+test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v1 (tests.test_registration_composition.RegistrationCompositionTests.test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v1) ... ok
+test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v2 (tests.test_registration_composition.RegistrationCompositionTests.test_initial_timeout_cleanup_differs_from_runtime_uncertainty_v2) ... ok
+test_rejection_retry_restart_preserves_handlers_v1 (tests.test_registration_composition.RegistrationCompositionTests.test_rejection_retry_restart_preserves_handlers_v1) ... ok
+test_rejection_retry_restart_preserves_handlers_v2 (tests.test_registration_composition.RegistrationCompositionTests.test_rejection_retry_restart_preserves_handlers_v2) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 3.161s
+
+OK
