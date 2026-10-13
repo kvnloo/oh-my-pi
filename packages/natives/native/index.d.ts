@@ -1977,6 +1977,8 @@ export interface InlineSloppyRegion {
  */
 export declare function invalidateFsScanCache(path?: string | undefined | null): void
 
+/** Whether a path is a SQLite database or WAL index held open by this process. */
+export declare function isHeldBySqlite(path: string): boolean
 /** Kind enum of the backend selected by default for this build target. */
 export declare function isoBackend(): IsoBackendKind
 

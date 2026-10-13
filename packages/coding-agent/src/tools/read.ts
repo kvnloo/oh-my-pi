@@ -1,7 +1,7 @@
 import type { ReadToolDetails } from "@oh-my-pi/pi-tui/tools/read";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { type EditStore, notebookToEditableText } from "@oh-my-pi/pi-natives";
+import { type EditStore, isHeldBySqlite, notebookToEditableText } from "@oh-my-pi/pi-natives";
 import { type } from "@oh-my-pi/omptype";
 import type {
 	AgentTool,
@@ -1774,6 +1774,12 @@ export class ReadTool implements AgentTool<typeof readSchema, ReadToolDetails> {
 			} else {
 				throw error;
 			}
+		}
+		// SQLite paths route to the query reader before here. Do not close a raw descriptor on a held SQLite inode.
+		if (!isDirectory && isHeldBySqlite(absolutePath)) {
+			throw new ToolError(
+				`Cannot read '${localReadPath}': it is a SQLite file this process holds open; read the database through its .db path instead.`,
+			);
 		}
 		// Speculative reads open the authorized resolved target (absolutePath)
 		// but must behave exactly like an ordinary read of the requested

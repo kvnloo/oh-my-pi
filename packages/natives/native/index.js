@@ -91,6 +91,7 @@ export const hasMatch = nativeBindings.hasMatch ?? missingNativeExport("hasMatch
 export const highlightCode = nativeBindings.highlightCode ?? missingNativeExport("highlightCode");
 export const htmlToMarkdown = nativeBindings.htmlToMarkdown ?? missingNativeExport("htmlToMarkdown");
 export const invalidateFsScanCache = nativeBindings.invalidateFsScanCache ?? missingNativeExport("invalidateFsScanCache");
+export const isHeldBySqlite = nativeBindings.isHeldBySqlite ?? missingNativeExport("isHeldBySqlite");
 export const isoBackend = nativeBindings.isoBackend ?? missingNativeExport("isoBackend");
 export const isoDiff = nativeBindings.isoDiff ?? missingNativeExport("isoDiff");
 export const isoIsUnavailableError = nativeBindings.isoIsUnavailableError ?? missingNativeExport("isoIsUnavailableError");
