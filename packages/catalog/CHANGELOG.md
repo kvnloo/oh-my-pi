@@ -10,6 +10,10 @@
 
 - Removed the Codex `toolMode` model field (`code_mode_only`); Codex discovery no longer maps `tool_mode`
 
+### Breaking Changes
+
+- Removed the unused `routingVariantPlain`, `hasRoutingVariants`, `recoversCanonicalParams`, `responsesHintGroup`, `responsesRouteModels`, `supportsDynamicEffortSiblings`, `effortFamiliesFor`, and `stripEffortLane` exports from `@oh-my-pi/pi-catalog/compat/taxonomy`.
+
 ## [18.10.3] - 2026-10-12
 
 ### Breaking Changes
@@ -47,9 +51,6 @@
 ### Added
 
 - Added the `honors-claude-code-beta-kill-switch` axis (`compat.honorsClaudeCodeBetaKillSwitch`), on for the `anthropic` provider, so a rule or `models.yml` override decides which providers honor `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` ([#15458](https://github.com/can1357/oh-my-pi/pull/15458) by [@H4vC](https://github.com/H4vC))
-### Breaking Changes
-
-- Removed the unused `routingVariantPlain`, `hasRoutingVariants`, `recoversCanonicalParams`, `responsesHintGroup`, `responsesRouteModels`, `supportsDynamicEffortSiblings`, `effortFamiliesFor`, and `stripEffortLane` exports from `@oh-my-pi/pi-catalog/compat/taxonomy`.
 
 ## [18.10.0] - 2026-10-12
 
