@@ -1,0 +1,10 @@
+Outer registration failed: RpcTimeoutError('Timed out waiting for response to set_host_tools. Stderr: ')
+Outer elapsed seconds: 0.25
+Nested registration result: ('new',)
+First callback: {"type": "host_tool_result", "id": "host-1", "result": {"content": [{"type": "text", "text": "outer handler completed"}]}}
+Next callback: {"type": "host_tool_result", "id": "host-2", "result": {"content": [{"type": "text", "text": "nested accepted"}]}}
+Traceback (most recent call last):
+  File "<evidence-workspace>/candidate/../evidence/reviewer/reproduce_reentrant_registration.py", line 38, in <module>
+    assert failure is None, failure
+           ^^^^^^^^^^^^^^^
+AssertionError: Timed out waiting for response to set_host_tools. Stderr: 

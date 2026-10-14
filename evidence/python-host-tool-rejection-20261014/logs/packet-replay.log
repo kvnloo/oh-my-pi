@@ -1,0 +1,10 @@
+baseline-regression: exit 1
+candidate-regression: exit 0
+baseline-adjacent: exit 0
+candidate-adjacent: exit 0
+reproduce_interrupted_registration: exit 0
+reproduce_reentrant_registration: exit 0
+review_outcome_model: exit 0
+baseline-sdk-pytest: exit 0
+candidate-sdk-pytest: exit 0
+PASS: source guards, expected RED, GREEN, adjacent controls and independent probes

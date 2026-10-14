@@ -1,0 +1,95 @@
+{
+  "normalization": "Only absolute evidence-workspace and existing-test-interpreter paths replaced with placeholders. Assertion text, exit results, and counts preserved. Reviewer reports retain original artifact names; README maps public names.",
+  "files": [
+    {
+      "path": "source-manifest.json",
+      "original_sha256": "6c59661903a5b741fb4c67cea3a37f1024d3527c564194472b237bb2c1702e71",
+      "published_sha256": "6c59661903a5b741fb4c67cea3a37f1024d3527c564194472b237bb2c1702e71"
+    },
+    {
+      "path": "final-v2.patch",
+      "original_sha256": "06bf17ac3d6001e1a9e3858654c8294fb03e36c3c90fde645391c112410be694",
+      "published_sha256": "06bf17ac3d6001e1a9e3858654c8294fb03e36c3c90fde645391c112410be694"
+    },
+    {
+      "path": "logs/baseline-regression.log",
+      "original_sha256": "c582513a1cbf879efd299f677be5e5ce3e3f483002955a8c6bc3beaeeca9a803",
+      "published_sha256": "bea7d5d1e197c7d106372019be2d9b41cbb42c78f79db6dcbe150da40b91289b"
+    },
+    {
+      "path": "logs/candidate-regression.log",
+      "original_sha256": "eb2fdb7af5b8e3e4ca326c443356e927ce82a9fa8ed6f4ea986f28682562ac4c",
+      "published_sha256": "eb2fdb7af5b8e3e4ca326c443356e927ce82a9fa8ed6f4ea986f28682562ac4c"
+    },
+    {
+      "path": "logs/baseline-sdk-pytest.log",
+      "original_sha256": "2ec68df94dc3ed793dd58576e7c17482f82502da35d01ab320ecbe2d6ab3ef98",
+      "published_sha256": "2ec68df94dc3ed793dd58576e7c17482f82502da35d01ab320ecbe2d6ab3ef98"
+    },
+    {
+      "path": "logs/candidate-sdk-pytest.log",
+      "original_sha256": "aec37aeb8a526f79920159a76cdb0663df66e8fab764a617cdd61177d113d637",
+      "published_sha256": "aec37aeb8a526f79920159a76cdb0663df66e8fab764a617cdd61177d113d637"
+    },
+    {
+      "path": "review/approved-v2.md",
+      "original_sha256": "13191647d64c6a9e83db2470c70c4a65a4110e76698abf0b7dd1cbba878c8576",
+      "published_sha256": "e2f22edc298bf51fb96716bd37cb752aa5bccadf58b39c0fe63e2aaa0142167e"
+    },
+    {
+      "path": "rejected-v1/review.md",
+      "original_sha256": "0effac851f0ee35c753b577b2b23edf21a377501a42c862326cd51d4f4ba002d",
+      "published_sha256": "0effac851f0ee35c753b577b2b23edf21a377501a42c862326cd51d4f4ba002d"
+    },
+    {
+      "path": "rejected-v1/patch.diff",
+      "original_sha256": "f6caaf527512060dc7301b3623d1ae1de53fef4aa53ec2fda9d61c0729d60e40",
+      "published_sha256": "f6caaf527512060dc7301b3623d1ae1de53fef4aa53ec2fda9d61c0729d60e40"
+    },
+    {
+      "path": "review/reproduce_interrupted_registration.py",
+      "original_sha256": "90d82b08b6f478c1ca8d7038f1dcd6b7a002e12badc7e7d8448b8ed89da540ad",
+      "published_sha256": "90d82b08b6f478c1ca8d7038f1dcd6b7a002e12badc7e7d8448b8ed89da540ad"
+    },
+    {
+      "path": "review/reproduce_reentrant_registration.py",
+      "original_sha256": "b2ee516e57b1e65556f44d4d8e1df4bc9bb3245d323dd7db0841464f657ad26c",
+      "published_sha256": "b2ee516e57b1e65556f44d4d8e1df4bc9bb3245d323dd7db0841464f657ad26c"
+    },
+    {
+      "path": "review/review_outcome_model.py",
+      "original_sha256": "ea7428ea9aacb5a9a2fe8688624a2833400ca38eafc848c669b973e9e985d8ab",
+      "published_sha256": "ea7428ea9aacb5a9a2fe8688624a2833400ca38eafc848c669b973e9e985d8ab"
+    },
+    {
+      "path": "rejected-v1/interrupted.log",
+      "original_sha256": "9dfe501c26527ec7d65196ac49cea8f15bd8747653c9b66c279af3a15b5be85a",
+      "published_sha256": "552dc7f0e3616f55b4c7396c604909e494075371931e768cf3a8a09f82cc7dc4"
+    },
+    {
+      "path": "rejected-v1/reentrant.log",
+      "original_sha256": "9e663691069cd56fb2eda9ec4fed035e49c94348753972a9b3cfeae7842166a6",
+      "published_sha256": "9973fac4646a1b1a1c6dbbc90ec1d3916cb12cfd0099e7ba8f516c70bf4e6462"
+    },
+    {
+      "path": "logs/reviewer-interrupted.log",
+      "original_sha256": "30d8307792ad03fb674c86c08b3e7cca8f4ad702832770cecd500f5f43353ea1",
+      "published_sha256": "30d8307792ad03fb674c86c08b3e7cca8f4ad702832770cecd500f5f43353ea1"
+    },
+    {
+      "path": "logs/reviewer-reentrant.log",
+      "original_sha256": "1923b53c8ccc4e1879e9040a90df53bc7ab935ff20c3af04c55df1c363d111bd",
+      "published_sha256": "1923b53c8ccc4e1879e9040a90df53bc7ab935ff20c3af04c55df1c363d111bd"
+    },
+    {
+      "path": "logs/reviewer-outcome-model.log",
+      "original_sha256": "6295b4ad0408121a32a3126c67e9587bee865153f6c598130dbf39cd899bd6a1",
+      "published_sha256": "6295b4ad0408121a32a3126c67e9587bee865153f6c598130dbf39cd899bd6a1"
+    },
+    {
+      "path": "logs/reviewer-sdk-pytest.log",
+      "original_sha256": "9c97412ca5c5c690235fcbf6e22ed21cf2afb0fa4bd6c493fbbb8d48b32d0506",
+      "published_sha256": "9c97412ca5c5c690235fcbf6e22ed21cf2afb0fa4bd6c493fbbb8d48b32d0506"
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+--- a/sdk/python/omp-rpc/src/omp_rpc/client.py
++++ b/sdk/python/omp-rpc/src/omp_rpc/client.py
+@@ -382,9 +382,18 @@
+ 
+ 
+ @dataclass(slots=True)
++class _HostToolRegistration:
++    tools: tuple[HostTool[Any, Any], ...]
++    previous: _HostToolRegistration | None = None
++    settled: bool = False
++    rejected: bool = False
++
++
++@dataclass(slots=True)
+ class _PendingRequest:
+     command: str
+     response_queue: queue.Queue[JsonObject | BaseException]
++    host_tool_registration: _HostToolRegistration | None = None
+ 
+ 
+ @dataclass(slots=True)
+@@ -526,6 +535,9 @@
+         self._stderr_thread: threading.Thread | None = None
+         self._ready = threading.Event()
+         self._write_lock = threading.Lock()
++        self._host_tool_registration = _HostToolRegistration(
++            self._custom_tools, settled=True
++        )
+         self._state_lock = threading.Lock()
+         self._event_condition = threading.Condition()
+         self._pending: dict[str, _PendingRequest] = {}
+@@ -1021,28 +1033,65 @@
+         )
+ 
+     def set_custom_tools(self, tools: Sequence[HostTool[Any, Any]]) -> tuple[str, ...]:
+-        self._custom_tools = tuple(tools)
+-        if self._process is None:
+-            return tuple(tool.name for tool in self._custom_tools)
++        proposed = tuple(tools)
++        registration = _HostToolRegistration(proposed)
++        try:
++            if self._process is None:
++                with self._state_lock:
++                    self._host_tool_registration = registration
++                    self._custom_tools = proposed
++                return tuple(tool.name for tool in proposed)
++
++            definitions: list[JsonObject] = []
++            for tool in proposed:
++                definition: JsonObject = {
++                    "name": tool.name,
++                    "description": tool.description,
++                    "parameters": tool.parameters,
++                    "hidden": tool.hidden,
++                    "readsSkillUris": tool.reads_skill_uris,
++                }
++                if tool.label is not None:
++                    definition["label"] = tool.label
++                if tool.load_mode is not None:
++                    definition["loadMode"] = tool.load_mode
++                definitions.append(definition)
++            data = self._request_data(
++                "set_host_tools",
++                self._next_request_id(),
++                {"tools": definitions},
++                host_tool_registration=registration,
++            )
++            return required(
++                expect_object(data, "set_host_tools"),
++                "toolNames",
++                array(decode_str),
++                "set_host_tools",
++            )
++        finally:
++            with self._state_lock:
++                # Missing acknowledgement (including interruption) is uncertain,
++                # not a rejection. A later response cannot undo a newer setter.
++                self._settle_host_tool_registration(registration, rejected=False)
+ 
+-        definitions: list[JsonObject] = []
+-        for tool in self._custom_tools:
+-            definition: JsonObject = {
+-                "name": tool.name,
+-                "description": tool.description,
+-                "parameters": tool.parameters,
+-                "hidden": tool.hidden,
+-                "readsSkillUris": tool.reads_skill_uris,
+-            }
+-            if tool.label is not None:
+-                definition["label"] = tool.label
+-            if tool.load_mode is not None:
+-                definition["loadMode"] = tool.load_mode
+-            definitions.append(definition)
+-        data = self._command("set_host_tools", {"tools": definitions})
+-        return required(
+-            expect_object(data, "set_host_tools"), "toolNames", array(decode_str), "set_host_tools"
+-        )
++    def _settle_host_tool_registration(
++        self, registration: _HostToolRegistration, *, rejected: bool
++    ) -> None:
++        """Settle a registration while holding _state_lock; never wait for I/O."""
++        if registration.settled:
++            return
++        registration.settled = True
++        if not rejected:
++            # Accepted or uncertain outcomes anchor subsequent replacements.
++            # Retain predecessors only while an outcome is still pending.
++            registration.previous = None
++            return
++        registration.rejected = True
++        current = self._host_tool_registration
++        while current.rejected and current.previous is not None:
++            current = current.previous
++        self._host_tool_registration = current
++        self._custom_tools = current.tools
+ 
+     def set_host_uris(self, host_uris: Sequence[HostUri[Any]]) -> tuple[str, ...]:
+         self._host_uris = tuple(host_uris)
+@@ -1435,6 +1484,7 @@
+         *,
+         drop_none: bool = True,
+         timeout: float | None = None,
++        host_tool_registration: _HostToolRegistration | None = None,
+     ) -> JsonObject | None:
+         """Send one command and return its `data`, None when absent or null.
+ 
+@@ -1449,11 +1499,18 @@
+         response_queue: queue.Queue[JsonObject | BaseException] = queue.Queue(maxsize=1)
+         with self._state_lock:
+             self._pending[request_id] = _PendingRequest(
+-                command=command_type, response_queue=response_queue
++                command=command_type,
++                response_queue=response_queue,
++                host_tool_registration=host_tool_registration,
+             )
+ 
+         try:
+-            self._write_json(process, envelope)
++            if host_tool_registration is None:
++                self._write_json(process, envelope)
++            else:
++                self._write_json(
++                    process, envelope, host_tool_registration=host_tool_registration
++                )
+         except BaseException:
+             with self._state_lock:
+                 self._pending.pop(request_id, None)
+@@ -1887,10 +1944,22 @@
+             raise RpcError("RPC client is not started")
+         return self._process
+ 
+-    def _write_json(self, process: subprocess.Popen[str], payload: JsonObject) -> None:
++    def _write_json(
++        self,
++        process: subprocess.Popen[str],
++        payload: JsonObject,
++        *,
++        host_tool_registration: _HostToolRegistration | None = None,
++    ) -> None:
+         if process.stdin is None:
+             raise RpcProcessExitError("RPC process stdin is unavailable")
+         with self._write_lock:
++            if host_tool_registration is not None:
++                with self._state_lock:
++                    # Publish in wire-send order, before any server callback.
++                    host_tool_registration.previous = self._host_tool_registration
++                    self._host_tool_registration = host_tool_registration
++                    self._custom_tools = host_tool_registration.tools
+             try:
+                 process.stdin.write(json.dumps(payload))
+                 process.stdin.write("\n")
+@@ -2059,6 +2128,12 @@
+         if isinstance(request_id, str):
+             with self._state_lock:
+                 pending = self._pending.pop(request_id, None)
++                if pending is not None and pending.host_tool_registration is not None:
++                    # Settle before the reader dispatches a following callback.
++                    self._settle_host_tool_registration(
++                        pending.host_tool_registration,
++                        rejected=payload.get("success") is False,
++                    )
+             if pending is not None:
+                 pending.response_queue.put(payload)
+                 return
+@@ -2104,6 +2179,15 @@
+                 return False
+ 
+             pending = self._pending.pop(target_id)
++            if (
++                pending.host_tool_registration is not None
++                and not isinstance(payload.get("id"), str)
++            ):
++                # An unmatched explicit id is not this registration's outcome.
++                self._settle_host_tool_registration(
++                    pending.host_tool_registration,
++                    rejected=payload.get("success") is False,
++                )
+ 
+         pending.response_queue.put(payload)
+         return True

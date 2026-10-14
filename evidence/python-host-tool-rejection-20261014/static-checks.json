@@ -1,0 +1,265 @@
+{
+  "ruff_version": "0.17.0",
+  "command": "python -m ruff check src tests --output-format json",
+  "baseline_count": 42,
+  "candidate_count": 42,
+  "normalization": "Compare relative filename, diagnostic code, message, and stripped source line. Ignore line-number shifts from the repair.",
+  "normalized_diagnostics": [
+    [
+      "src/omp_rpc/__init__.py",
+      "RUF022",
+      "`__all__` is not sorted",
+      "__all__ = ["
+    ],
+    [
+      "src/omp_rpc/__init__.py",
+      "RUF100",
+      "Unused `noqa` directive (non-enabled: `F403`)",
+      "from ._wire import *  # noqa: F403 - generated surface, bounded by `_wire.__all__`"
+    ],
+    [
+      "src/omp_rpc/_wire.py",
+      "I001",
+      "Import block is un-sorted or un-formatted",
+      "from __future__ import annotations"
+    ],
+    [
+      "src/omp_rpc/_wire.py",
+      "UP035",
+      "Import from `collections.abc` instead: `Callable`, `Mapping`, `Sequence`",
+      "from typing import Callable, Final, Literal, Mapping, NotRequired, Sequence, TypeAlias, TypedDict, cast"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must be a boolean\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must be a list\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must be a number\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must be a string\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must be an integer\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must be an object\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must be an object\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "TRY004",
+      "Prefer `TypeError` exception for invalid type",
+      "raise ValueError(f\"{path} must contain string keys\")"
+    ],
+    [
+      "src/omp_rpc/_wire_runtime.py",
+      "UP035",
+      "Import from `collections.abc` instead: `Callable`, `Mapping`",
+      "from typing import Callable, Mapping, TypeAlias, TypeVar, cast"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception as exc:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception as exc:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception as exc:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception as exc:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception as exc:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception as exc:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "BLE001",
+      "Do not catch blind exception: `Exception`",
+      "except Exception:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "PYI034",
+      "`__enter__` methods in classes like `RpcClient` usually return `self` at runtime",
+      "def __enter__(self) -> RpcClient:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "S110",
+      "`try`-`except`-`pass` detected, consider logging the exception",
+      "except Exception:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "S112",
+      "`try`-`except`-`continue` detected, consider logging the exception",
+      "except Exception:"
+    ],
+    [
+      "src/omp_rpc/client.py",
+      "UP035",
+      "Import from `collections.abc` instead: `Callable`, `Mapping`, `Sequence`",
+      "from typing import Any, Callable, Generic, Mapping, Sequence, TypeVar, cast"
+    ],
+    [
+      "src/omp_rpc/host_tools.py",
+      "I001",
+      "Import block is un-sorted or un-formatted",
+      "from __future__ import annotations"
+    ],
+    [
+      "src/omp_rpc/host_tools.py",
+      "UP035",
+      "Import from `collections.abc` instead: `Callable`",
+      "from typing import Callable, Generic, TypeAlias, TypeVar, TypedDict, cast"
+    ],
+    [
+      "src/omp_rpc/host_uris.py",
+      "I001",
+      "Import block is un-sorted or un-formatted",
+      "from __future__ import annotations"
+    ],
+    [
+      "src/omp_rpc/host_uris.py",
+      "UP035",
+      "Import from `collections.abc` instead: `Callable`",
+      "from typing import Callable, Generic, Literal, TypeAlias, TypeVar, TypedDict"
+    ],
+    [
+      "tests/test_client.py",
+      "BLE001",
+      "Do not catch blind exception: `BaseException`",
+      "BaseException"
+    ],
+    [
+      "tests/test_client.py",
+      "BLE001",
+      "Do not catch blind exception: `BaseException`",
+      "except BaseException as exc:"
+    ],
+    [
+      "tests/test_client.py",
+      "I001",
+      "Import block is un-sorted or un-formatted",
+      "from __future__ import annotations"
+    ],
+    [
+      "tests/test_client.py",
+      "SIM117",
+      "Use a single `with` statement with multiple contexts instead of nested `with` statements",
+      "with self.make_client(max_event_history=2) as client:"
+    ],
+    [
+      "tests/test_client.py",
+      "SIM117",
+      "Use a single `with` statement with multiple contexts instead of nested `with` statements",
+      "with self.make_client(server) as client:"
+    ],
+    [
+      "tests/test_client.py",
+      "SIM117",
+      "Use a single `with` statement with multiple contexts instead of nested `with` statements",
+      "with self.make_client(server) as client:"
+    ],
+    [
+      "tests/test_client.py",
+      "SIM117",
+      "Use a single `with` statement with multiple contexts instead of nested `with` statements",
+      "with self.make_client(server) as client:"
+    ],
+    [
+      "tests/test_client.py",
+      "SIM117",
+      "Use a single `with` statement with multiple contexts instead of nested `with` statements",
+      "with self.make_client(server=IDLESS_ERROR_SERVER) as client:"
+    ],
+    [
+      "tests/test_host_uris.py",
+      "I001",
+      "Import block is un-sorted or un-formatted",
+      "from __future__ import annotations"
+    ],
+    [
+      "tests/test_protocol.py",
+      "B009",
+      "Do not call `getattr` with a constant attribute value. It is not any safer than normal property access.",
+      "[getattr(event, \"message_id\") for event in events], [\"m-7\"] * 3"
+    ],
+    [
+      "tests/test_protocol.py",
+      "I001",
+      "Import block is un-sorted or un-formatted",
+      "from __future__ import annotations"
+    ],
+    [
+      "tests/test_protocol.py",
+      "SIM117",
+      "Use a single `with` statement with multiple contexts instead of nested `with` statements",
+      "with self.subTest(slow_mode=slow_mode):"
+    ],
+    [
+      "tests/test_user_group.py",
+      "SIM117",
+      "Use a single `with` statement with multiple contexts instead of nested `with` statements",
+      "with patch("
+    ]
+  ],
+  "format_command": "python -m ruff format --check --diff src tests",
+  "baseline_format_summary": "6 files would be reformatted, 8 files already formatted",
+  "candidate_format_summary": "6 files would be reformatted, 8 files already formatted",
+  "new_regression_test": "ruff check and ruff format --check pass independently; not a whole-SDK lint pass"
+}

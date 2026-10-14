@@ -1,0 +1,2 @@
+PASS: 405 three-registration ordered-send / arbitrary-outcome traces
+PASS: only literal success=False rolls back; falsey/missing fields preserve proposed handlers

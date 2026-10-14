@@ -1,0 +1,125 @@
+--- baseline/src/omp_rpc/client.py	2026-10-14 06:29:24.622447825 -0500
++++ candidate/src/omp_rpc/client.py	2026-10-14 06:32:21.525945899 -0500
+@@ -385,6 +385,7 @@
+ class _PendingRequest:
+     command: str
+     response_queue: queue.Queue[JsonObject | BaseException]
++    host_tools_before: tuple[HostTool[Any, Any], ...] | None = None
+ 
+ 
+ @dataclass(slots=True)
+@@ -526,6 +527,7 @@
+         self._stderr_thread: threading.Thread | None = None
+         self._ready = threading.Event()
+         self._write_lock = threading.Lock()
++        self._host_tool_registration_lock = threading.Lock()
+         self._state_lock = threading.Lock()
+         self._event_condition = threading.Condition()
+         self._pending: dict[str, _PendingRequest] = {}
+@@ -1021,28 +1023,36 @@
+         )
+ 
+     def set_custom_tools(self, tools: Sequence[HostTool[Any, Any]]) -> tuple[str, ...]:
+-        self._custom_tools = tuple(tools)
+-        if self._process is None:
+-            return tuple(tool.name for tool in self._custom_tools)
+-
+-        definitions: list[JsonObject] = []
+-        for tool in self._custom_tools:
+-            definition: JsonObject = {
+-                "name": tool.name,
+-                "description": tool.description,
+-                "parameters": tool.parameters,
+-                "hidden": tool.hidden,
+-                "readsSkillUris": tool.reads_skill_uris,
+-            }
+-            if tool.label is not None:
+-                definition["label"] = tool.label
+-            if tool.load_mode is not None:
+-                definition["loadMode"] = tool.load_mode
+-            definitions.append(definition)
+-        data = self._command("set_host_tools", {"tools": definitions})
+-        return required(
+-            expect_object(data, "set_host_tools"), "toolNames", array(decode_str), "set_host_tools"
+-        )
++        with self._host_tool_registration_lock:
++            previous = self._custom_tools
++            # Publish before sending: accepted tools can be called before the reply.
++            self._custom_tools = tuple(tools)
++            if self._process is None:
++                return tuple(tool.name for tool in self._custom_tools)
++
++            definitions: list[JsonObject] = []
++            for tool in self._custom_tools:
++                definition: JsonObject = {
++                    "name": tool.name,
++                    "description": tool.description,
++                    "parameters": tool.parameters,
++                    "hidden": tool.hidden,
++                    "readsSkillUris": tool.reads_skill_uris,
++                }
++                if tool.label is not None:
++                    definition["label"] = tool.label
++                if tool.load_mode is not None:
++                    definition["loadMode"] = tool.load_mode
++                definitions.append(definition)
++            data = self._request_data(
++                "set_host_tools",
++                self._next_request_id(),
++                {"tools": definitions},
++                host_tools_before=previous,
++            )
++            return required(
++                expect_object(data, "set_host_tools"), "toolNames", array(decode_str), "set_host_tools"
++            )
+ 
+     def set_host_uris(self, host_uris: Sequence[HostUri[Any]]) -> tuple[str, ...]:
+         self._host_uris = tuple(host_uris)
+@@ -1435,6 +1445,7 @@
+         *,
+         drop_none: bool = True,
+         timeout: float | None = None,
++        host_tools_before: tuple[HostTool[Any, Any], ...] | None = None,
+     ) -> JsonObject | None:
+         """Send one command and return its `data`, None when absent or null.
+ 
+@@ -1449,7 +1460,9 @@
+         response_queue: queue.Queue[JsonObject | BaseException] = queue.Queue(maxsize=1)
+         with self._state_lock:
+             self._pending[request_id] = _PendingRequest(
+-                command=command_type, response_queue=response_queue
++                command=command_type,
++                response_queue=response_queue,
++                host_tools_before=host_tools_before,
+             )
+ 
+         try:
+@@ -2059,6 +2072,14 @@
+         if isinstance(request_id, str):
+             with self._state_lock:
+                 pending = self._pending.pop(request_id, None)
++                if (
++                    pending is not None
++                    and pending.host_tools_before is not None
++                    and payload.get("success") is False
++                ):
++                    # Restore before the reader dispatches a following callback.
++                    # Timeout, disconnect and malformed success are not rejection.
++                    self._custom_tools = pending.host_tools_before
+             if pending is not None:
+                 pending.response_queue.put(payload)
+                 return
+@@ -2104,6 +2125,13 @@
+                 return False
+ 
+             pending = self._pending.pop(target_id)
++            if (
++                pending.host_tools_before is not None
++                and payload.get("success") is False
++                and not isinstance(payload.get("id"), str)
++            ):
++                # An unmatched explicit id is not this registration's outcome.
++                self._custom_tools = pending.host_tools_before
+ 
+         pending.response_queue.put(payload)
+         return True

@@ -1,0 +1,95 @@
+{
+  "upstream": "f5145fd0271906cdf3bca6a218912fa1d8db3500",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha": "d90a6ea82277f531056af45928102fa58d71ae0c",
+      "size": 1075
+    },
+    {
+      "path": "README.md",
+      "sha": "0e4f64f0c07fadb7815f66d787b01394776802c9",
+      "size": 20835
+    },
+    {
+      "path": "pyproject.toml",
+      "sha": "b4e37f74cf01be33879171522102dbcc98900e21",
+      "size": 1087
+    },
+    {
+      "path": "src/omp_rpc/__init__.py",
+      "sha": "7d3aefe1fdf2803387e073025abc961c8b337b7d",
+      "size": 2528
+    },
+    {
+      "path": "src/omp_rpc/_extension_ui.py",
+      "sha": "8fcf5732cd1a6d1ae8c8ffcfcd63888e8e0c290b",
+      "size": 1313
+    },
+    {
+      "path": "src/omp_rpc/_wire.py",
+      "sha": "929f6986ccf481e24e1e7fd3f1784feb9a276c9a",
+      "size": 173016
+    },
+    {
+      "path": "src/omp_rpc/_wire_runtime.py",
+      "sha": "737404a1226feb00fc2b0c49c0dd55d9abd455e2",
+      "size": 6281
+    },
+    {
+      "path": "src/omp_rpc/client.py",
+      "sha": "93375fc12a2e8cb981363535addea9fd6d3baafc",
+      "size": 86486
+    },
+    {
+      "path": "src/omp_rpc/host_tools.py",
+      "sha": "8825677dddce4c85a674f94c17b6800cbf347732",
+      "size": 2611
+    },
+    {
+      "path": "src/omp_rpc/host_uris.py",
+      "sha": "dc548600daac3536672ec8c908e7cd59ab9376e9",
+      "size": 3726
+    },
+    {
+      "path": "src/omp_rpc/protocol.py",
+      "sha": "0916986349cd9c67d0bc714e41b15dd7c6d7ccda",
+      "size": 2284
+    },
+    {
+      "path": "src/omp_rpc/py.typed",
+      "sha": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+      "size": 1
+    },
+    {
+      "path": "tests/__init__.py",
+      "sha": "5c8135e9244c65c535a5406e127e29eb1603d727",
+      "size": 142
+    },
+    {
+      "path": "tests/test_client.py",
+      "sha": "5ec56142e69cd59f390161cf2e7cf893a481f8fe",
+      "size": 100413
+    },
+    {
+      "path": "tests/test_host_uris.py",
+      "sha": "dc01799ec3e8fad39ac607feff7a8e795f70dd16",
+      "size": 9646
+    },
+    {
+      "path": "tests/test_protocol.py",
+      "sha": "c6cd2175fefbd60983cde15faa0ceefae37b66b7",
+      "size": 30816
+    },
+    {
+      "path": "tests/test_user_group.py",
+      "sha": "13bb1e9c53a364c246f84b18ff337ba0cb8fc33e",
+      "size": 1250
+    },
+    {
+      "path": "uv.lock",
+      "sha": "3966be0f4d2961bdc12d9095dc22d5c58d10f031",
+      "size": 128
+    }
+  ]
+}

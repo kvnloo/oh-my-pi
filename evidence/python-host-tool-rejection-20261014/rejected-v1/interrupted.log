@@ -1,0 +1,10 @@
+Interrupted first registration
+Pending after interrupt: ['req_3']
+New registration result: ('new',)
+Local tool names: ['accepted']
+Callback result: {"type": "host_tool_result", "id": "host-1", "result": {"content": [{"type": "text", "text": "Host tool \"new\" is not registered"}], "details": {}}, "isError": true}
+Traceback (most recent call last):
+  File "<evidence-workspace>/candidate/../evidence/reviewer/reproduce_interrupted_registration.py", line 44, in <module>
+    assert frame.get("isError") is not True, frame
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'type': 'host_tool_result', 'id': 'host-1', 'result': {'content': [{'type': 'text', 'text': 'Host tool "new" is not registered'}], 'details': {}}, 'isError': True}

@@ -1,0 +1,121 @@
+test_callback_before_success_acknowledgement_uses_proposed_handler (tests.test_host_tool_registration.HostToolRegistrationTests.test_callback_before_success_acknowledgement_uses_proposed_handler) ... ok
+test_concurrent_rejection_cannot_overwrite_accepted_registration (tests.test_host_tool_registration.HostToolRegistrationTests.test_concurrent_rejection_cannot_overwrite_accepted_registration) ... FAIL
+test_disconnect_does_not_restore_rejected_assumption_on_restart (tests.test_host_tool_registration.HostToolRegistrationTests.test_disconnect_does_not_restore_rejected_assumption_on_restart) ... ok
+test_handler_can_replace_tools_before_outer_acknowledgement (tests.test_host_tool_registration.HostToolRegistrationTests.test_handler_can_replace_tools_before_outer_acknowledgement) ... ok
+test_handler_publication_matches_wire_send_order (tests.test_host_tool_registration.HostToolRegistrationTests.test_handler_publication_matches_wire_send_order) ... FAIL
+test_idless_definite_rejection_restores_previous_handler (tests.test_host_tool_registration.HostToolRegistrationTests.test_idless_definite_rejection_restores_previous_handler) ... FAIL
+test_initial_configuration_and_successful_replacement_are_callable (tests.test_host_tool_registration.HostToolRegistrationTests.test_initial_configuration_and_successful_replacement_are_callable) ... ok
+test_interrupted_registration_cannot_undo_a_newer_success (tests.test_host_tool_registration.HostToolRegistrationTests.test_interrupted_registration_cannot_undo_a_newer_success) ... ok
+test_late_identified_failure_cannot_restore_another_registration (tests.test_host_tool_registration.HostToolRegistrationTests.test_late_identified_failure_cannot_restore_another_registration) ... ok
+test_malformed_success_is_not_an_explicit_registration_rejection (tests.test_host_tool_registration.HostToolRegistrationTests.test_malformed_success_is_not_an_explicit_registration_rejection) ... ok
+test_overlapping_rejections_skip_rejected_predecessors_in_either_order (tests.test_host_tool_registration.HostToolRegistrationTests.test_overlapping_rejections_skip_rejected_predecessors_in_either_order) ... 
+  test_overlapping_rejections_skip_rejected_predecessors_in_either_order (tests.test_host_tool_registration.HostToolRegistrationTests.test_overlapping_rejections_skip_rejected_predecessors_in_either_order) (reverse=False) ... FAIL
+  test_overlapping_rejections_skip_rejected_predecessors_in_either_order (tests.test_host_tool_registration.HostToolRegistrationTests.test_overlapping_rejections_skip_rejected_predecessors_in_either_order) (reverse=True) ... FAIL
+test_rejected_replacement_restores_before_waiting_setter_resumes (tests.test_host_tool_registration.HostToolRegistrationTests.test_rejected_replacement_restores_before_waiting_setter_resumes) ... FAIL
+test_rejected_same_name_keeps_accepted_callable (tests.test_host_tool_registration.HostToolRegistrationTests.test_rejected_same_name_keeps_accepted_callable) ... FAIL
+test_rejection_from_empty_set_restores_empty_startup_configuration (tests.test_host_tool_registration.HostToolRegistrationTests.test_rejection_from_empty_set_restores_empty_startup_configuration) ... ERROR
+test_timeout_preserves_potentially_applied_handlers (tests.test_host_tool_registration.HostToolRegistrationTests.test_timeout_preserves_potentially_applied_handlers) ... ok
+
+======================================================================
+ERROR: test_rejection_from_empty_set_restores_empty_startup_configuration (tests.test_host_tool_registration.HostToolRegistrationTests.test_rejection_from_empty_set_restores_empty_startup_configuration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 213, in test_rejection_from_empty_set_restores_empty_startup_configuration
+    client.start()
+  File "<evidence-workspace>/baseline/src/omp_rpc/client.py", line 690, in start
+    self.set_custom_tools(self._custom_tools)
+  File "<evidence-workspace>/baseline/src/omp_rpc/client.py", line 1042, in set_custom_tools
+    data = self._command("set_host_tools", {"tools": definitions})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<evidence-workspace>/baseline/src/omp_rpc/client.py", line 851, in _command
+    return self._request_data(
+           ^^^^^^^^^^^^^^^^^^^
+  File "<evidence-workspace>/baseline/src/omp_rpc/client.py", line 1478, in _request_data
+    raise RpcCommandError(
+omp_rpc.client.RpcCommandError: set_host_tools: Host tool must provide a non-empty description
+
+======================================================================
+FAIL: test_concurrent_rejection_cannot_overwrite_accepted_registration (tests.test_host_tool_registration.HostToolRegistrationTests.test_concurrent_rejection_cannot_overwrite_accepted_registration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 330, in test_concurrent_rejection_cannot_overwrite_accepted_registration
+    self.assert_result(frames, "first accepted")
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 150, in assert_result
+    self.assertIsNot(frame.get("isError"), True, frame)
+AssertionError: unexpectedly identical: True : {'type': 'host_tool_result', 'id': 'host-2', 'result': {'content': [{'type': 'text', 'text': 'Host tool "first" is not registered'}], 'details': {}}, 'isError': True}
+
+======================================================================
+FAIL: test_handler_publication_matches_wire_send_order (tests.test_host_tool_registration.HostToolRegistrationTests.test_handler_publication_matches_wire_send_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 456, in test_handler_publication_matches_wire_send_order
+    self.assert_result(frames, "first")
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 150, in assert_result
+    self.assertIsNot(frame.get("isError"), True, frame)
+AssertionError: unexpectedly identical: True : {'type': 'host_tool_result', 'id': 'host-1', 'result': {'content': [{'type': 'text', 'text': 'Host tool "first" is not registered'}], 'details': {}}, 'isError': True}
+
+======================================================================
+FAIL: test_idless_definite_rejection_restores_previous_handler (tests.test_host_tool_registration.HostToolRegistrationTests.test_idless_definite_rejection_restores_previous_handler)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 262, in test_idless_definite_rejection_restores_previous_handler
+    self.assert_result(frames, "accepted")
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 150, in assert_result
+    self.assertIsNot(frame.get("isError"), True, frame)
+AssertionError: unexpectedly identical: True : {'type': 'host_tool_result', 'id': 'host-1', 'result': {'content': [{'type': 'text', 'text': 'Host tool "accepted" is not registered'}], 'details': {}}, 'isError': True}
+
+======================================================================
+FAIL: test_overlapping_rejections_skip_rejected_predecessors_in_either_order (tests.test_host_tool_registration.HostToolRegistrationTests.test_overlapping_rejections_skip_rejected_predecessors_in_either_order) (reverse=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 409, in test_overlapping_rejections_skip_rejected_predecessors_in_either_order
+    self.assert_result(frames, "accepted")
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 150, in assert_result
+    self.assertIsNot(frame.get("isError"), True, frame)
+AssertionError: unexpectedly identical: True : {'type': 'host_tool_result', 'id': 'host-1', 'result': {'content': [{'type': 'text', 'text': 'Host tool "accepted" is not registered'}], 'details': {}}, 'isError': True}
+
+======================================================================
+FAIL: test_overlapping_rejections_skip_rejected_predecessors_in_either_order (tests.test_host_tool_registration.HostToolRegistrationTests.test_overlapping_rejections_skip_rejected_predecessors_in_either_order) (reverse=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 409, in test_overlapping_rejections_skip_rejected_predecessors_in_either_order
+    self.assert_result(frames, "accepted")
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 150, in assert_result
+    self.assertIsNot(frame.get("isError"), True, frame)
+AssertionError: unexpectedly identical: True : {'type': 'host_tool_result', 'id': 'host-1', 'result': {'content': [{'type': 'text', 'text': 'Host tool "accepted" is not registered'}], 'details': {}}, 'isError': True}
+
+======================================================================
+FAIL: test_rejected_replacement_restores_before_waiting_setter_resumes (tests.test_host_tool_registration.HostToolRegistrationTests.test_rejected_replacement_restores_before_waiting_setter_resumes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 193, in test_rejected_replacement_restores_before_waiting_setter_resumes
+    self.assert_result(frames, "accepted")
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 150, in assert_result
+    self.assertIsNot(frame.get("isError"), True, frame)
+AssertionError: unexpectedly identical: True : {'type': 'host_tool_result', 'id': 'host-1', 'result': {'content': [{'type': 'text', 'text': 'Host tool "accepted" is not registered'}], 'details': {}}, 'isError': True}
+
+======================================================================
+FAIL: test_rejected_same_name_keeps_accepted_callable (tests.test_host_tool_registration.HostToolRegistrationTests.test_rejected_same_name_keeps_accepted_callable)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 204, in test_rejected_same_name_keeps_accepted_callable
+    self.assert_result(frames, "accepted")
+  File "<evidence-workspace>/baseline/tests/test_host_tool_registration.py", line 151, in assert_result
+    self.assertEqual(
+AssertionError: Lists differ: [{'type': 'text', 'text': 'wrong'}] != [{'type': 'text', 'text': 'accepted'}]
+
+First differing element 0:
+{'type': 'text', 'text': 'wrong'}
+{'type': 'text', 'text': 'accepted'}
+
+- [{'text': 'wrong', 'type': 'text'}]
+?            ^^^^^
+
++ [{'text': 'accepted', 'type': 'text'}]
+?            ^^^^^^^^
+
+
+----------------------------------------------------------------------
+Ran 15 tests in 1.023s
+
+FAILED (failures=7, errors=1)

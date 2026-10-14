@@ -1,0 +1,6 @@
+Nested registration result: ('new',)
+Outer registration result: ('new',)
+Outer elapsed seconds: 0.001
+First callback: {"type": "host_tool_result", "id": "host-1", "result": {"content": [{"type": "text", "text": "outer handler completed"}]}}
+Next callback: {"type": "host_tool_result", "id": "host-2", "result": {"content": [{"type": "text", "text": "nested accepted"}]}}
+PASS
