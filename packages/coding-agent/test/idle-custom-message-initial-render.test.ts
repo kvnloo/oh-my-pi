@@ -6,7 +6,7 @@
  * the replay, so the append is lost if the replay misses its entry and duplicated
  * if the preserved-chat replay also carries a live paint.
  */
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import * as path from "node:path";
 import { Agent } from "@oh-my-pi/pi-agent-core";
 import { createMockModel } from "@oh-my-pi/pi-ai/providers/mock";
@@ -140,5 +140,19 @@ describe("idle display custom message across the initial transcript render", () 
 		await sendIdleDisplay("AFTER_RENDER_BODY");
 
 		expect(copiesOf("AFTER_RENDER_BODY")).toBe(1);
+	});
+
+	it("does not collapse distinct notifications with the same timestamp", async () => {
+		const { ctx, sendIdleDisplay, copiesOf } = createInteractiveTranscript();
+		await ctx.renderInitialMessages({ preserveExistingChat: true });
+		const clock = spyOn(Date, "now").mockReturnValue(1_765_000_000_000);
+		try {
+			await sendIdleDisplay("SAME_TICK_FIRST");
+			await sendIdleDisplay("SAME_TICK_SECOND");
+		} finally {
+			clock.mockRestore();
+		}
+		expect(copiesOf("SAME_TICK_FIRST")).toBe(1);
+		expect(copiesOf("SAME_TICK_SECOND")).toBe(1);
 	});
 });

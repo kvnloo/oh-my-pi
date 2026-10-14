@@ -8841,6 +8841,18 @@ export class AgentSession implements SettingsScope {
 				normalizedAppMessage.details,
 				normalizedAppMessage.attribution,
 			);
+			if (normalizedAppMessage.display === true) {
+				// Idle nextTurn persists immediately. Notify listeners without a turn
+				// so the transcript paints incrementally instead of rebuilding history.
+				await this.#emitSessionEvent(
+					{ type: "message_start", message: normalizedAppMessage },
+					{ detachExtensions: true },
+				);
+				await this.#emitSessionEvent(
+					{ type: "message_end", message: normalizedAppMessage },
+					{ detachExtensions: true },
+				);
+			}
 			return false;
 		}
 

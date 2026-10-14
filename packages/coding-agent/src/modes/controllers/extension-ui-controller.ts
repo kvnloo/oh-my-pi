@@ -1407,9 +1407,12 @@ export class ExtensionUiController {
 		if (startsTurn && this.#rejectGuestExtensionTurn()) return;
 		const wasStreaming = this.ctx.session.isStreaming;
 		const normalized = normalizeCustomMessagePayload(message);
+		// Idle default and nextTurn messages already paint via session events (#12718).
+		const needsReplay =
+			(options?.deliverAs !== undefined && options.deliverAs !== "nextTurn") || options?.triggerTurn === true;
 		this.ctx.session
 			.sendCustomMessage(normalized, options)
-			.then(() => this.#applyCustomMessageDisplay(wasStreaming, normalized.display))
+			.then(() => this.#applyCustomMessageDisplay(wasStreaming, normalized.display, needsReplay))
 			.catch((err: unknown) => {
 				this.ctx.showError(`Extension sendMessage failed: ${err instanceof Error ? err.message : String(err)}`);
 			});
@@ -1423,14 +1426,20 @@ export class ExtensionUiController {
 		});
 	};
 
-	#applyCustomMessageDisplay(wasStreaming: boolean, shouldDisplay: boolean | undefined): void {
-		// For non-streaming cases with display=true, update UI
-		// (streaming cases update via message_end event).
-		// Gate on initialChatRendered (#1955): an extension's session_start
-		// sendMessage({display:true}) runs before renderInitialMessages, which would
-		// re-render from session entries AND re-append via preserveExistingChat,
-		// duplicating the message. After the initial render the rebuild must run.
-		if (!wasStreaming && shouldDisplay && this.ctx.initialChatRendered) {
+	#applyCustomMessageDisplay(
+		wasStreaming: boolean,
+		shouldDisplay: boolean | undefined,
+		needsReplay: boolean,
+	): void {
+		// Startup replay owns pre-render messages (#1955). For idle event-backed
+		// deliveries, a full history replay is redundant (#12183); a focused
+		// subagent view still needs explicit synchronization.
+		if (
+			!wasStreaming &&
+			shouldDisplay &&
+			this.ctx.initialChatRendered &&
+			(needsReplay || this.ctx.focusedAgentId !== undefined)
+		) {
 			this.ctx.rebuildChatFromMessages();
 		}
 	}

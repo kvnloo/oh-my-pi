@@ -91,11 +91,9 @@ function createHarness(): Harness {
 		isStreaming: false,
 		extensionRunner: fakeRunner,
 		/**
-		 * Mirror `AgentSession.sendCustomMessage` non-streaming
-		 * `deliverAs: "nextTurn"` / no-trigger path: persist the message as a
-		 * `custom_message` session entry. (The real implementation also calls
-		 * `agent.appendMessage`, but that path is silent — no event, no render —
-		 * so the bug surface is unaffected by omitting it here.)
+		 * Mirror AgentSession's idle no-turn paths: persist every message and
+		 * paint displayed default/nextTurn messages through an incremental event.
+		 * Pre-initial-render messages belong to the initial transcript replay.
 		 */
 		sendCustomMessage: async (msg: {
 			customType: string;
@@ -103,9 +101,18 @@ function createHarness(): Harness {
 			display?: boolean;
 			details?: unknown;
 			attribution?: string;
-		}) => {
+		}, options?: { deliverAs?: string; triggerTurn?: boolean }) => {
 			const parent = entries.length === 0 ? null : entries[entries.length - 1].id;
 			entries.push(makeCustomEntry(entries.length + 1, extractText(msg.content), parent));
+			if (
+				msg.display &&
+				options?.triggerTurn !== true &&
+				(options?.deliverAs === undefined || options.deliverAs === "nextTurn") &&
+				ctx.initialChatRendered
+			) {
+				const lastMessage = buildSessionContext(entries).messages.at(-1);
+				if (lastMessage) ctx.addMessageToChat(lastMessage);
+			}
 		},
 	};
 
@@ -250,6 +257,44 @@ describe("issue #1955 — sendMessage(display:true) during session_start", () =>
 
 		const rendered = Bun.stripANSI(harness.ctx.chatContainer.render(120).join("\n"));
 		expect(countOccurrences(rendered, marker)).toBe(1);
+	});
+
+	test("default idle notifications paint without a history replay", async () => {
+		const harness = createHarness();
+		await harness.controller.initHooksAndCustomTools();
+		await harness.helpers.renderInitialMessages({ preserveExistingChat: true });
+		const rebuild = vi.spyOn(harness.ctx, "rebuildChatFromMessages");
+		const actions = harness.getActions();
+		for (let index = 0; index < 3; index++) {
+			actions!.sendMessage({
+				customType: "issue-1955-probe",
+				content: [{ type: "text", text: `idle-no-replay-${index}` }],
+				display: true,
+				attribution: "agent",
+			});
+		}
+		await Bun.sleep(0);
+
+		expect(rebuild).not.toHaveBeenCalled();
+		const rendered = Bun.stripANSI(harness.ctx.chatContainer.render(120).join("\n"));
+		for (let index = 0; index < 3; index++) {
+			expect(countOccurrences(rendered, `idle-no-replay-${index}`)).toBe(1);
+		}
+	});
+
+	test("idle nextTurn display paints without a history replay", async () => {
+		const harness = createHarness();
+		await harness.controller.initHooksAndCustomTools();
+		await harness.helpers.renderInitialMessages({ preserveExistingChat: true });
+		const rebuild = vi.spyOn(harness.ctx, "rebuildChatFromMessages");
+		const actions = harness.getActions();
+		actions!.sendMessage(
+			{ customType: "issue-1955-probe", content: [{ type: "text", text: "nextTurn-no-replay" }], display: true, attribution: "agent" },
+			{ deliverAs: "nextTurn", triggerTurn: false },
+		);
+		await Bun.sleep(0);
+		expect(rebuild).not.toHaveBeenCalled();
+		expect(countOccurrences(Bun.stripANSI(harness.ctx.chatContainer.render(120).join("\n")), "nextTurn-no-replay")).toBe(1);
 	});
 
 	test("defers display rebuilds that arrive during the incremental initial replay", async () => {

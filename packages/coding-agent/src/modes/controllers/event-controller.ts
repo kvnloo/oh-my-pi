@@ -182,7 +182,7 @@ export class EventController {
 	// emits one read per completion — does not break it, so a run of consecutive
 	// reads collapses into one group even across completion boundaries.
 	#lastVisibleBlockCount = 0;
-	#renderedCustomMessages = new Set<string>();
+	#renderedCustomMessages = new WeakSet<object>();
 	#lastIntent: string | undefined = undefined;
 	/** Returned calls parked for their background job's frames ({@link parksAsBackground}). */
 	#backgroundCallIds = new Set<string>();
@@ -924,7 +924,7 @@ export class EventController {
 		this.#pendingMessageUpdate = undefined;
 		this.#resetReadGroup();
 		this.#lastVisibleBlockCount = 0;
-		this.#renderedCustomMessages.clear();
+		this.#renderedCustomMessages = new WeakSet<object>();
 		this.#lastIntent = undefined;
 		this.#toolTimelineComponents.clear();
 		this.#streamedToolCallIdByIndex.clear();
@@ -1130,11 +1130,12 @@ export class EventController {
 				// Streaming is excluded so live-turn rendering is unchanged.
 				return;
 			}
-			const signature = `${event.message.role}:${event.message.customType}:${event.message.timestamp}`;
-			if (this.#renderedCustomMessages.has(signature)) {
+			// Distinct idle notifications can share the same millisecond timestamp.
+			// Deduplicate repeat delivery of one message, not unrelated messages.
+			if (this.#renderedCustomMessages.has(event.message)) {
 				return;
 			}
-			this.#renderedCustomMessages.add(signature);
+			this.#renderedCustomMessages.add(event.message);
 			this.#resetReadGroup();
 			// A directly-invoked `/skill:` or writable-collab custom prompt is the
 			// run's initiating message (user attribution): seed the prompt→yield
