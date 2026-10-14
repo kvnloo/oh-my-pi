@@ -41,6 +41,7 @@ import {
 	extractUriScheme,
 	type InternalResource,
 	InternalUrlRouter,
+	parseInternalUrl,
 	type SchemeSpec,
 	sessionResolveContext,
 } from "../internal-urls";
@@ -1838,7 +1839,13 @@ export class ReadTool implements AgentTool<typeof readSchema, ReadToolDetails> {
 			if (sqlitePath) {
 				return readSqlite(sqlitePath, signal);
 			}
-			const jsonPath = await resolveJsonReadPath(this.session, literalSplit.path, suffixCache, signal);
+			// File-backed local/artifact URLs keep query options in the URL, not the
+			// resolved filesystem path. Restore only their JSON query when dispatching
+			// to the JSON reader; other schemes own their query semantics.
+			const scheme = located ? extractUriScheme(located.url) : undefined;
+			const jsonQuery =
+				located && (scheme === "local" || scheme === "artifact") ? parseInternalUrl(located.url).search : "";
+			const jsonPath = await resolveJsonReadPath(this.session, `${literalSplit.path}${jsonQuery}`, suffixCache, signal);
 			if (jsonPath) {
 				return readJson(this.session, jsonPath, literalSplit.sel, signal);
 			}
