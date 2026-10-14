@@ -7,7 +7,7 @@ import { resolveLocalUrlToPath } from "../../src/internal-urls";
 import { ReadTool } from "../../src/tools/read";
 
 /**
- * Regression for can1357/oh-my-pi#15767 (reproducer and diagnosis by @will-bogusz).
+ * Regression for can1357/oh-my-pi#15767 (reproducer and diagnosis by @shoucandanghehe).
  * File-backed internal URLs must pass ?q= to the same JSON reader used by
  * physical paths; the file locator intentionally returns a query-free path.
  */
