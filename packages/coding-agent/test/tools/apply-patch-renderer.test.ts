@@ -194,8 +194,7 @@ describe("apply_patch rendering", () => {
 		expect(approvalPreview).not.toContain("… (content above)");
 	});
 
-
-	it("drops stale previews only when empty batches settle, ignoring late updates", async () => {
+	it("retains the last native preview when an empty batch settles, ignoring late updates", async () => {
 		await getUiTheme();
 		const uiStub = { requestRender() {}, requestComponentRender() {} } as unknown as TUI;
 		const input = [
@@ -227,13 +226,13 @@ describe("apply_patch rendering", () => {
 		component.updateStreamPreview({ generation: 2, streaming: true, files: [] });
 		expect(Bun.stripANSI(component.render(160).join("\n"))).toContain("TAIL_STALE_DIFF_SENTINEL");
 
-		// No diff in the terminal batch must replace the stale live diff.
+		// A terminal empty batch settles the promise without replacing the last diff.
 		component.updateStreamPreview({ generation: 3, streaming: false, files: [] });
 		for (const expanded of [false, true]) {
 			component.setExpanded(expanded);
 			const settled = Bun.stripANSI(component.render(160).join("\n"));
-			expect(settled).not.toContain("HEAD_STALE_DIFF_SENTINEL");
-			expect(settled).not.toContain("TAIL_STALE_DIFF_SENTINEL");
+			expect(settled).toContain("TAIL_STALE_DIFF_SENTINEL");
+			expect(settled.includes("HEAD_STALE_DIFF_SENTINEL")).toBe(expanded);
 		}
 
 		// A queued late live batch cannot resurrect terminal state.
@@ -245,8 +244,8 @@ describe("apply_patch rendering", () => {
 		for (const expanded of [false, true]) {
 			component.setExpanded(expanded);
 			const afterLateBatch = Bun.stripANSI(component.render(160).join("\n"));
-			expect(afterLateBatch).not.toContain("HEAD_STALE_DIFF_SENTINEL");
-			expect(afterLateBatch).not.toContain("TAIL_STALE_DIFF_SENTINEL");
+			expect(afterLateBatch).toContain("TAIL_STALE_DIFF_SENTINEL");
+			expect(afterLateBatch.includes("HEAD_STALE_DIFF_SENTINEL")).toBe(expanded);
 		}
 	});
 

@@ -531,8 +531,7 @@ export class ToolExecutionComponent extends Container {
 		}
 		if (update.files.length === 0) {
 			if (previewSettled) {
-				// Terminal empty is authoritative; keep live-empty snapshots non-destructive.
-				this.#editDiffPreview = [];
+				// Native empty batches retain the previous preview; only completion changes.
 				this.#displayInputVersion++;
 				this.#updateDisplay();
 				this.#ui.requestRender();
