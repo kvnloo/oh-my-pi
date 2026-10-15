@@ -104,6 +104,39 @@ describe("AgentSession idle custom message render", () => {
 		expect(rebuilt.length).toBe(1);
 	});
 
+
+	it("idle nextTurn emits one display event pair without a model turn", async () => {
+		const created = createSession();
+		session = created.session;
+		const events: { type: string; message: unknown }[] = [];
+		session.subscribe(event => {
+			if (
+				(event.type === "message_start" || event.type === "message_end") &&
+				event.message.role === "custom" &&
+				event.message.customType === "idle-next-turn"
+			) {
+				events.push({ type: event.type, message: event.message });
+			}
+		});
+
+		const dispatched = await session.sendCustomMessage(
+			{ customType: "idle-next-turn", content: "NEXT_TURN_BODY", display: true, attribution: "agent" },
+			{ deliverAs: "nextTurn", triggerTurn: false },
+		);
+
+		expect(dispatched).toBe(false);
+		expect(session.isStreaming).toBe(false);
+		expect(created.streamCalls()).toBe(0);
+		expect(events.map(event => event.type)).toEqual(["message_start", "message_end"]);
+		expect(events[0]?.message).toBe(events[1]?.message);
+		expect(
+			session.sessionManager.getEntries().filter(entry => entry.type === "custom_message" && entry.customType === "idle-next-turn"),
+		).toHaveLength(1);
+		expect(
+			session.buildDisplaySessionContext().messages.filter(message => message.role === "custom" && message.customType === "idle-next-turn"),
+		).toHaveLength(1);
+	});
+
 	it("idle display:false no-trigger append stays silent", async () => {
 		const created = createSession();
 		session = created.session;
