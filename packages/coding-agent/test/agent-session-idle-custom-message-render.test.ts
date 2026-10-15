@@ -139,6 +139,36 @@ describe("AgentSession idle custom message render", () => {
 		expect(visible).toHaveLength(1);
 	});
 
+
+	it("idle hidden nextTurn persists silently without a model turn", async () => {
+		const created = createSession();
+		session = created.session;
+		const displayEvents: string[] = [];
+		session.subscribe(event => {
+			if (
+				(event.type === "message_start" || event.type === "message_end") &&
+				event.message.role === "custom" &&
+				event.message.customType === "idle-next-turn-hidden"
+			) {
+				displayEvents.push(event.type);
+			}
+		});
+
+		const dispatched = await session.sendCustomMessage(
+			{ customType: "idle-next-turn-hidden", content: "HIDDEN_BODY", display: false, attribution: "agent" },
+			{ deliverAs: "nextTurn", triggerTurn: false },
+		);
+
+		expect(dispatched).toBe(false);
+		expect(session.isStreaming).toBe(false);
+		expect(created.streamCalls()).toBe(0);
+		expect(displayEvents).toEqual([]);
+		const stored = session.sessionManager
+			.getEntries()
+			.filter(entry => entry.type === "custom_message" && entry.customType === "idle-next-turn-hidden");
+		expect(stored).toHaveLength(1);
+	});
+
 	it("idle display:false no-trigger append stays silent", async () => {
 		const created = createSession();
 		session = created.session;
