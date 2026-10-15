@@ -289,7 +289,12 @@ describe("issue #1955 — sendMessage(display:true) during session_start", () =>
 		const rebuild = vi.spyOn(harness.ctx, "rebuildChatFromMessages");
 		const actions = harness.getActions();
 		actions!.sendMessage(
-			{ customType: "issue-1955-probe", content: [{ type: "text", text: "nextTurn-no-replay" }], display: true, attribution: "agent" },
+			{
+				customType: "issue-1955-probe",
+				content: [{ type: "text", text: "nextTurn-no-replay" }],
+				display: true,
+				attribution: "agent",
+			},
 			{ deliverAs: "nextTurn", triggerTurn: false },
 		);
 		await Bun.sleep(0);
