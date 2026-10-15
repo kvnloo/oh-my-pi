@@ -183,6 +183,8 @@ export class EventController {
 	// reads collapses into one group even across completion boundaries.
 	#lastVisibleBlockCount = 0;
 	#renderedCustomMessages = new WeakSet<object>();
+	// Unique live IRC card keys, independent of message timestamp.
+	#nextIrcCardId = 0;
 	#lastIntent: string | undefined = undefined;
 	/** Returned calls parked for their background job's frames ({@link parksAsBackground}). */
 	#backgroundCallIds = new Set<string>();
@@ -1263,11 +1265,13 @@ export class EventController {
 	}
 
 	async #handleIrcMessage(event: Extract<AgentSessionEvent, { type: "irc_message" }>): Promise<void> {
-		const signature = `${event.message.role}:${event.message.customType}:${event.message.timestamp}`;
-		if (this.#renderedCustomMessages.has(signature)) {
+		// Share the object-identity guard with message_start: IRC cards may later
+		// be persisted and delivered again through the normal message pipeline.
+		if (this.#renderedCustomMessages.has(event.message)) {
 			return;
 		}
-		this.#renderedCustomMessages.add(signature);
+		this.#renderedCustomMessages.add(event.message);
+		const signature = String(++this.#nextIrcCardId);
 		this.#resetReadGroup();
 		const components = this.ctx.addMessageToChat(event.message);
 		this.#scheduleIrcExpiry(signature, components);
