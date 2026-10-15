@@ -129,12 +129,14 @@ describe("AgentSession idle custom message render", () => {
 		expect(created.streamCalls()).toBe(0);
 		expect(events.map(event => event.type)).toEqual(["message_start", "message_end"]);
 		expect(events[0]?.message).toBe(events[1]?.message);
-		expect(
-			session.sessionManager.getEntries().filter(entry => entry.type === "custom_message" && entry.customType === "idle-next-turn"),
-		).toHaveLength(1);
-		expect(
-			session.buildDisplaySessionContext().messages.filter(message => message.role === "custom" && message.customType === "idle-next-turn"),
-		).toHaveLength(1);
+		const stored = session.sessionManager
+			.getEntries()
+			.filter(entry => entry.type === "custom_message" && entry.customType === "idle-next-turn");
+		const visible = session
+			.buildDisplaySessionContext()
+			.messages.filter(message => message.role === "custom" && message.customType === "idle-next-turn");
+		expect(stored).toHaveLength(1);
+		expect(visible).toHaveLength(1);
 	});
 
 	it("idle display:false no-trigger append stays silent", async () => {
