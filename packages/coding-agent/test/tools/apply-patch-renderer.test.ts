@@ -194,6 +194,62 @@ describe("apply_patch rendering", () => {
 		expect(approvalPreview).not.toContain("… (content above)");
 	});
 
+
+	it("drops stale previews only when empty batches settle, ignoring late updates", async () => {
+		await getUiTheme();
+		const uiStub = { requestRender() {}, requestComponentRender() {} } as unknown as TUI;
+		const input = [
+			"*** Begin Patch",
+			"*** Update File: preview.ts",
+			"@@",
+			"-before",
+			"+after",
+			"*** End Patch",
+		].join("\n");
+		const component = new ToolExecutionComponent("apply_patch", { input }, {}, undefined, uiStub);
+		const diff = [
+			" 1|HEAD_STALE_DIFF_SENTINEL",
+			...Array.from({ length: 120 }, (_unused, index) => " " + (index + 2) + "|middle-" + index),
+			" 122|TAIL_STALE_DIFF_SENTINEL",
+		].join("\n");
+		component.setArgsComplete();
+		component.setExpanded(true);
+		component.updateStreamPreview({
+			generation: 1,
+			streaming: true,
+			files: [{ path: "preview.ts", diff, firstChangedLine: 1 }],
+		});
+		const live = Bun.stripANSI(component.render(160).join("\n"));
+		expect(live).not.toContain("HEAD_STALE_DIFF_SENTINEL");
+		expect(live).toContain("TAIL_STALE_DIFF_SENTINEL");
+
+		// A transient empty update must not clear a live preview.
+		component.updateStreamPreview({ generation: 2, streaming: true, files: [] });
+		expect(Bun.stripANSI(component.render(160).join("\n"))).toContain("TAIL_STALE_DIFF_SENTINEL");
+
+		// No diff in the terminal batch must replace the stale live diff.
+		component.updateStreamPreview({ generation: 3, streaming: false, files: [] });
+		for (const expanded of [false, true]) {
+			component.setExpanded(expanded);
+			const settled = Bun.stripANSI(component.render(160).join("\n"));
+			expect(settled).not.toContain("HEAD_STALE_DIFF_SENTINEL");
+			expect(settled).not.toContain("TAIL_STALE_DIFF_SENTINEL");
+		}
+
+		// A queued late live batch cannot resurrect terminal state.
+		component.updateStreamPreview({
+			generation: 4,
+			streaming: true,
+			files: [{ path: "preview.ts", diff, firstChangedLine: 1 }],
+		});
+		for (const expanded of [false, true]) {
+			component.setExpanded(expanded);
+			const afterLateBatch = Bun.stripANSI(component.render(160).join("\n"));
+			expect(afterLateBatch).not.toContain("HEAD_STALE_DIFF_SENTINEL");
+			expect(afterLateBatch).not.toContain("TAIL_STALE_DIFF_SENTINEL");
+		}
+	});
+
 	it("refreshes streaming preview immediately on arg updates without scheduling a debounce", async () => {
 		await getUiTheme();
 		const uiStub = { requestRender() {}, requestComponentRender() {} } as unknown as TUI;

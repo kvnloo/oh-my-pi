@@ -514,6 +514,7 @@ export class ToolExecutionComponent extends Container {
 	}
 
 	updateStreamPreview(update: unknown): void {
+		if (this.#editDiffPreviewSettled) return;
 		if (
 			this.#previewDiffSettled() ||
 			update === null ||
@@ -530,6 +531,8 @@ export class ToolExecutionComponent extends Container {
 		}
 		if (update.files.length === 0) {
 			if (previewSettled) {
+				// Terminal empty is authoritative; keep live-empty snapshots non-destructive.
+				this.#editDiffPreview = [];
 				this.#displayInputVersion++;
 				this.#updateDisplay();
 				this.#ui.requestRender();
