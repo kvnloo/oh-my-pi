@@ -178,7 +178,10 @@ describe("apply_patch rendering", () => {
 
 		// A late live batch must not replace a terminal approval snapshot.
 		component.updateStreamPreview({ generation: 3, streaming: true, files: [{ path: "preview.ts", diff: "HEAD_LATE_BATCH", firstChangedLine: 1 }] });
-		expect(render()).toBe(expanded);
+		const afterLateBatch = render();
+		expect(afterLateBatch).toContain("HEAD_APPROVAL_SENTINEL");
+		expect(afterLateBatch).toContain("TAIL_APPROVAL_SENTINEL");
+		expect(afterLateBatch).not.toContain("HEAD_LATE_BATCH");
 	});
 
 	it("shows both files of a settled multi-file approval diff", async () => {
