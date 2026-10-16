@@ -19,6 +19,7 @@ const CREDENTIAL_SCOPED_MODEL_CACHE_PROVIDERS: Readonly<Record<string, true>> = 
 	"opencode-zen": true,
 	"github-copilot": true,
 	"muse-code": true,
+	"nous-portal": true,
 	cursor: true,
 	"factory-droid": true,
 	// Both SingularityAPI rosters are issued per key, so the namespace must be
@@ -44,6 +45,8 @@ export function getDefaultModelDiscoveryBaseUrl(providerId: string): string | un
 			return "http://127.0.0.1:11434";
 		case "litellm":
 			return Bun.env.LITELLM_BASE_URL ?? "http://localhost:4000/v1";
+		case "nous-portal":
+			return "https://inference-api.nousresearch.com/v1";
 		case "opencode-go":
 			return "https://opencode.ai/inference/go/v1";
 		case "opencode-zen":
@@ -157,6 +160,19 @@ export function resolveModelCacheProviderId(providerId: string, options: ModelCa
 			const baseUrl = normalizeSingularityApiBaseUrl(options.baseUrl, canonical);
 			const scope = `${options.apiKey ?? ""}\u0000${baseUrl}`;
 			return `${providerId}:models-v1:${Bun.hash(scope).toString(36)}`;
+		}
+		case "nous-portal": {
+			const configured = options.baseUrl?.trim() || getDefaultModelDiscoveryBaseUrl(providerId)!;
+			let baseUrl = configured.replace(/\/+$/g, "");
+			try {
+				const parsed = new URL(configured);
+				parsed.pathname = parsed.pathname.replace(/\/+$/g, "");
+				baseUrl = parsed.toString().replace(/\/+$/g, "");
+			} catch {
+				// Discovery owns malformed-URL handling; cache identity stays deterministic.
+			}
+			const scope = `${options.apiKey ?? ""}\u0000${baseUrl}`;
+			return `nous-portal:models-v1:${Bun.hash(scope).toString(36)}`;
 		}
 		case "litellm": {
 			const baseUrl = options.baseUrl ?? getDefaultModelDiscoveryBaseUrl(providerId)!;
