@@ -147,6 +147,62 @@ describe("apply_patch rendering", () => {
 		}
 	});
 
+	it("reveals settled approval diffs without unbounding live or collapsed previews", async () => {
+		await getUiTheme();
+		const uiStub = { requestRender() {}, requestComponentRender() {} } as unknown as TUI;
+		const input = ["*** Begin Patch", "*** Update File: preview.ts", "@@", "-before", "+after", "*** End Patch"].join("\n");
+		const component = new ToolExecutionComponent("apply_patch", { input }, {}, undefined, uiStub);
+		const diff = [" 1|HEAD_APPROVAL_SENTINEL", ...Array.from({ length: 120 }, (_, i) => ` ${i + 2}|middle-${i}`), " 122|TAIL_APPROVAL_SENTINEL"].join("\n");
+		const render = () => Bun.stripANSI(component.render(160).join("\n"));
+
+		component.updateStreamPreview({ generation: 1, streaming: true, files: [{ path: "preview.ts", diff, firstChangedLine: 1 }] });
+		component.setArgsComplete();
+		component.setExpanded(true);
+		const live = render();
+		expect(live).toContain("… (content above)");
+		expect(live).not.toContain("HEAD_APPROVAL_SENTINEL");
+		expect(live).toContain("TAIL_APPROVAL_SENTINEL");
+
+		component.updateStreamPreview({ generation: 2, streaming: false, files: [{ path: "preview.ts", diff, firstChangedLine: 1 }] });
+		component.setExpanded(false);
+		const collapsed = render();
+		expect(collapsed).toContain("… (content above)");
+		expect(collapsed).not.toContain("HEAD_APPROVAL_SENTINEL");
+		expect(collapsed).toContain("TAIL_APPROVAL_SENTINEL");
+
+		component.setExpanded(true);
+		const expanded = render();
+		expect(expanded).toContain("HEAD_APPROVAL_SENTINEL");
+		expect(expanded).toContain("TAIL_APPROVAL_SENTINEL");
+		expect(expanded).not.toContain("… (content above)");
+
+		// A late live batch must not replace a terminal approval snapshot.
+		component.updateStreamPreview({ generation: 3, streaming: true, files: [{ path: "preview.ts", diff: "HEAD_LATE_BATCH", firstChangedLine: 1 }] });
+		expect(render()).toBe(expanded);
+	});
+
+	it("shows both files of a settled multi-file approval diff", async () => {
+		await getUiTheme();
+		const uiStub = { requestRender() {}, requestComponentRender() {} } as unknown as TUI;
+		const input = ["*** Begin Patch", "*** Update File: first.ts", "@@", "-a", "+b", "*** Update File: second.ts", "@@", "-c", "+d", "*** End Patch"].join("\n");
+		const component = new ToolExecutionComponent("apply_patch", { input }, {}, undefined, uiStub);
+		const big = (head: string, tail: string) => [` 1|${head}`, ...Array.from({ length: 120 }, (_, i) => ` ${i + 2}|middle-${i}`), ` 122|${tail}`].join("\n");
+		const files = [
+			{ path: "first.ts", diff: big("HEAD_FIRST", "TAIL_FIRST"), firstChangedLine: 1 },
+			{ path: "second.ts", diff: big("HEAD_SECOND", "TAIL_SECOND"), firstChangedLine: 1 },
+		];
+		component.updateStreamPreview({ generation: 1, streaming: true, files });
+		component.setArgsComplete();
+		component.setExpanded(true);
+		const live = Bun.stripANSI(component.render(160).join("\n"));
+		expect(live).not.toContain("HEAD_FIRST");
+		expect(live).not.toContain("HEAD_SECOND");
+		component.updateStreamPreview({ generation: 2, streaming: false, files });
+		const settled = Bun.stripANSI(component.render(160).join("\n"));
+		for (const marker of ["HEAD_FIRST", "TAIL_FIRST", "HEAD_SECOND", "TAIL_SECOND"]) expect(settled).toContain(marker);
+		expect(settled).not.toContain("… (content above)");
+	});
+
 	it("refreshes streaming preview immediately on arg updates without scheduling a debounce", async () => {
 		await getUiTheme();
 		const uiStub = { requestRender() {}, requestComponentRender() {} } as unknown as TUI;

@@ -194,6 +194,8 @@ export interface EditRenderContext {
 	editDiffPreview?: EditDiffPreview;
 	/** Multi-file streaming diff preview (edits spanning several files) */
 	perFileDiffPreview?: PerFileDiffPreview[];
+	/** True once the async edit preview emitted its terminal batch. */
+	editDiffPreviewSettled?: boolean;
 	/** Raw in-flight edit text shown while a computed diff preview is unavailable */
 	editStreamingFallback?: string;
 	/** Function to render diff text with syntax highlighting */
@@ -535,6 +537,7 @@ function formatStreamingDiff(
 	label = "streaming",
 	spinnerFrame?: number,
 	cache?: RenderedStringCache,
+	showFullDiff = false,
 ): string {
 	if (!diff) return "";
 	// Clamp the tail to the viewport so a tall or fast-growing diff cannot
@@ -550,20 +553,18 @@ function formatStreamingDiff(
 	// innerWidth/budget are in the cache salt so a resize re-slices.
 	const innerWidth = Math.max(1, width - 2);
 	const budget = expanded ? previewWindowRows() : Math.min(PREVIEW_LIMITS.EXPANDED_LINES, previewWindowRows());
-	let text = cachedRenderedString(cache, uiTheme, expanded, `${rawPath}:${innerWidth}:${budget}`, diff, () => {
-		// "Cursor" tail window: pin the last rows to the bottom so freshly streamed
-		// changes stay on screen. The whole-file diff is recomputed every chunk and
-		// its Myers alignment is not monotonic in payload length, so a hunk-aware
-		// window stutters as rows move between hunks. Expanded widens the window
-		// to the viewport; the full diff appears once the result finalizes.
-		const tail = sliceStreamingDiffTail(diff, innerWidth, budget);
+	const mode = showFullDiff ? "full" : "window";
+	let text = cachedRenderedString(cache, uiTheme, expanded, `${rawPath}:${innerWidth}:${budget}:${mode}`, diff, () => {
 		let rendered = "\n\n";
-		if (tail.hidden) {
-			// Exact hidden line/hunk counts require scanning the discarded prefix,
-			// which would make every streaming update scale with the complete diff.
-			rendered += `${uiTheme.fg("dim", "… (content above)")}\n`;
+		if (showFullDiff) {
+			// The settled expanded approval diff is immutable, unlike live frames.
+			rendered += renderDiffColored(diff, { filePath: rawPath, theme: uiTheme });
+		} else {
+			// Preserve the bounded visual-row tail for live and collapsed previews.
+			const tail = sliceStreamingDiffTail(diff, innerWidth, budget);
+			if (tail.hidden) rendered += `${uiTheme.fg("dim", "… (content above)")}\n`;
+			rendered += renderDiffColored(tail.content, { filePath: rawPath, theme: uiTheme });
 		}
-		rendered += renderDiffColored(tail.content, { filePath: rawPath, theme: uiTheme });
 		return rendered;
 	});
 	// The animated glyph rides this trailing line — inside the transcript's
@@ -587,6 +588,7 @@ function formatMultiFileStreamingDiff(
 	expanded: boolean,
 	spinnerFrame?: number,
 	caches?: RenderedStringCache[],
+	showFullDiff = false,
 ): string {
 	const parts: string[] = [];
 	for (let index = 0; index < previews.length; index++) {
@@ -604,7 +606,7 @@ function formatMultiFileStreamingDiff(
 			const isLast = index === previews.length - 1;
 			const cache = previewCacheAt(caches, index);
 			parts.push(
-				`${header}${formatStreamingDiff(preview.diff, preview.path, width, uiTheme, expanded, "preview", isLast ? spinnerFrame : undefined, cache)}`,
+				`${header}${formatStreamingDiff(preview.diff, preview.path, width, uiTheme, expanded, "preview", isLast ? spinnerFrame : undefined, cache, showFullDiff)}`,
 			);
 		}
 	}
@@ -620,17 +622,18 @@ function getCallPreview(
 	expanded: boolean,
 	spinnerFrame?: number,
 	caches?: RenderedStringCache[],
+	showFullDiff = false,
 ): string {
 	const multi = renderContext?.perFileDiffPreview;
 	if (multi && multi.length > 1 && multi.some(p => p.diff || p.error)) {
-		return formatMultiFileStreamingDiff(multi, width, uiTheme, expanded, spinnerFrame, caches);
+		return formatMultiFileStreamingDiff(multi, width, uiTheme, expanded, spinnerFrame, caches, showFullDiff);
 	}
 	const cache = previewCacheAt(caches, 0);
 	if (args.previewDiff) {
-		return formatStreamingDiff(args.previewDiff, rawPath, width, uiTheme, expanded, "preview", spinnerFrame, cache);
+		return formatStreamingDiff(args.previewDiff, rawPath, width, uiTheme, expanded, "preview", spinnerFrame, cache, showFullDiff);
 	}
 	if (args.diff && args.op) {
-		return formatStreamingDiff(args.diff, rawPath, width, uiTheme, expanded, "streaming", spinnerFrame, cache);
+		return formatStreamingDiff(args.diff, rawPath, width, uiTheme, expanded, "streaming", spinnerFrame, cache, showFullDiff);
 	}
 	if (args.diff) {
 		return renderPlainTextPreview(args.diff, uiTheme, rawPath);
@@ -1149,6 +1152,7 @@ export const editToolRenderer = {
 					options.expanded,
 					options?.spinnerFrame,
 					callPreviewCaches,
+					options.expanded && options.argsComplete === true && renderContext?.editDiffPreviewSettled === true,
 				);
 				if (applyPatchError) {
 					body += `\n${uiTheme.fg("error", truncateToWidth(replaceTabs(applyPatchError), Math.max(1, width - 2)))}`;
