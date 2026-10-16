@@ -84,6 +84,37 @@ describe("pii-redact example helpers", () => {
 		expect(payload.nested).toEqual([{ text: "a@b.co" }]);
 	});
 
+	it("does not return plaintext on repeated references or cycles", () => {
+		const shared = { email: "secret@example.com", note: "555-123-4567" };
+		const original: Record<string, unknown> = { first: shared, second: shared };
+		original.self = original;
+		const result = redactStructuredPayload(original, PLACEHOLDER) as {
+			first: typeof shared;
+			second: typeof shared;
+			self: unknown;
+		};
+		expect(result.first).toEqual({ email: PLACEHOLDER, note: PLACEHOLDER });
+		expect(result.second).toBe(result.first);
+		expect(result.self).toBe(result);
+		expect(result.first).not.toBe(shared);
+		expect(shared.email).toBe("secret@example.com");
+	});
+
+	it("keeps sparse arrays sparse and provider binary data unchanged", () => {
+		const sparse = new Array(3);
+		sparse[1] = { text: "a@b.co" };
+		const bytes = new Uint8Array([4, 7]);
+		const result = redactStructuredPayload({ sparse, bytes }, PLACEHOLDER) as {
+			sparse: typeof sparse;
+			bytes: Uint8Array;
+		};
+		expect(result.sparse).toHaveLength(3);
+		expect(0 in result.sparse).toBe(false);
+		expect(2 in result.sparse).toBe(false);
+		expect(result.sparse[1]).toEqual({ text: PLACEHOLDER });
+		expect(result.bytes).toBe(bytes);
+	});
+
 	it("continues walking null-prototype JSON records", () => {
 		const record = Object.assign(Object.create(null), { email: "a@b.co" });
 		expect(redactStructuredPayload({ record }, PLACEHOLDER)).toEqual({ record: { email: PLACEHOLDER } });
