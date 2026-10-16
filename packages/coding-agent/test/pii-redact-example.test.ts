@@ -176,6 +176,29 @@ describe("pii-redact example extension events", () => {
 		expect(replaced?.content).toEqual([{ type: "text", text: `Permission denied for ${PLACEHOLDER}` }]);
 	});
 
+	it("redacts persisted Ask tool_result details without corrupting binary payloads", async () => {
+		const runner = await loadExampleRunner();
+		const bytes = new Uint8Array([1, 2, 3]);
+		const details = {
+			results: [{ customInput: "email a@b.co", note: "call 555-123-4567" }],
+			bytes,
+		};
+		const replaced = await runner.emitToolResult({
+			type: "tool_result",
+			toolName: "ask",
+			toolCallId: "ask-details-1",
+			input: {},
+			content: [{ type: "text", text: "response a@b.co" }],
+			details,
+			isError: false,
+		});
+		const redactedDetails = replaced?.details as typeof details;
+		expect(replaced?.content).toEqual([{ type: "text", text: "response [PII]" }]);
+		expect(redactedDetails.results).toEqual([{ customInput: "email [PII]", note: "call [PII]" }]);
+		expect(redactedDetails.bytes).toBe(bytes);
+		expect(details.results[0]?.customInput).toBe("email a@b.co");
+	});
+
 	it("keeps text/image/text order on context rewrite", async () => {
 		const runner = await loadExampleRunner();
 		const messages = await runner.emitContext([
