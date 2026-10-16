@@ -236,16 +236,21 @@ describe("apply_patch rendering", () => {
 		}
 
 		// A queued late live batch cannot resurrect terminal state.
+		const lateDiff = diff
+			.replace("HEAD_STALE_DIFF_SENTINEL", "HEAD_LATE_DIFF_SENTINEL")
+			.replace("TAIL_STALE_DIFF_SENTINEL", "TAIL_LATE_DIFF_SENTINEL");
 		component.updateStreamPreview({
 			generation: 4,
 			streaming: true,
-			files: [{ path: "preview.ts", diff, firstChangedLine: 1 }],
+			files: [{ path: "preview.ts", diff: lateDiff, firstChangedLine: 1 }],
 		});
 		for (const expanded of [false, true]) {
 			component.setExpanded(expanded);
 			const afterLateBatch = Bun.stripANSI(component.render(160).join("\n"));
 			expect(afterLateBatch).toContain("TAIL_STALE_DIFF_SENTINEL");
 			expect(afterLateBatch.includes("HEAD_STALE_DIFF_SENTINEL")).toBe(expanded);
+			expect(afterLateBatch).not.toContain("HEAD_LATE_DIFF_SENTINEL");
+			expect(afterLateBatch).not.toContain("TAIL_LATE_DIFF_SENTINEL");
 		}
 	});
 
