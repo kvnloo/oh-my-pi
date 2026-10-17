@@ -332,8 +332,13 @@ than a byte-for-byte native provider transcript.
 - In history, `Esc` cancels the selected running topic without closing history;
   otherwise it closes history. If another topic is still running, its inline
   panel is restored rather than leaving it hidden in the background.
+- In Tern (native rendering), the BTW history sheet replaces the inline panel:
+  a long answer scrolls the sheet body, and while a topic is running `Esc` puts
+  the sheet away (the answer keeps streaming in the background; bare `/btw`
+  reopens it on that question) and `x` cancels it.
 - Completed, cancelled, and failed panels close with `Esc`; their history stays
-  saved. There is no hide-and-continue action or separate `x` cancellation key.
+  saved. In text mode there is no hide-and-continue action or separate `x`
+  cancellation key.
 - `c` copies the completed inline answer, or the selected topic's latest nonempty answer.
 - After an inline BTW answer completes, `f` opens that topic's follow-up input
   directly, without requiring `/btw` first. The main editor must be empty and focused.
