@@ -7091,7 +7091,6 @@ dependencies = [
  "async-trait",
  "brush-core",
  "brush-parser",
- "bytes",
  "clap",
  "flume",
  "jiff",
