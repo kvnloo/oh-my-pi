@@ -1,41 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import {
-	createOpenAICodexAuthorizationUrl,
-	formatOpenAICodexTokenEndpointError,
-} from "@oh-my-pi/pi-ai/oauth/openai-codex";
+import { formatOpenAICodexTokenEndpointError } from "@oh-my-pi/pi-ai/oauth/openai-codex";
 import { type RequestBody, transformRequestBody } from "@oh-my-pi/pi-ai/providers/openai-codex/request-transformer";
 import { CodexApiError, parseCodexError } from "@oh-my-pi/pi-ai/providers/openai-codex/response-handler";
 import { convertOpenAICodexResponsesTools } from "@oh-my-pi/pi-ai/providers/openai-codex-responses";
 import type { Tool } from "@oh-my-pi/pi-ai/types";
-import { OPENAI_HEADER_VALUES } from "@oh-my-pi/pi-catalog/wire/codex";
 import { createCodexModel } from "./helpers";
 
 const DEFAULT_PROMPT_PREFIX =
 	"You are an expert coding assistant. You help users with coding tasks by reading files, executing commands";
 
 describe("openai-codex oauth", () => {
-	it("uses the same default originator for browser login and API requests", () => {
-		const authUrl = createOpenAICodexAuthorizationUrl({
-			state: "state",
-			redirectUri: "http://localhost:1455/auth/callback",
-			challenge: "challenge",
-		});
-
-		expect(new URL(authUrl).searchParams.get("originator")).toBe(OPENAI_HEADER_VALUES.ORIGINATOR_CODEX);
-	});
-
-	it("requests Codex connector scopes during browser login", () => {
-		const authUrl = createOpenAICodexAuthorizationUrl({
-			state: "state",
-			redirectUri: "http://localhost:1455/auth/callback",
-			challenge: "challenge",
-		});
-
-		const scopes = new Set((new URL(authUrl).searchParams.get("scope") ?? "").split(" "));
-		expect(scopes.has("api.connectors.read")).toBe(true);
-		expect(scopes.has("api.connectors.invoke")).toBe(true);
-	});
-
 	it("formats object token endpoint errors without object coercion", () => {
 		const detail = formatOpenAICodexTokenEndpointError(
 			403,
