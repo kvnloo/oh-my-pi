@@ -87,8 +87,8 @@ Pattern grammar and language support exposed to the model:
 - Session state (transcript, memory, jobs, checkpoints, registries)
   - None beyond normal tool transcript/result metadata.
 - Background work / cancellation
-  - Native work runs on a blocking worker via `task::blocking(...)`.
-  - Cancellation and optional native timeout are cooperative through `CancelToken::heartbeat()`.
+  - Native work runs on a Tokio blocking worker via `task::filesystem(env, ...)`.
+  - Cancellation and optional native timeout are cooperative through `CancelToken::heartbeat()`; outer cancel also trips the worker's `CancellationToken` to release pending provider I/O.
 
 ## Limits & Caps
 - Wrapper-visible result cap: `DEFAULT_AST_LIMIT = 50` in `packages/coding-agent/src/tools/ast-grep.ts`.

@@ -89,8 +89,8 @@ Shared AST pattern grammar and language catalog: see [`ast_grep`](./ast-grep.md#
   - Direct `ast_edit` results are previews.
   - Follow-up apply/discard is exposed through writes to `xd://resolve` and `xd://reject`.
 - Background work / cancellation
-  - Native preview/apply work runs on a blocking worker via `task::blocking(...)`.
-  - Cancellation and optional native timeout are cooperative through `CancelToken::heartbeat()`.
+  - Native preview/apply work runs on a Tokio blocking worker via `task::filesystem(env, ...)`.
+  - Cancellation and optional native timeout are cooperative through `CancelToken::heartbeat()`; outer cancel also trips the worker's `CancellationToken` to release pending provider I/O.
 
 ## Limits & Caps
 - File cap exposed by the wrapper: `PI_MAX_AST_FILES`, default `1000`, in `packages/coding-agent/src/tools/ast-edit.ts`. The cap is passed to each native target independently, not enforced globally across multi-target calls.
