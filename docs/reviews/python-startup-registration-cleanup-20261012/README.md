@@ -84,8 +84,9 @@ main reproduces **1 PASS / 2 FAIL / 1 ERROR**: both rejected context-entry cases
 leave the child and readers alive, and retry reports already started. The success
 callback control passes. Baseline existing unittest-compatible SDK modules pass
 **104 tests**; the former inherited teardown failure did not recur in this run.
-The separate pytest-based user-group module requires pytest, which is absent from
-the installed interpreter; this is not a full SDK or hosted CI pass.
+The separate pytest-based user-group module requires pytest; final full-suite
+qualification uses an isolated `/tmp/omp-startup-pytest-20261018` environment
+with Python 3.14.7 and pytest 9.1.1, without changing project dependencies.
 
 Current CONTRIBUTING permits small bug PRs without vouch, but requires a human to
 review every changed file, exercise the behavior, and supply their own sentence
