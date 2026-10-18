@@ -68,3 +68,29 @@ Original path authors: can1357 (client path latest `fd4542b21d`), Sunil Srivatsa
 Independent xhigh critic found no blocking findings: focused candidate 4/4 PASS; exact baseline 1 PASS / 2 FAIL / 1 ERROR; related checks 60 PASS / 1 FAIL with the same teardown failure reproduced on exact base. An independent host-URI-only startup rejection subprocess probe also verified original error preservation and child/reader cleanup. `git diff --check` PASS. The critic made no edits or GitHub writes. Native Python subprocess evidence is not full OMP/Bun integration, hosted CI, live provider acceptance or production session-lock proof.
 
 QA: LIMITED / downstream candidate. Parent owns recording #152 result/releasing the claim. This agent makes no GitHub API writes, upstream post, main/force push, fake human signoff or credential recovery. Authorization and publication readiness remain separate.
+
+## Current-main qualification (2026-10-18)
+
+Current upstream control is `ba85aef0b343a25f3c90b4f86628a9bd92d8414d`.
+The existing implementation/history is retained by merging current main into an
+isolated nondefault qualification branch, not rebasing or rewriting the published
+`6126e9fc9deae12b2bbad8539cedc8ba063944d2` carrier. Current main still registers
+initial custom tools and host URIs outside its protocol-negotiation cleanup guard.
+Exact-title/scope upstream PR searches found no replacement startup cleanup PR.
+
+The existing subprocess regression uses a real Python child and the SDK's real
+stdio reader threads, not Bun, a provider, or a full OMP host. Import-pinned current
+main reproduces **1 PASS / 2 FAIL / 1 ERROR**: both rejected context-entry cases
+leave the child and readers alive, and retry reports already started. The success
+callback control passes. Baseline existing unittest-compatible SDK modules pass
+**104 tests**; the former inherited teardown failure did not recur in this run.
+The separate pytest-based user-group module requires pytest, which is absent from
+the installed interpreter; this is not a full SDK or hosted CI pass.
+
+Current CONTRIBUTING permits small bug PRs without vouch, but requires a human to
+review every changed file, exercise the behavior, and supply their own sentence
+explaining the change. These remain unmet publication gates; no generated
+substitute, autonomous origin publication, default-branch merge, or #151 action
+is authorized. Credit remains can1357, Sunil Srivatsa, roboomp, and dot/ayo;
+integration does not reattribute their work. Final exact-head runtime results and
+commands are recorded on canonical fork queue #157.
