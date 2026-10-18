@@ -1,0 +1,57 @@
+test_failed_context_entry_reaps_child_and_readers_v1 (__main__.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v1) ... FAIL
+test_failed_context_entry_reaps_child_and_readers_v2 (__main__.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v2) ... FAIL
+test_retry_after_failed_entry_starts_fresh_worker (__main__.StartupRegistrationTests.test_retry_after_failed_entry_starts_fresh_worker) ... ERROR
+test_successful_startup_serves_callback_before_registration_ack (__main__.StartupRegistrationTests.test_successful_startup_serves_callback_before_registration_ack) ... ok
+
+======================================================================
+ERROR: test_retry_after_failed_entry_starts_fresh_worker (__main__.StartupRegistrationTests.test_retry_after_failed_entry_starts_fresh_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/omp-startup-frozen.py", line 133, in test_retry_after_failed_entry_starts_fresh_worker
+    with client:
+         ^^^^^^
+  File "<base-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py", line 574, in __enter__
+    return self.start()
+           ^^^^^^^^^^^^
+  File "<base-worktree>/sdk/python/omp-rpc/src/omp_rpc/client.py", line 600, in start
+    raise RpcError("RPC client is already started")
+omp_rpc.client.RpcError: RPC client is already started
+
+======================================================================
+FAIL: test_failed_context_entry_reaps_child_and_readers_v1 (__main__.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/omp-startup-frozen.py", line 121, in test_failed_context_entry_reaps_child_and_readers_v1
+    self._assert_failed_entry_reaps(protocol_v2=False)
+  File "/tmp/omp-startup-frozen.py", line 106, in _assert_failed_entry_reaps
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True) : failed context entry must reap worker and stop both readers
+
+======================================================================
+FAIL: test_failed_context_entry_reaps_child_and_readers_v2 (__main__.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v2)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/omp-startup-frozen.py", line 124, in test_failed_context_entry_reaps_child_and_readers_v2
+    self._assert_failed_entry_reaps(protocol_v2=True)
+  File "/tmp/omp-startup-frozen.py", line 106, in _assert_failed_entry_reaps
+    self.assertEqual(
+AssertionError: Tuples differ: (False, False, False) != (True, True, True)
+
+First differing element 0:
+False
+True
+
+- (False, False, False)
++ (True, True, True) : failed context entry must reap worker and stop both readers
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.201s
+
+FAILED (failures=2, errors=1)

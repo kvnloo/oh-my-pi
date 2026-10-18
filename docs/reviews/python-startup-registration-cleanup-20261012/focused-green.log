@@ -1,0 +1,9 @@
+test_failed_context_entry_reaps_child_and_readers_v1 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v1) ... ok
+test_failed_context_entry_reaps_child_and_readers_v2 (tests.test_client.StartupRegistrationTests.test_failed_context_entry_reaps_child_and_readers_v2) ... ok
+test_retry_after_failed_entry_starts_fresh_worker (tests.test_client.StartupRegistrationTests.test_retry_after_failed_entry_starts_fresh_worker) ... ok
+test_successful_startup_serves_callback_before_registration_ack (tests.test_client.StartupRegistrationTests.test_successful_startup_serves_callback_before_registration_ack) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.379s
+
+OK

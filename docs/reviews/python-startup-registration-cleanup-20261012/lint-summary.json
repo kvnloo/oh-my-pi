@@ -1,0 +1,10 @@
+{
+  "ruff": "0.17.0",
+  "baseline_diagnostics": 43,
+  "candidate_diagnostics": 43,
+  "new_diagnostics": [],
+  "sdk_format_base": "7 files would be reformatted, 7 files already formatted",
+  "sdk_format_candidate": "7 files would be reformatted, 7 files already formatted",
+  "frozen_regression_format": "PASS",
+  "diff_check": "PASS"
+}
