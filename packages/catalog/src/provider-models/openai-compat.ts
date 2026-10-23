@@ -61,7 +61,11 @@ import {
 	normalizeSingularityApiBaseUrl,
 } from "../wire/singularityapi";
 import { createBundledReferenceMap, createReferenceResolver, toModelSpec } from "./bundled-references";
-import { getDefaultModelDiscoveryBaseUrl, resolveModelCacheProviderId } from "./cache-provider-id";
+import {
+	getDefaultModelDiscoveryBaseUrl,
+	normalizeNousPortalBaseUrl,
+	resolveModelCacheProviderId,
+} from "./cache-provider-id";
 import { getClinePassModelMetadata } from "./cline-pass";
 import type { ModelManagerConfig } from "./descriptor-types";
 import { filterModelsDevCatalogRows } from "./models-dev-policies";
@@ -1208,8 +1212,6 @@ export function gmiCloudModelManagerOptions(
 // 1c. Nous Portal
 // ---------------------------------------------------------------------------
 
-const NOUS_PORTAL_BASE_URL = "https://inference-api.nousresearch.com/v1";
-
 export interface NousPortalModelManagerConfig {
 	apiKey?: string;
 	baseUrl?: string;
@@ -1222,8 +1224,7 @@ function mapNousPortalModel(
 	reference: ModelSpec<"openai-completions"> | undefined,
 ): ModelSpec<"openai-completions"> {
 	if (reference) return mapWithBundledReference(entry, defaults, reference);
-	if (!recoversCanonicalParams("nous-portal"))
-		return { ...defaults, name: toModelName(entry.name, defaults.name) };
+	if (!recoversCanonicalParams("nous-portal")) return { ...defaults, name: toModelName(entry.name, defaults.name) };
 
 	const canonical = resolveModelReference(defaults.id, getBundledModelReferenceIndex());
 	if (!canonical) return { ...defaults, name: toModelName(entry.name, defaults.name) };
@@ -1249,7 +1250,7 @@ export function nousPortalModelManagerOptions(
 	config?: NousPortalModelManagerConfig,
 ): ModelManagerOptions<"openai-completions"> {
 	const apiKey = config?.apiKey;
-	const baseUrl = config?.baseUrl?.trim() || NOUS_PORTAL_BASE_URL;
+	const baseUrl = normalizeNousPortalBaseUrl(config?.baseUrl);
 	return {
 		providerId: "nous-portal",
 		cacheProviderId: resolveModelCacheProviderId("nous-portal", { apiKey, baseUrl }),

@@ -65,32 +65,58 @@ describe("Nous Portal provider", () => {
 		expect(unknown?.reasoning).toBe(false);
 	});
 
-	test("cache namespace follows both credential and normalized endpoint", () => {
-		const first = nousPortalModelManagerOptions({
-			apiKey: "sk-nous-a",
-			baseUrl: "https://proxy.example/v1/",
+	test("authoritative cache identities isolate accounts and endpoints without exposing keys", () => {
+		const apiKey = "sk-nous-lab-alpha-sensitive";
+		const baseUrl = "https://proxy.example/v1";
+		const accountA = resolveModelCacheProviderId("nous-portal", { apiKey, baseUrl });
+		const accountB = resolveModelCacheProviderId("nous-portal", {
+			apiKey: "sk-nous-lab-beta-sensitive",
+			baseUrl,
 		});
-		const same = nousPortalModelManagerOptions({
-			apiKey: "sk-nous-a",
-			baseUrl: "https://proxy.example/v1",
-		});
-		const otherKey = nousPortalModelManagerOptions({
-			apiKey: "sk-nous-b",
-			baseUrl: "https://proxy.example/v1",
-		});
-		const otherHost = nousPortalModelManagerOptions({
-			apiKey: "sk-nous-a",
+		const endpointB = resolveModelCacheProviderId("nous-portal", {
+			apiKey,
 			baseUrl: "https://other.example/v1",
 		});
 
-		expect(first.cacheProviderId).toBe(same.cacheProviderId);
-		expect(first.cacheProviderId).not.toBe(otherKey.cacheProviderId);
-		expect(first.cacheProviderId).not.toBe(otherHost.cacheProviderId);
-		expect(first.cacheProviderId).toBe(
+		expect(accountA).not.toBe(accountB);
+		expect(accountA).not.toBe(endpointB);
+		expect(accountB).not.toBe(endpointB);
+		expect(accountA).toMatch(/^nous-portal:models-v1:[a-z0-9]+$/);
+		expect(accountA).not.toContain(apiKey);
+		expect(accountA).not.toContain(baseUrl);
+	});
+
+	test("startup resolver and manager use the same normalized namespace and discovery URL", async () => {
+		const apiKey = "sk-nous-lab-startup";
+		const configuredUrl = "https://PROXY.EXAMPLE:443/v1///";
+		const canonicalUrl = "https://proxy.example/v1";
+		const startupId = resolveModelCacheProviderId("nous-portal", {
+			apiKey,
+			baseUrl: configuredUrl,
+		});
+		expect(startupId).toBe(resolveModelCacheProviderId("nous-portal", { apiKey, baseUrl: canonicalUrl }));
+		expect(startupId).toBe(
 			resolveModelCacheProviderId("nous-portal", {
-				apiKey: "sk-nous-a",
-				baseUrl: "https://proxy.example/v1/",
+				apiKey,
+				baseUrl: "  https://proxy.example/v1/  ",
 			}),
 		);
+
+		const urls: string[] = [];
+		const fakeFetch = (async (input: string | URL | Request) => {
+			urls.push(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+			return Response.json({
+				object: "list",
+				data: [{ id: "nous-lab/discovered", object: "model", owned_by: "nous" }],
+			});
+		}) as typeof globalThis.fetch;
+		const manager = nousPortalModelManagerOptions({ apiKey, baseUrl: configuredUrl, fetch: fakeFetch });
+		expect(manager.cacheProviderId).toBe(startupId);
+		const discovered = await manager.fetchDynamicModels?.();
+
+		expect(urls).toEqual(["https://proxy.example/v1/models"]);
+		expect(discovered?.map(model => ({ id: model.id, baseUrl: model.baseUrl }))).toEqual([
+			{ id: "nous-lab/discovered", baseUrl: canonicalUrl },
+		]);
 	});
 });
