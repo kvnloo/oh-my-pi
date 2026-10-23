@@ -54,6 +54,20 @@ export function getDefaultModelDiscoveryBaseUrl(providerId: string): string | un
 	}
 }
 
+/** Normalize the same Nous endpoint for both discovery requests and their credential-scoped cache identity. */
+export function normalizeNousPortalBaseUrl(baseUrl?: string): string {
+	const configured = baseUrl?.trim() || getDefaultModelDiscoveryBaseUrl("nous-portal")!;
+	let normalized = configured.replace(/\/+$/g, "");
+	try {
+		const parsed = new URL(configured);
+		parsed.pathname = parsed.pathname.replace(/\/+$/g, "");
+		normalized = parsed.toString().replace(/\/+$/g, "");
+	} catch {
+		// Discovery will handle malformed URLs; keep the cache identity deterministic.
+	}
+	return normalized;
+}
+
 /** Resolve an Ollama model-cache namespace scoped to the normalized discovery endpoint. */
 export function resolveOllamaModelCacheProviderId(providerId: string, baseUrl?: string): string {
 	const defaultBaseUrl = getDefaultModelDiscoveryBaseUrl("ollama")!;
@@ -126,15 +140,8 @@ export function resolveModelCacheProviderId(providerId: string, options: ModelCa
 			return `${providerId}:models-v1:${Bun.hash(scope).toString(36)}`;
 		}
 		case "nous-portal": {
-			const configured = options.baseUrl?.trim() || getDefaultModelDiscoveryBaseUrl(providerId)!;
-			let baseUrl = configured.replace(/\/+$/g, "");
-			try {
-				const parsed = new URL(configured);
-				parsed.pathname = parsed.pathname.replace(/\/+$/g, "");
-				baseUrl = parsed.toString().replace(/\/+$/g, "");
-			} catch {
-				// Discovery owns malformed-URL handling; cache identity stays deterministic.
-			}
+			// Account-scoped authoritative rosters must never share an endpoint/key namespace.
+			const baseUrl = normalizeNousPortalBaseUrl(options.baseUrl);
 			const scope = `${options.apiKey ?? ""}\u0000${baseUrl}`;
 			return `nous-portal:models-v1:${Bun.hash(scope).toString(36)}`;
 		}
