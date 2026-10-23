@@ -87,8 +87,11 @@ const MESSAGE_METADATA_FIELDS = new Set([
 	"api", "callId", "call_id", "detail", "file_id", "finishReason", "finish_reason",
 	"format", "id", "item_id", "kind", "media_type", "mimeType", "mime_type", "model",
 	"name", "object", "provider", "recipient", "response_id", "role", "signature",
-	"status", "thoughtSignature", "toolCallId", "toolName", "tool_call_id", "tool_name",
+	"status", "thoughtSignature", "toolCallId", "toolName", "toolUseId", "tool_call_id", "tool_name", "tool_use_id",
 	"type", "uri", "url", "version",
+]);
+const IMAGE_METADATA_FIELDS = new Set([
+	"data", "detail", "file_id", "format", "media_type", "mimeType", "mime_type", "source", "url",
 ]);
 const CONTENT_BLOCK_TYPES = new Set([
 	"image", "image_url", "input_audio", "input_file", "input_image", "input_text",
@@ -113,16 +116,14 @@ function opaqueImageField(source: object, key: string): boolean {
 	if (key === "image_url" || key === "imageUrl" || key === "b64_json") return true;
 	const type = Reflect.get(source, "type");
 	const isImage = type === "image" || type === "input_image" || type === "image_url" || type === "input_file";
-	if (isImage && new Set([
-		"data", "detail", "file_id", "format", "media_type", "mimeType", "mime_type", "source", "url",
-	]).has(key)) return true;
+	if (isImage && IMAGE_METADATA_FIELDS.has(key)) return true;
 	const mime = Reflect.get(source, "mimeType") ?? Reflect.get(source, "mime_type") ?? Reflect.get(source, "media_type");
 	return key === "data" && typeof mime === "string" && mime.startsWith("image/");
 }
 
 /**
  * Graph-preserving content traversal for context, persisted results and request
- * envelopes. Only content strings are sent to PAW. Identifiers, schema
+ * envelopes. Only content strings are sent to PAW. Protocol IDs, schema
  * constraints, signatures and image data/URLs are never rewritten; arbitrary
  * nested tool arguments and details are still fully traversed.
  *
