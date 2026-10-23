@@ -320,7 +320,7 @@ describe("pinned z0evals wire contract", () => {
 		const schemaBytes = readFileSync(new URL("../evals/cognitive-state/receipt.schema.json", import.meta.url));
 		const questionBytes = readFileSync(new URL("../evals/cognitive-state/question-contract.json", import.meta.url));
 		const blobSha = (bytes: Buffer) =>
-			createHash("sha1").update(`blob ${bytes.length}\\0`).update(bytes).digest("hex");
+			createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 		// These are the Git blobs at kvnloo/z0evals@8341084c4967bd25236ef011e6efdbace27d03bd.
 		expect(blobSha(schemaBytes)).toBe("b43eaf3eba88e31142d5f0f2af01b0729eb221ba");
 		expect(blobSha(questionBytes)).toBe("44b5b228e62fa64ba8cc50a4aeef899c2e9a5aa7");
@@ -331,7 +331,7 @@ describe("pinned z0evals wire contract", () => {
 		const questions = JSON.parse(questionBytes.toString("utf8")) as { questions: Array<{ id: string }> };
 		const canonicalIds = questions.questions.map(question => question.id);
 		const lines = readFileSync(new URL("../evals/cognitive-state/receipts.jsonl", import.meta.url), "utf8")
-			.trimEnd().split("\\n");
+			.trimEnd().split("\n");
 		const rows = lines.map(line => JSON.parse(line) as UnifiedMemoryReceipt);
 		expect(FROZEN_QUESTIONS.map(question => question.id)).toEqual(canonicalIds);
 		expect(rows.map(row => row.question_id)).toEqual(canonicalIds);
