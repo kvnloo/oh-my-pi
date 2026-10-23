@@ -65,6 +65,7 @@ export async function redactTextLeaves(
 	placeholder: string,
 	signal?: AbortSignal,
 ): Promise<unknown> {
+	const deadline = performance.now() + PAW_EVENT_BUDGET_MS;
 	const root: { value?: unknown } = {};
 	const seen = new WeakMap<object, object>();
 	const queue: Array<{ source: object; target: object }> = [];
@@ -122,7 +123,6 @@ export async function redactTextLeaves(
 		}
 	}
 
-	const deadline = performance.now() + PAW_EVENT_BUDGET_MS;
 	const configured = Boolean(process.env.PAW_PII_CMD);
 	let cursor = 0;
 	const worker = async (): Promise<void> => {
