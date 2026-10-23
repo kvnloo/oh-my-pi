@@ -8,18 +8,16 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { ModelRegistry } from "@oh-my-pi/pi-coding-agent/config/model-registry";
 import { loadExtensions } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/loader";
-import { ExtensionRunner, testSetExtensionHandlerTimeoutMs } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/runner";
+import {
+	ExtensionRunner,
+	testSetExtensionHandlerTimeoutMs,
+} from "@oh-my-pi/pi-coding-agent/extensibility/extensions/runner";
 import * as execUtils from "@oh-my-pi/pi-coding-agent/exec/exec";
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/types";
 import { AuthStorage } from "@oh-my-pi/pi-coding-agent/session/auth-storage";
 import { SessionManager } from "@oh-my-pi/pi-coding-agent/session/session-manager";
 import { TempDir } from "@oh-my-pi/pi-utils";
-import piiRedactExtension, {
-	buildPawArgs,
-	redactTextLeaves,
-	redactText,
-	regexRedact,
-} from "../examples/extensions/pii-redact";
+import piiRedactExtension, { buildPawArgs, redactText, redactTextLeaves, regexRedact } from "../examples/extensions/pii-redact";
 
 const EXAMPLE_PATH = path.resolve(import.meta.dir, "../examples/extensions/pii-redact.ts");
 const PLACEHOLDER = "[PII]";
@@ -56,7 +54,7 @@ describe("pii-redact example helpers", () => {
 		]);
 	});
 
-	it("redactStructuredPayload walks provider request objects", async () => {
+	it("async traversal walks provider request objects", async () => {
 		const payload = {
 			model: "gpt",
 			input: [{ role: "user", content: "reach me at secret@example.com" }],
@@ -282,7 +280,6 @@ describe("pii-redact example extension events", () => {
 		expect(payload.system).toBe(`contact ${PLACEHOLDER}`);
 	});
 
-
 	it("applies configured NER to structured-only provider fields", async () => {
 		process.env.PAW_PII_CMD = "mock-paw";
 		const calls: string[] = [];
@@ -318,7 +315,7 @@ describe("pii-redact example extension events", () => {
 			return { code: 0, stdout: input.replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
 		});
 		const runner = await loadExampleRunner();
-		const image = { type: "image" as const, mimeType: "image/png", data: "binary_data" };
+		const image = { type: "image" as const, mimeType: "image/png" as const, data: "binary_data" };
 		const replaced = await runner.emitToolResult({
 			type: "tool_result",
 			toolName: "ask",
