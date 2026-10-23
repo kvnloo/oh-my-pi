@@ -9,6 +9,7 @@ import {
 	handleCognitiveStateContext,
 	resolveFromAgentsView,
 	resolveFromZ0int,
+	toEvidenceRef,
 	validateUnifiedReceipt,
 } from "../../examples/extensions/cognitive-state/index.ts";
 import type { ArmBytes, ContextMessage, UnifiedMemoryReceipt } from "../../examples/extensions/cognitive-state/index.ts";
@@ -121,14 +122,14 @@ const payload = {
 			retrieval_capability: z0int.retrieval_capability,
 			retrieval_ok: z0int.gaps.length === 0 && z0int.evidence.length > 0,
 			revision: process.env.Z0INT_REVISION ?? "unset",
-			evidence_refs: z0int.evidence.map(ref => ref.locator.replace(/^\/tmp\/z0intelligence\//, "kvnloo/z0intelligence:")),
+			evidence_refs: z0int.evidence.map(toEvidenceRef),
 			raw_source_reads: z0int.raw_source_reads,
 			gaps: z0int.gaps,
 		},
 		agentsview: {
 			retrieval_capability: agentsview.retrieval_capability,
 			retrieval_ok: false,
-			evidence_refs: agentsview.evidence.map(ref => ref.locator),
+			evidence_refs: agentsview.evidence.map(toEvidenceRef),
 			raw_source_reads: agentsview.raw_source_reads,
 			gaps: agentsview.gaps.length > 0 ? agentsview.gaps : [agentsviewLimitation],
 		},
