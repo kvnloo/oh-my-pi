@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { Claim, CognitiveStatePacket, EvidenceRef, FrozenQuestion, InformationNeed } from "./types.ts";
-import { CONTEXT_RESOLVE_SCHEMA, STATE_PACKET_SCHEMA } from "./types.ts";
+import type { Claim, CognitiveStatePacket, EvidenceRef, FrozenQuestion, InformationNeed } from "./types";
+import { CONTEXT_RESOLVE_SCHEMA, STATE_PACKET_SCHEMA } from "./types";
 
 function sha16(value: unknown): string {
 	return createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 16);

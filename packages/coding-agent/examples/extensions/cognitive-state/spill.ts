@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { ContextMessage } from "./types.ts";
-import { RLM_DONOR_SPILL_BYTES, RLM_PREVIEW_CHARS } from "./types.ts";
+import type { ContextMessage } from "./types";
+import { RLM_DONOR_SPILL_BYTES, RLM_PREVIEW_CHARS } from "./types";
 
 /**
  * Byte model of donor `maybeSpill` / `stubFor`.

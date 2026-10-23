@@ -1,10 +1,17 @@
-import type { ContextMessage, EvidenceQualityLabel, EvidenceRef, FrozenQuestion, OmpContextAnalysis, UnifiedMemoryReceipt } from "./types.ts";
-import { RLM_DONOR_SPILL_BYTES } from "./types.ts";
-import { FROZEN_QUESTIONS, PUBLIC_EVIDENCE, matchFrozenQuestion } from "./frozen.ts";
-import { growthFromPrevious, measureArms } from "./measure.ts";
-import { compileCognitiveState, renderStatePacket, verifyAnswerSupport } from "./packet.ts";
-import { assertShaRevision, toEvidenceRef } from "./receipt.ts";
-import { contextBytes, messageText } from "./spill.ts";
+import type {
+	ContextMessage,
+	EvidenceQualityLabel,
+	EvidenceRef,
+	FrozenQuestion,
+	OmpContextAnalysis,
+	UnifiedMemoryReceipt,
+} from "./types";
+import { RLM_DONOR_SPILL_BYTES } from "./types";
+import { FROZEN_QUESTIONS, PUBLIC_EVIDENCE, matchFrozenQuestion } from "./frozen";
+import { growthFromPrevious, measureArms } from "./measure";
+import { compileCognitiveState, renderStatePacket, verifyAnswerSupport } from "./packet";
+import { assertShaRevision, toEvidenceRef } from "./receipt";
+import { contextBytes, messageText } from "./spill";
 
 export type CognitiveMode = "off" | "shadow" | "canary";
 

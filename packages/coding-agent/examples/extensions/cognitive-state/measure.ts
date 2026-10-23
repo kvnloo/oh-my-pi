@@ -1,6 +1,6 @@
-import type { ArmBytes, ContextMessage } from "./types.ts";
-import { RLM_DONOR_SPILL_BYTES } from "./types.ts";
-import { applySpillOnly, contextBytes } from "./spill.ts";
+import type { ArmBytes, ContextMessage } from "./types";
+import { RLM_DONOR_SPILL_BYTES } from "./types";
+import { applySpillOnly, contextBytes } from "./spill";
 
 export function measureArms(
 	native: readonly ContextMessage[],

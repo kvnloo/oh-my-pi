@@ -21,9 +21,14 @@ import {
 	resolveFromZ0int,
 	toEvidenceRef,
 	validateUnifiedReceipt,
-} from "../examples/extensions/cognitive-state/index.ts";
-import type { ArmBytes, ContextMessage, EvidenceRef, UnifiedMemoryReceipt } from "../examples/extensions/cognitive-state/index.ts";
-import { growthFromPrevious } from "../examples/extensions/cognitive-state/index.ts";
+} from "../examples/extensions/cognitive-state/index";
+import type {
+	ArmBytes,
+	ContextMessage,
+	EvidenceRef,
+	UnifiedMemoryReceipt,
+} from "../examples/extensions/cognitive-state/index";
+import { growthFromPrevious } from "../examples/extensions/cognitive-state/index";
 
 const base = { sessionId: "sess-1", traceId: "trace-1", sourceRevision: "984fa8bcc5d4" };
 
@@ -59,7 +64,11 @@ describe("cognitive-state context seam", () => {
 		expect(result.analysis?.would_send_bytes).toBeGreaterThan(0);
 		expect(result.receipt?.context_bytes).toBe(contextBytes(native));
 		expect(result.visibleText).not.toContain("z0.cognitive_state.v1");
-		expect(result.receipt?.evidence_refs.some(ref => ref.source_id === "z0int:context_resolve" && ref.trust_class === "code")).toBe(true);
+		expect(
+			result.receipt?.evidence_refs.some(
+				ref => ref.source_id === "z0int:context_resolve" && ref.trust_class === "code",
+			),
+		).toBe(true);
 		expect(JSON.stringify(native)).toBe(before);
 		expect(receipt.lines).toHaveLength(1);
 	});
@@ -300,7 +309,14 @@ describe("z0eval receipt schema", () => {
 		const schema = JSON.parse(
 			readFileSync(new URL("../evals/cognitive-state/receipt.schema.json", import.meta.url), "utf8"),
 		) as { required?: string[]; properties?: Record<string, unknown> };
-		const ids = ["exact-identifier", "supersession", "cross-harness", "contradiction", "missing-evidence", "minimal-context"];
+		const ids = [
+			"exact-identifier",
+			"supersession",
+			"cross-harness",
+			"contradiction",
+			"missing-evidence",
+			"minimal-context",
+		];
 		for (const id of ids) {
 			const result = await handleCognitiveStateContext(
 				{ type: "context", messages: marked(id) },
@@ -309,7 +325,11 @@ describe("z0eval receipt schema", () => {
 			const errors = validateUnifiedReceipt(result.receipt, schema);
 			expect(errors).toEqual([]);
 			expect(result.receipt && "arms" in result.receipt).toBe(false);
-			expect(result.receipt?.evidence_refs.every(ref => typeof ref.source_id === "string" && typeof ref.locator_hash === "string")).toBe(true);
+			expect(
+				result.receipt?.evidence_refs.every(
+					ref => typeof ref.source_id === "string" && typeof ref.locator_hash === "string",
+				),
+			).toBe(true);
 		}
 		expect(ids).toHaveLength(6);
 	});

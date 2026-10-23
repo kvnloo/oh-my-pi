@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { EvidenceRef } from "./types.ts";
-import { UNIFIED_RECEIPT_SCHEMA } from "./types.ts";
-import type { UnifiedEvidenceRef, UnifiedMemoryReceipt } from "./types.ts";
+import type { EvidenceRef } from "./types";
+import { UNIFIED_RECEIPT_SCHEMA } from "./types";
+import type { UnifiedEvidenceRef, UnifiedMemoryReceipt } from "./types";
 
 const SHA_RE = /^[0-9a-f]{7,40}$/;
 
@@ -101,7 +101,17 @@ function validateProperty(value: unknown, spec: SchemaProperty, path: string, er
 /** Validate every keyword used by the pinned z0eval schema, including optional fields and nested evidence. */
 export function validateUnifiedReceipt(row: unknown, schema: SchemaDoc): string[] {
 	const errors: string[] = [];
-	validateProperty(row, { type: "object", required: schema.required, properties: schema.properties as Record<string, SchemaProperty>, additionalProperties: false }, "receipt", errors);
+	validateProperty(
+		row,
+		{
+			type: "object",
+			required: schema.required,
+			properties: schema.properties as Record<string, SchemaProperty>,
+			additionalProperties: false,
+		},
+		"receipt",
+		errors,
+	);
 	return errors;
 }
 

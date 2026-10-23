@@ -1,5 +1,5 @@
-import { ReceiptLog, configFromEnv, createCognitiveStateHandler } from "./handle.ts";
-import type { ContextMessage } from "./types.ts";
+import { ReceiptLog, configFromEnv, createCognitiveStateHandler } from "./handle";
+import type { ContextMessage } from "./types";
 
 type SessionLike = { getSessionId?: () => string };
 

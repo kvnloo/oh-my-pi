@@ -1,4 +1,4 @@
-import type { EvidenceRef, FrozenQuestion } from "./types.ts";
+import type { EvidenceRef, FrozenQuestion } from "./types";
 
 /**
  * Public fixtures only. No private transcript text.

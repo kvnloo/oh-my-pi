@@ -11,9 +11,9 @@ import {
 	resolveFromZ0int,
 	toEvidenceRef,
 	validateUnifiedReceipt,
-} from "../../examples/extensions/cognitive-state/index.ts";
-import type { ArmBytes, ContextMessage, UnifiedMemoryReceipt } from "../../examples/extensions/cognitive-state/index.ts";
-import { FROZEN_QUESTIONS } from "../../examples/extensions/cognitive-state/frozen.ts";
+} from "../../examples/extensions/cognitive-state/index";
+import type { ArmBytes, ContextMessage, UnifiedMemoryReceipt } from "../../examples/extensions/cognitive-state/index";
+import { FROZEN_QUESTIONS } from "../../examples/extensions/cognitive-state/frozen";
 
 const outPath = new URL("./measurements.json", import.meta.url);
 const receiptPath = new URL("./receipts.jsonl", import.meta.url);

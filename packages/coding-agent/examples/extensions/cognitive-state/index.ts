@@ -1,12 +1,12 @@
-export { FROZEN_QUESTIONS, PUBLIC_EVIDENCE, frozenQuestion, matchFrozenQuestion } from "./frozen.ts";
-export { ReceiptLog, configFromEnv, createCognitiveStateHandler, handleCognitiveStateContext } from "./handle.ts";
-export type { CognitiveStateConfig, HandleResult } from "./handle.ts";
-export { growthFromPrevious, measureArms } from "./measure.ts";
-export { compileCognitiveState, renderStatePacket, verifyAnswerSupport } from "./packet.ts";
-export { evidenceFromAgentsView, evidenceFromContextResolve, resolveFromAgentsView, resolveFromZ0int } from "./resolve.ts";
-export { assertShaRevision, locatorHash, toEvidenceRef, validateUnifiedReceipt } from "./receipt.ts";
-export type { CommandRunner, ResolveResult } from "./resolve.ts";
-export { applySpillOnly, contextBytes, donorSpillStub, messageText } from "./spill.ts";
+export { FROZEN_QUESTIONS, PUBLIC_EVIDENCE, frozenQuestion, matchFrozenQuestion } from "./frozen";
+export { ReceiptLog, configFromEnv, createCognitiveStateHandler, handleCognitiveStateContext } from "./handle";
+export type { CognitiveStateConfig, HandleResult } from "./handle";
+export { growthFromPrevious, measureArms } from "./measure";
+export { compileCognitiveState, renderStatePacket, verifyAnswerSupport } from "./packet";
+export { evidenceFromAgentsView, evidenceFromContextResolve, resolveFromAgentsView, resolveFromZ0int } from "./resolve";
+export { assertShaRevision, locatorHash, toEvidenceRef, validateUnifiedReceipt } from "./receipt";
+export type { CommandRunner, ResolveResult } from "./resolve";
+export { applySpillOnly, contextBytes, donorSpillStub, messageText } from "./spill";
 export {
 	CANARY_MARKER,
 	CONTEXT_RESOLVE_SCHEMA,
@@ -15,7 +15,7 @@ export {
 	RLM_PREVIEW_CHARS,
 	STATE_PACKET_SCHEMA,
 	UNIFIED_RECEIPT_SCHEMA,
-} from "./types.ts";
+} from "./types";
 export type {
 	ArmBytes,
 	Claim,
@@ -26,5 +26,5 @@ export type {
 	OmpContextAnalysis,
 	UnifiedEvidenceRef,
 	UnifiedMemoryReceipt,
-} from "./types.ts";
-export { default } from "./extension.ts";
+} from "./types";
+export { default } from "./extension";

@@ -1,4 +1,4 @@
-import type { EvidenceRef } from "./types.ts";
+import type { EvidenceRef } from "./types";
 
 export interface CommandResult {
 	code: number;
