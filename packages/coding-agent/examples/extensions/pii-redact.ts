@@ -98,13 +98,19 @@ const CONTENT_BLOCK_TYPES = new Set([
 	"output_audio", "output_text", "redacted_thinking", "text", "thinking",
 ]);
 
-function childScope(scope: RedactionScope, key: string): RedactionScope {
+function childScope(scope: RedactionScope, key: string, parent: object): RedactionScope {
 	if (scope === "data") return "data";
 	// Schema constraints (including enum/required/default/pattern/type) are
 	// protocol, not prose. Descriptions and examples can contain real PII.
 	if (scope === "schema") return key === "description" || key === "examples" ? "data" : "schema";
 	if (DATA_FIELDS.has(key)) return "data";
 	if (SCHEMA_FIELDS.has(key)) return "schema";
+	// The same "input" key means a message array at the request root and
+	// arbitrary user-supplied tool parameters on Anthropic tool_use blocks.
+	if (scope === "messages" && key === "input" && Reflect.get(parent, "type") === "tool_use") return "data";
+	// Gemini functionResponse.name is a protocol identifier, but its response
+	// object is arbitrary tool data and may contain PII even under "id".
+	if (scope === "messages" && key === "response" && "name" in parent) return "data";
 	if (scope === "provider") return PROVIDER_TEXT_FIELDS.has(key) ? "messages" : "provider";
 	return "messages";
 }
@@ -220,7 +226,7 @@ export async function redactTextLeaves(
 					continue;
 				}
 			}
-			visit(child, target, key, childScope(scope, key), typedBlock);
+			visit(child, target, key, childScope(scope, key, source), typedBlock);
 		}
 	}
 
