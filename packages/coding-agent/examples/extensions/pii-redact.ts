@@ -15,6 +15,8 @@
  * WARNING: if the extension handler itself times out, ExtensionRunner can
  * discard its result and continue with original, unredacted input. Detector
  * kills and the internal work budget fail closed, but runner timeout does not.
+ * Signed thinking and redacted/encrypted reasoning are opaque replay data:
+ * this example preserves them verbatim even if they contain private text.
  *
  * Usage:
  *   omp -e packages/coding-agent/examples/extensions/pii-redact.ts
@@ -46,7 +48,7 @@ export function buildPawArgs(text: string, placeholder: string): string[] {
 	return ["--placeholder", placeholder, "redact", "--text", text];
 }
 
-type RedactionScope = "data" | "messages" | "provider" | "schema";
+type RedactionScope = "data" | "messages" | "provider" | "schema" | "schemaMap";
 
 interface TextDestination {
 	target: object;
@@ -83,11 +85,14 @@ const DATA_FIELDS = new Set([
 const SCHEMA_FIELDS = new Set([
 	"input_schema", "json_schema", "parameters", "responseSchema", "response_schema", "schema",
 ]);
+/** Keys of these schema containers are property/definition names, never JSON Schema keywords. */
+const SCHEMA_MAP_FIELDS = new Set(["$defs", "definitions", "dependentSchemas", "patternProperties", "properties"]);
 const MESSAGE_METADATA_FIELDS = new Set([
 	"api", "callId", "call_id", "detail", "file_id", "finishReason", "finish_reason",
 	"format", "id", "item_id", "kind", "media_type", "mimeType", "mime_type", "model",
 	"name", "object", "provider", "recipient", "response_id", "role", "signature",
-	"status", "thoughtSignature", "toolCallId", "toolName", "toolUseId", "tool_call_id", "tool_name", "tool_use_id",
+	"status", "textSignature", "thinkingSignature", "thoughtSignature",
+	"toolCallId", "toolName", "toolUseId", "tool_call_id", "tool_name", "tool_use_id",
 	"type", "uri", "url", "version",
 ]);
 const IMAGE_METADATA_FIELDS = new Set([
@@ -100,9 +105,15 @@ const CONTENT_BLOCK_TYPES = new Set([
 
 function childScope(scope: RedactionScope, key: string, parent: object): RedactionScope {
 	if (scope === "data") return "data";
+	// A named property/definition is a schema even when its name happens to
+	// equal a keyword such as "description" or "examples".
+	if (scope === "schemaMap") return "schema";
 	// Schema constraints (including enum/required/default/pattern/type) are
-	// protocol, not prose. Descriptions and examples can contain real PII.
-	if (scope === "schema") return key === "description" || key === "examples" ? "data" : "schema";
+	// protocol, not prose. Only actual keyword descriptions/examples are data.
+	if (scope === "schema") {
+		if (SCHEMA_MAP_FIELDS.has(key)) return "schemaMap";
+		return key === "description" || key === "examples" ? "data" : "schema";
+	}
 	if (DATA_FIELDS.has(key)) return "data";
 	if (SCHEMA_FIELDS.has(key)) return "schema";
 	// The same "input" key means a message array at the request root and
@@ -113,6 +124,20 @@ function childScope(scope: RedactionScope, key: string, parent: object): Redacti
 	if (scope === "messages" && key === "response" && "name" in parent) return "data";
 	if (scope === "provider") return PROVIDER_TEXT_FIELDS.has(key) ? "messages" : "provider";
 	return "messages";
+}
+
+/**
+ * Provider/native replay signatures authenticate (or identify) the entire
+ * thinking/text block. Scrubbing text while retaining the signature corrupts
+ * replay; preserving it means this example cannot scrub PII inside the block.
+ * Native and Anthropic redacted-thinking blobs are likewise opaque.
+ */
+function opaqueReplayBlock(scope: RedactionScope, source: object): boolean {
+	if (scope !== "messages") return false;
+	const type = Reflect.get(source, "type");
+	if (type === "redactedThinking" || type === "redacted_thinking") return true;
+	if ("thinkingSignature" in source || "textSignature" in source || "thoughtSignature" in source) return true;
+	return type === "thinking" && "signature" in source;
 }
 
 function opaqueImageField(source: object, key: string): boolean {
@@ -131,7 +156,8 @@ function opaqueImageField(source: object, key: string): boolean {
  * Graph-preserving content traversal for context, persisted results and request
  * envelopes. Only content strings are sent to PAW. Protocol IDs, schema
  * constraints, signatures and image data/URLs are never rewritten; arbitrary
- * nested tool arguments and details are still fully traversed.
+ * nested tool arguments and details are still fully traversed. Signed thinking
+ * and opaque redacted/encrypted reasoning cannot be scrubbed by this example.
  *
  * At most eight PAW subprocesses per invocation (not globally across
  * concurrent events). The internal 20s budget fails closed for *content*
@@ -157,7 +183,7 @@ export async function redactTextLeaves(
 	const visit = (value: unknown, target: object, key: string, scope: RedactionScope, typedBlock = false): void => {
 		if (typeof value === "string") {
 			const structural =
-				scope === "provider" || scope === "schema" ||
+				scope === "provider" || scope === "schema" || scope === "schemaMap" ||
 				(scope === "messages" && MESSAGE_METADATA_FIELDS.has(key)) ||
 				(typedBlock && key === "type");
 			if (value.length === 0 || structural) {
@@ -174,6 +200,10 @@ export async function redactTextLeaves(
 			return;
 		}
 		if (value === null || typeof value !== "object") {
+			Reflect.set(target, key, value);
+			return;
+		}
+		if (opaqueReplayBlock(scope, value)) {
 			Reflect.set(target, key, value);
 			return;
 		}
@@ -204,7 +234,9 @@ export async function redactTextLeaves(
 		const type = Reflect.get(source, "type");
 		const typedBlock = CONTENT_BLOCK_TYPES.has(type);
 		for (const [key, child] of Object.entries(source)) {
-			if (opaqueImageField(source, key)) {
+			// OpenAI Responses reasoning.encrypted_content and image payloads
+			// are opaque wire bytes, not user-visible text or NER input.
+			if ((scope !== "data" && key === "encrypted_content") || opaqueImageField(source, key)) {
 				Reflect.set(target, key, child);
 				continue;
 			}

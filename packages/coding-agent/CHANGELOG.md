@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- The example PII redactor now protects provider IDs, tool signatures, schema constraints and opaque image references while scrubbing request text, serialized arguments and persisted details; runner-level handler timeouts remain non-fail-closed ([#10829](https://github.com/can1357/oh-my-pi/pull/10829)).
+- The example PII redactor now preserves provider IDs, valid nested schemas, opaque images and signed/encrypted/redacted reasoning replay while scrubbing visible text, schema prose, arguments and persisted details; opaque replay and runner timeouts remain privacy gaps ([#10829](https://github.com/can1357/oh-my-pi/pull/10829)).
 
 - Fixed the example PII redactor interpreting replacement tokens in configured placeholders and converting binary/provider-native payload values into plain objects ([#10829](https://github.com/can1357/oh-my-pi/pull/10829), by [@kvnloo](https://github.com/kvnloo)).
 

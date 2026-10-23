@@ -1,7 +1,8 @@
 /**
  * Behavioral coverage for the pii-redact example extension.
  * Proves error-result scrubbing, multimodal block order, PAW fail-open
- * fallback, provider metadata/image preservation, and runner timeout limits.
+ * fallback, schema property-name scope, opaque signed/encrypted replay,
+ * provider metadata/image preservation, and runner timeout limits.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import * as fs from "node:fs";
@@ -199,6 +200,159 @@ describe("pii-redact example extension events", () => {
 		expect(result.errors).toEqual([]);
 		const sessionManager = SessionManager.inMemory();
 		return new ExtensionRunner(result.extensions, result.runtime, tempDir.path(), sessionManager, modelRegistry);
+	}
+
+
+	function makeReplayFixtures() {
+		const nativeThinking = {
+			type: "thinking", thinking: "native signed Ada Lovelace", thinkingSignature: "native sig Ada Lovelace",
+		};
+		const nativeText = {
+			type: "text", text: "native signed text Ada Lovelace", textSignature: '{"v":1,"id":"text Ada Lovelace"}',
+		};
+		const nativeRedacted = { type: "redactedThinking", data: "native redacted Ada Lovelace bytes" };
+		const anthropicThinking = {
+			type: "thinking", thinking: "anthropic signed Ada Lovelace", signature: "anthropic sig Ada Lovelace",
+		};
+		const anthropicRedacted = { type: "redacted_thinking", data: "anthropic redacted Ada Lovelace bytes" };
+		const reasoning = {
+			type: "reasoning", encrypted_content: "responses encrypted Ada Lovelace bytes",
+			summary: [{ type: "summary_text", text: "Ada Lovelace" }],
+		};
+		const nativeMessages = [{ role: "assistant", content: [
+			nativeThinking, nativeText, nativeRedacted,
+			{ type: "text", text: "Ada Lovelace" },
+			{ type: "text", text: "later Ada Lovelace" },
+		], timestamp: 1 } as never];
+		const provider = {
+			messages: [{ role: "assistant", content: [
+				anthropicThinking, anthropicRedacted,
+				{ type: "text", text: "Ada Lovelace" },
+				{ type: "text", text: "later Ada Lovelace" },
+			] }],
+			input: [reasoning, { type: "message", role: "user", content: [{ type: "input_text", text: "Ada Lovelace" }] }],
+		};
+		return { nativeThinking, nativeText, nativeRedacted, anthropicThinking, anthropicRedacted, reasoning, nativeMessages, provider };
+	}
+
+	async function assertReplayProtection(runner: ExtensionRunner, inspected: string[]) {
+		const f = makeReplayFixtures();
+		const context = await runner.emitContext(f.nativeMessages);
+		const blocks = (context[0] as { content: unknown[] }).content;
+		expect(blocks[0]).toBe(f.nativeThinking);
+		expect(blocks[1]).toBe(f.nativeText);
+		expect(blocks[2]).toBe(f.nativeRedacted);
+		expect(blocks[3]).toEqual({ type: "text", text: PLACEHOLDER });
+		expect(blocks[4]).toEqual({ type: "text", text: PLACEHOLDER });
+
+		const result = (await runner.emitBeforeProviderRequest(f.provider)) as typeof f.provider;
+		expect(result.messages[0]?.content[0]).toBe(f.anthropicThinking);
+		expect(result.messages[0]?.content[1]).toBe(f.anthropicRedacted);
+		expect(result.messages[0]?.content[2]).toEqual({ type: "text", text: PLACEHOLDER });
+		expect(result.messages[0]?.content[3]).toEqual({ type: "text", text: PLACEHOLDER });
+		expect(result.input[0]).toMatchObject({
+			type: "reasoning", encrypted_content: f.reasoning.encrypted_content,
+			summary: [{ type: "summary_text", text: PLACEHOLDER }],
+		});
+		expect(result.input[1]).toMatchObject({
+			type: "message", role: "user", content: [{ type: "input_text", text: PLACEHOLDER }],
+		});
+		for (const opaque of [
+			f.nativeThinking.thinking, f.nativeThinking.thinkingSignature,
+			f.nativeText.text, f.nativeText.textSignature, f.nativeRedacted.data,
+			f.anthropicThinking.thinking, f.anthropicThinking.signature,
+			f.anthropicRedacted.data, f.reasoning.encrypted_content,
+		]) {
+			expect(inspected).not.toContain(opaque);
+		}
+		expect(inspected).toContain("Ada Lovelace");
+		expect(f.nativeThinking.thinking).toBe("native signed Ada Lovelace");
+		expect(f.reasoning.encrypted_content).toBe("responses encrypted Ada Lovelace bytes");
+	}
+
+	function makeSchemaPayload() {
+		return {
+			messages: [{ role: "user", content: "Ada Lovelace" }],
+			tools: [{ type: "function", name: "lookup", description: "Ada Lovelace", parameters: {
+				type: "object",
+				description: "Ada Lovelace",
+				examples: ["Ada Lovelace"],
+				properties: {
+					description: {
+						type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
+						description: "Ada Lovelace",
+					},
+					examples: {
+						type: "array", items: { type: "string" },
+						examples: ["Ada Lovelace"], description: "Ada Lovelace",
+					},
+				},
+				patternProperties: {
+					description: { type: "string", enum: ["Ada Lovelace"], description: "Ada Lovelace" },
+					examples: { type: "string", default: "Ada Lovelace", description: "Ada Lovelace" },
+				},
+				$defs: {
+					examples: {
+						type: "object", required: ["description"], description: "Ada Lovelace",
+						properties: { description: {
+							type: "string", default: "Ada Lovelace", description: "Ada Lovelace",
+						} },
+					},
+				},
+				additionalProperties: {
+					type: "string", enum: ["Ada Lovelace"], description: "Ada Lovelace",
+				},
+				required: ["description"],
+				default: { description: "Ada Lovelace" },
+			} }],
+			toolCalls: [{ arguments: { description: "Ada Lovelace details", details: { examples: "Ada Lovelace details" } } }],
+		};
+	}
+
+	async function assertSchemaProtection(runner: ExtensionRunner) {
+		const payload = makeSchemaPayload();
+		const result = (await runner.emitBeforeProviderRequest(payload)) as typeof payload;
+		const schema = result.tools[0]!.parameters;
+		expect(result.messages[0]?.content).toBe(PLACEHOLDER);
+		expect(result.tools[0]?.description).toBe(PLACEHOLDER);
+		expect(schema.type).toBe("object");
+		expect(schema.description).toBe(PLACEHOLDER);
+		expect(schema.examples).toEqual([PLACEHOLDER]);
+		expect(schema.properties.description).toEqual({
+			type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
+			description: PLACEHOLDER,
+		});
+		expect(schema.properties.examples).toEqual({
+			type: "array", items: { type: "string" },
+			examples: [PLACEHOLDER], description: PLACEHOLDER,
+		});
+		expect(schema.patternProperties).toEqual({
+			description: { type: "string", enum: ["Ada Lovelace"], description: PLACEHOLDER },
+			examples: { type: "string", default: "Ada Lovelace", description: PLACEHOLDER },
+		});
+		expect(schema.$defs.examples).toEqual({
+			type: "object", required: ["description"], description: PLACEHOLDER,
+			properties: { description: { type: "string", default: "Ada Lovelace", description: PLACEHOLDER } },
+		});
+		expect(schema.additionalProperties).toEqual({
+			type: "string", enum: ["Ada Lovelace"], description: PLACEHOLDER,
+		});
+		expect(schema.required).toEqual(["description"]);
+		expect(schema.default).toEqual({ description: "Ada Lovelace" });
+		expect(result.toolCalls[0]?.arguments).toEqual({
+			description: PLACEHOLDER, details: { examples: PLACEHOLDER },
+		});
+		expect(payload.tools[0]?.parameters.properties.description.type).toBe("string");
+		expect(payload.tools[0]?.parameters.properties.examples.examples).toEqual(["Ada Lovelace"]);
+
+		const tool = await runner.emitToolResult({
+			type: "tool_result", toolName: "lookup", toolCallId: "schema-redaction",
+			input: {}, content: [{ type: "text", text: "Ada Lovelace" }],
+			details: { description: "Ada Lovelace details", examples: ["Ada Lovelace details"] },
+			isError: false,
+		});
+		expect(tool?.content).toEqual([{ type: "text", text: PLACEHOLDER }]);
+		expect(tool?.details).toEqual({ description: PLACEHOLDER, examples: [PLACEHOLDER] });
 	}
 
 	it("scrubs failed tool_result content", async () => {
@@ -404,7 +558,7 @@ describe("pii-redact example extension events", () => {
 				{ role: "user", content: [
 					{ type: "text", text: "Ada Lovelace" },
 					{ type: "image", source: anthropicSource },
-					{ type: "thinking", thinking: "Ada Lovelace", signature: "sig_Ada Lovelace_opaque" },
+					{ type: "thinking", thinking: "signed Anthropic Ada Lovelace thinking", signature: "sig_Ada Lovelace_opaque" },
 				] },
 				{ role: "assistant", content: [{
 					type: "tool_use", id: toolUseId, name: "lookup_Ada Lovelace",
@@ -420,7 +574,10 @@ describe("pii-redact example extension events", () => {
 		};
 		expect(a.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
 		expect(a.messages[0]?.content[1]?.source).toBe(anthropicSource);
-		expect(a.messages[0]?.content[2]?.thinking).toBe(PLACEHOLDER);
+		// Anthropic validates the signature against these exact thinking bytes.
+		// Do not scrub the text and replay its original signature.
+		expect(a.messages[0]?.content[2]).toBe(anthropic.messages[0]?.content[2]);
+		expect(a.messages[0]?.content[2]?.thinking).toBe("signed Anthropic Ada Lovelace thinking");
 		expect(a.messages[0]?.content[2]?.signature).toBe("sig_Ada Lovelace_opaque");
 		expect(a.messages[1]?.content[0]?.id).toBe(toolUseId);
 		expect(a.messages[1]?.content[0]?.name).toBe("lookup_Ada Lovelace");
@@ -463,11 +620,68 @@ describe("pii-redact example extension events", () => {
 		expect(c.messages[0]?.content[1]?.image_url).toBe(imageUrl);
 		for (const opaque of [
 			anthropicSource.data, "sig_Ada Lovelace_opaque", toolUseId, inlineData.data, imageUrl.url,
-			"model_Ada Lovelace",
+			"model_Ada Lovelace", "signed Anthropic Ada Lovelace thinking",
 		]) {
 			expect(inspected).not.toContain(opaque);
 		}
 		expect(inspected).toContain("Ada Lovelace");
+	});
+
+
+	it("keeps native, Anthropic and Responses replay bytes intact under killed detectors", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const inspected: string[] = [];
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args) => {
+			inspected.push(args[args.length - 1] ?? "");
+			return { code: 1, stdout: "", stderr: "", killed: true };
+		});
+		const runner = await loadExampleRunner();
+		await assertReplayProtection(runner, inspected);
+	});
+
+	it("keeps signed, encrypted and redacted replay intact when the detector work budget expires", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const inspected: string[] = [];
+		const realNow = performance.now.bind(performance);
+		let offset = 0;
+		vi.spyOn(performance, "now").mockImplementation(() => realNow() + offset);
+		let calls = 0;
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args) => {
+			calls++;
+			const text = args[args.length - 1] ?? "";
+			inspected.push(text);
+			offset += 25_000;
+			return { code: 0, stdout: text.replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+		});
+		const runner = await loadExampleRunner();
+		await assertReplayProtection(runner, inspected);
+		expect(calls).toBe(2); // One detector call per event; later distinct text must use the budget fallback.
+	});
+
+	it("keeps schema property and definition names in schema scope after detector kill", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async () => ({
+			code: 1, stdout: "", stderr: "", killed: true,
+		}));
+		const runner = await loadExampleRunner();
+		await assertSchemaProtection(runner);
+	});
+
+	it("keeps nested schemas valid after the detector budget expires", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const realNow = performance.now.bind(performance);
+		let offset = 0;
+		vi.spyOn(performance, "now").mockImplementation(() => realNow() + offset);
+		let calls = 0;
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args) => {
+			calls++;
+			const text = args[args.length - 1] ?? "";
+			offset += 25_000;
+			return { code: 0, stdout: text.replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+		});
+		const runner = await loadExampleRunner();
+		await assertSchemaProtection(runner);
+		expect(calls).toBe(2); // Provider event and tool-result event each reach their internal budget.
 	});
 
 	it("treats nested result detail id/type fields as private data, not provider metadata", async () => {
