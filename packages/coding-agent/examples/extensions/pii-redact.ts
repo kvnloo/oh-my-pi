@@ -28,6 +28,10 @@ const SSN = /\b\d{3}-\d{2}-\d{4}\b/g;
 
 /** Keep PAW well under the extension handler timeout (30s). */
 const PAW_TIMEOUT_MS = 5_000;
+/** Reserve ten seconds for traversal, other handlers, and runner cleanup. */
+const PAW_EVENT_BUDGET_MS = 20_000;
+/** PAW's CLI accepts one --text; bound parallel single-text calls, not invented batch flags. */
+const PAW_MAX_CONCURRENCY = 8;
 
 export function regexRedact(text: string, placeholder: string): string {
 	const replacement = () => placeholder;
@@ -39,103 +43,132 @@ export function buildPawArgs(text: string, placeholder: string): string[] {
 	return ["--placeholder", placeholder, "redact", "--text", text];
 }
 
+interface TextDestination {
+	target: object;
+	key: string;
+}
+
+interface TextTask {
+	text: string;
+	destinations: TextDestination[];
+}
+
 /**
- * Preserve multimodal block order: redact each text block in place without
- * joining/moving content across non-text parts.
+ * One graph-preserving async mapper for context, persisted tool results, and
+ * structured provider requests. Every string leaf passes through the same
+ * configured detector. No joining of independent content or unsupported CLI
+ * batching; repeated text is detected once per event.
  */
-export function mapTextBlocks(content: unknown, redact: (text: string) => string): unknown {
-	if (typeof content === "string") return redact(content);
-	if (!Array.isArray(content)) return content;
-	return content.map(part => {
-		if (part && typeof part === "object" && "type" in part && part.type === "text" && "text" in part) {
-			if (typeof part.text === "string") {
-				return { ...part, text: redact(part.text) };
+export async function redactTextLeaves(
+	pi: ExtensionAPI,
+	input: unknown,
+	placeholder: string,
+	signal?: AbortSignal,
+): Promise<unknown> {
+	const root: { value?: unknown } = {};
+	const seen = new WeakMap<object, object>();
+	const queue: Array<{ source: object; target: object }> = [];
+	const tasks: TextTask[] = [];
+	const byText = new Map<string, TextTask>();
+
+	const visit = (value: unknown, target: object, key: string): void => {
+		if (typeof value === "string") {
+			if (value.length === 0) {
+				Reflect.set(target, key, value);
+				return;
 			}
+			let task = byText.get(value);
+			if (!task) {
+				task = { text: value, destinations: [] };
+				byText.set(value, task);
+				tasks.push(task);
+			}
+			task.destinations.push({ target, key });
+			return;
 		}
-		return part;
-	});
+		if (value === null || typeof value !== "object") {
+			Reflect.set(target, key, value);
+			return;
+		}
+		const prototype = Object.getPrototypeOf(value);
+		if (!Array.isArray(value) && prototype !== Object.prototype && prototype !== null) {
+			// Typed arrays, buffers, dates, provider-native objects and their
+			// internal state must keep their original identity and wire type.
+			Reflect.set(target, key, value);
+			return;
+		}
+		const prior = seen.get(value);
+		if (prior) {
+			Reflect.set(target, key, prior);
+			return;
+		}
+		const copy: object = Array.isArray(value) ? new Array(value.length) : Object.create(prototype);
+		seen.set(value, copy);
+		Reflect.set(target, key, copy);
+		queue.push({ source: value, target: copy });
+	};
+
+	visit(input, root, "value");
+	for (let index = 0; index < queue.length; index++) {
+		const { source, target } = queue[index]!;
+		const kind = "type" in source ? Reflect.get(source, "type") : undefined;
+		for (const [key, child] of Object.entries(source)) {
+			// Image bytes are opaque even when carried as a base64 string.
+			if (key === "data" && (kind === "image" || kind === "input_image")) {
+				Reflect.set(target, key, child);
+				continue;
+			}
+			visit(child, target, key);
+		}
+	}
+
+	const deadline = performance.now() + PAW_EVENT_BUDGET_MS;
+	const configured = Boolean(process.env.PAW_PII_CMD);
+	let cursor = 0;
+	const worker = async (): Promise<void> => {
+		while (cursor < tasks.length) {
+			const task = tasks[cursor++]!;
+			const remaining = Math.floor(deadline - performance.now());
+			// After the bounded detector budget, scrub the *entire* remaining
+			// leaf: a regex-only result could leak configured NER-only names.
+			const redacted =
+				signal?.aborted || (configured && remaining < 100)
+					? placeholder
+					: await redactText(pi, task.text, placeholder, signal, Math.min(PAW_TIMEOUT_MS, Math.max(1, remaining)));
+			for (const { target, key } of task.destinations) Reflect.set(target, key, redacted);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(PAW_MAX_CONCURRENCY, tasks.length) }, () => worker()));
+	return root.value;
 }
 
-/** Shape-preserving walk of provider request objects; redacts every string leaf. */
-export function redactStructuredPayload(value: unknown, placeholder: string, seen = new WeakMap<object, unknown>()): unknown {
-	if (typeof value === "string") return regexRedact(value, placeholder);
-	if (value == null || typeof value !== "object") return value;
-	// Binary fields and provider-native instances must retain their wire types.
-	const prototype = Object.getPrototypeOf(value);
-	if (!Array.isArray(value) && prototype !== Object.prototype && prototype !== null) return value;
-	// Returning the original on a repeated reference would revive unredacted
-	// PII in the second alias; cache the redacted clone before walking children.
-	if (seen.has(value)) return seen.get(value);
-	if (Array.isArray(value)) {
-		const out: unknown[] = new Array(value.length);
-		seen.set(value, out);
-		value.forEach((item, index) => {
-			out[index] = redactStructuredPayload(item, placeholder, seen);
-		});
-		return out;
-	}
-	const out: Record<string, unknown> = {};
-	seen.set(value, out);
-	for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
-		out[key] = redactStructuredPayload(child, placeholder, seen);
-	}
-	return out;
-}
-
-export async function redactText(pi: ExtensionAPI, text: string, placeholder: string): Promise<string> {
+export async function redactText(
+	pi: ExtensionAPI,
+	text: string,
+	placeholder: string,
+	signal?: AbortSignal,
+	timeoutMs = PAW_TIMEOUT_MS,
+): Promise<string> {
 	const cmd = process.env.PAW_PII_CMD;
 	if (!cmd) return regexRedact(text, placeholder);
+	if (signal?.aborted) return placeholder;
 	try {
-		const result = await pi.exec(cmd, buildPawArgs(text, placeholder), { timeout: PAW_TIMEOUT_MS });
-		if (result.code === 0 && result.stdout) {
-			return result.stdout.replace(/\n$/, "");
-		}
-		// Do not log stderr/stdout — detectors may echo the protected input.
+		const result = await pi.exec(cmd, buildPawArgs(text, placeholder), { signal, timeout: timeoutMs });
+		// A killed or cancelled NER invocation cannot certify names: fail
+		// closed instead of sending its unexamined original back to the model.
+		if (signal?.aborted || result.killed) return placeholder;
+		if (result.code === 0 && result.stdout) return result.stdout.replace(/\r?\n$/, "");
+		// Never log stdout/stderr or input, including when the CLI echoes it.
 		pi.logger?.warn?.("PAW_PII_CMD failed; falling back to regex", {
 			code: result.code,
 			killed: result.killed,
 		});
 	} catch {
+		if (signal?.aborted) return placeholder;
 		pi.logger?.warn?.("PAW_PII_CMD failed to spawn; falling back to regex");
 	}
+	// Retain the example's documented zero-dependency fallback on CLI errors.
 	return regexRedact(text, placeholder);
-}
-
-async function redactToolResultContent(
-	pi: ExtensionAPI,
-	content: ToolResultContent,
-	placeholder: string,
-): Promise<ToolResultContent> {
-	const next: ToolResultContent = [];
-	for (const part of content) {
-		if (part && typeof part === "object" && part.type === "text" && typeof part.text === "string") {
-			next.push({ ...part, text: await redactText(pi, part.text, placeholder) });
-			continue;
-		}
-		next.push(part);
-	}
-	return next;
-}
-
-async function redactMessageContent(pi: ExtensionAPI, content: unknown, placeholder: string): Promise<unknown> {
-	if (typeof content === "string") {
-		return await redactText(pi, content, placeholder);
-	}
-	if (!Array.isArray(content)) return content;
-	const next: unknown[] = [];
-	for (const part of content) {
-		if (part && typeof part === "object" && "type" in part && part.type === "text" && "text" in part) {
-			if (typeof (part as { text?: unknown }).text === "string") {
-				next.push({
-					...(part as object),
-					text: await redactText(pi, (part as { text: string }).text, placeholder),
-				});
-				continue;
-			}
-		}
-		next.push(part);
-	}
-	return next;
 }
 
 export default function piiRedactExtension(pi: ExtensionAPI) {
@@ -151,42 +184,27 @@ export default function piiRedactExtension(pi: ExtensionAPI) {
 		},
 	});
 
-	pi.on("tool_result", async event => {
+	pi.on("tool_result", async (event, ctx) => {
 		if (!enabled) return;
-		// Error results are model-visible and persisted; scrub them too.
-		const redacted = await redactToolResultContent(pi, event.content, placeholder);
-		// Details are persisted alongside tool content; scrub their string
-		// leaves without converting binary or provider-native values.
-		const details = redactStructuredPayload(event.details, placeholder);
-		return { content: redacted, details };
+		// One work budget covers both model-visible blocks AND persisted details.
+		// Failure results are just as sensitive as successes.
+		const redacted = (await redactTextLeaves(
+			pi,
+			{ content: event.content, details: event.details },
+			placeholder,
+			ctx.signal,
+		)) as { content: ToolResultContent; details: unknown };
+		return redacted;
 	});
 
-	pi.on("context", async event => {
+	pi.on("context", async (event, ctx) => {
 		if (!enabled || !Array.isArray(event.messages)) return;
-		const messages = [];
-		for (const message of event.messages) {
-			if (!message || typeof message !== "object") {
-				messages.push(message);
-				continue;
-			}
-			if (!("content" in message)) {
-				messages.push(message);
-				continue;
-			}
-			const content = await redactMessageContent(pi, (message as { content?: unknown }).content, placeholder);
-			messages.push({ ...message, content } as typeof message);
-		}
+		const messages = (await redactTextLeaves(pi, event.messages, placeholder, ctx.signal)) as typeof event.messages;
 		return { messages };
 	});
 
-	pi.on("before_provider_request", async event => {
+	pi.on("before_provider_request", async (event, ctx) => {
 		if (!enabled || event.payload == null) return;
-		if (typeof event.payload === "string") {
-			return await redactText(pi, event.payload, placeholder);
-		}
-		if (typeof event.payload === "object") {
-			return redactStructuredPayload(event.payload, placeholder);
-		}
-		return undefined;
+		return await redactTextLeaves(pi, event.payload, placeholder, ctx.signal);
 	});
 }

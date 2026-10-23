@@ -3,20 +3,20 @@
  * Proves error-result scrubbing, multimodal block order, PAW fail-open
  * fallback, and structured provider payload redaction.
  */
-import { afterEach, describe, expect, it, vi } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { ModelRegistry } from "@oh-my-pi/pi-coding-agent/config/model-registry";
 import { loadExtensions } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/loader";
-import { ExtensionRunner } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/runner";
+import { ExtensionRunner, testSetExtensionHandlerTimeoutMs } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/runner";
+import * as execUtils from "@oh-my-pi/pi-coding-agent/exec/exec";
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/types";
 import { AuthStorage } from "@oh-my-pi/pi-coding-agent/session/auth-storage";
 import { SessionManager } from "@oh-my-pi/pi-coding-agent/session/session-manager";
 import { TempDir } from "@oh-my-pi/pi-utils";
 import piiRedactExtension, {
 	buildPawArgs,
-	mapTextBlocks,
-	redactStructuredPayload,
+	redactTextLeaves,
 	redactText,
 	regexRedact,
 } from "../examples/extensions/pii-redact";
@@ -42,13 +42,13 @@ describe("pii-redact example helpers", () => {
 		}
 	});
 
-	it("mapTextBlocks preserves multimodal block order", () => {
+	it("shared async traversal preserves multimodal block order", async () => {
 		const content = [
 			{ type: "text", text: "before a@b.co" },
 			{ type: "image", url: "img://1" },
 			{ type: "text", text: "after 555-123-4567" },
 		];
-		const mapped = mapTextBlocks(content, text => regexRedact(text, PLACEHOLDER)) as Array<Record<string, unknown>>;
+		const mapped = (await redactTextLeaves({} as ExtensionAPI, content, PLACEHOLDER)) as Array<Record<string, unknown>>;
 		expect(mapped).toEqual([
 			{ type: "text", text: `before ${PLACEHOLDER}` },
 			{ type: "image", url: "img://1" },
@@ -56,26 +56,26 @@ describe("pii-redact example helpers", () => {
 		]);
 	});
 
-	it("redactStructuredPayload walks provider request objects", () => {
+	it("redactStructuredPayload walks provider request objects", async () => {
 		const payload = {
 			model: "gpt",
 			input: [{ role: "user", content: "reach me at secret@example.com" }],
 			tools: [{ name: "bash", arguments: { cmd: "echo 123-45-6789" } }],
 		};
-		expect(redactStructuredPayload(payload, PLACEHOLDER)).toEqual({
+		expect(await redactTextLeaves({} as ExtensionAPI, payload, PLACEHOLDER)).toEqual({
 			model: "gpt",
 			input: [{ role: "user", content: `reach me at ${PLACEHOLDER}` }],
 			tools: [{ name: "bash", arguments: { cmd: `echo ${PLACEHOLDER}` } }],
 		});
 	});
 
-	it("preserves binary and non-plain provider values without copying them", () => {
+	it("preserves binary and non-plain provider values without copying them", async () => {
 		const bytes = new Uint8Array([1, 2, 3]);
 		const buffer = new ArrayBuffer(4);
 		const view = new DataView(buffer);
 		const date = new Date(0);
 		const payload = { bytes, buffer, view, date, nested: [{ text: "a@b.co" }] };
-		const redacted = redactStructuredPayload(payload, PLACEHOLDER) as typeof payload;
+		const redacted = (await redactTextLeaves({} as ExtensionAPI, payload, PLACEHOLDER)) as typeof payload;
 		expect(redacted.bytes).toBe(bytes);
 		expect(redacted.buffer).toBe(buffer);
 		expect(redacted.view).toBe(view);
@@ -84,11 +84,11 @@ describe("pii-redact example helpers", () => {
 		expect(payload.nested).toEqual([{ text: "a@b.co" }]);
 	});
 
-	it("does not return plaintext on repeated references or cycles", () => {
+	it("does not return plaintext on repeated references or cycles", async () => {
 		const shared = { email: "secret@example.com", note: "555-123-4567" };
 		const original: Record<string, unknown> = { first: shared, second: shared };
 		original.self = original;
-		const result = redactStructuredPayload(original, PLACEHOLDER) as {
+		const result = (await redactTextLeaves({} as ExtensionAPI, original, PLACEHOLDER)) as {
 			first: typeof shared;
 			second: typeof shared;
 			self: unknown;
@@ -100,11 +100,11 @@ describe("pii-redact example helpers", () => {
 		expect(shared.email).toBe("secret@example.com");
 	});
 
-	it("keeps sparse arrays sparse and provider binary data unchanged", () => {
+	it("keeps sparse arrays sparse and provider binary data unchanged", async () => {
 		const sparse = new Array(3);
 		sparse[1] = { text: "a@b.co" };
 		const bytes = new Uint8Array([4, 7]);
-		const result = redactStructuredPayload({ sparse, bytes }, PLACEHOLDER) as {
+		const result = (await redactTextLeaves({} as ExtensionAPI, { sparse, bytes }, PLACEHOLDER)) as {
 			sparse: typeof sparse;
 			bytes: Uint8Array;
 		};
@@ -115,9 +115,9 @@ describe("pii-redact example helpers", () => {
 		expect(result.bytes).toBe(bytes);
 	});
 
-	it("continues walking null-prototype JSON records", () => {
+	it("continues walking null-prototype JSON records", async () => {
 		const record = Object.assign(Object.create(null), { email: "a@b.co" });
-		expect(redactStructuredPayload({ record }, PLACEHOLDER)).toEqual({ record: { email: PLACEHOLDER } });
+		expect(await redactTextLeaves({} as ExtensionAPI, { record }, PLACEHOLDER)).toEqual({ record: { email: PLACEHOLDER } });
 	});
 
 	it("redactText falls back to regex when PAW exec throws", async () => {
@@ -170,10 +170,20 @@ describe("pii-redact example helpers", () => {
 
 describe("pii-redact example extension events", () => {
 	let tempDir: TempDir;
+	let oldPawCommand: string | undefined;
 	let authStorage: AuthStorage;
 	let modelRegistry: ModelRegistry;
 
+	beforeEach(() => {
+		oldPawCommand = process.env.PAW_PII_CMD;
+		delete process.env.PAW_PII_CMD;
+	});
+
 	afterEach(() => {
+		if (oldPawCommand === undefined) delete process.env.PAW_PII_CMD;
+		else process.env.PAW_PII_CMD = oldPawCommand;
+		vi.restoreAllMocks();
+		testSetExtensionHandlerTimeoutMs(30_000);
 		authStorage?.close();
 		tempDir?.removeSync();
 		delete process.env.PAW_PII_DISABLE;
@@ -270,6 +280,138 @@ describe("pii-redact example extension events", () => {
 		})) as { conversationState: { rootPromptMessagesJson: Uint8Array }; system: string };
 		expect(payload.conversationState.rootPromptMessagesJson).toBe(bytes);
 		expect(payload.system).toBe(`contact ${PLACEHOLDER}`);
+	});
+
+
+	it("applies configured NER to structured-only provider fields", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const calls: string[] = [];
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args, _cwd, options) => {
+			const input = args[args.length - 1] ?? "";
+			calls.push(input);
+			expect(options?.signal).toBeDefined();
+			return { code: 0, stdout: input.replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+		});
+		const runner = await loadExampleRunner();
+		const bytes = new Uint8Array([12, 34]);
+		const payload = {
+			system: "Ada Lovelace",
+			tools: [{ description: "Ask Ada Lovelace", parameters: { properties: { note: { description: "Ada Lovelace" } } } }],
+			toolCalls: [{ arguments: { recipient: "Ada Lovelace" } }],
+			native: { bytes },
+		};
+		const transformed = (await runner.emitBeforeProviderRequest(payload)) as typeof payload;
+		expect(transformed.system).toBe(PLACEHOLDER);
+		expect(transformed.tools[0]?.description).toBe("Ask [PII]");
+		expect(transformed.tools[0]?.parameters.properties.note.description).toBe(PLACEHOLDER);
+		expect(transformed.toolCalls[0]?.arguments.recipient).toBe(PLACEHOLDER);
+		expect(transformed.native.bytes).toBe(bytes);
+		expect(calls).toContain("Ada Lovelace");
+		expect(payload.system).toBe("Ada Lovelace");
+	});
+
+	it("applies configured NER to persisted details and text blocks", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args, _cwd, options) => {
+			expect(options?.signal).toBeDefined();
+			const input = args[args.length - 1] ?? "";
+			return { code: 0, stdout: input.replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+		});
+		const runner = await loadExampleRunner();
+		const image = { type: "image" as const, mimeType: "image/png", data: "binary_data" };
+		const replaced = await runner.emitToolResult({
+			type: "tool_result",
+			toolName: "ask",
+			toolCallId: "ask-ner",
+			input: {},
+			content: [
+				{ type: "text", text: "Ada Lovelace" },
+				image,
+				{ type: "text", text: "For Ada Lovelace" },
+			],
+			details: { results: [{ customInput: "Ada Lovelace", note: "Hi Ada Lovelace" }] },
+			isError: true,
+		});
+		expect(replaced?.content).toEqual([
+			{ type: "text", text: PLACEHOLDER },
+			image,
+			{ type: "text", text: "For [PII]" },
+		]);
+		expect(replaced?.details).toEqual({ results: [{ customInput: PLACEHOLDER, note: "Hi [PII]" }] });
+		const context = await runner.emitContext([
+			{ role: "user", content: [{ type: "text", text: "Ada Lovelace" }, image], timestamp: 1 } as never,
+		]);
+		expect((context[0] as { content: Array<{ text?: string; data?: string }> }).content[0]?.text).toBe(PLACEHOLDER);
+		expect((context[0] as { content: Array<{ text?: string; data?: string }> }).content[1]?.data).toBe("binary_data");
+	});
+
+	it("bounds many PAW calls concurrently without rearranging the transcript", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		let inflight = 0;
+		let peak = 0;
+		let calls = 0;
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args, _cwd, options) => {
+			expect(options?.signal).toBeDefined();
+			inflight++;
+			peak = Math.max(peak, inflight);
+			calls++;
+			await Bun.sleep(10);
+			inflight--;
+			return { code: 0, stdout: (args[args.length - 1] ?? "").replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+		});
+		const runner = await loadExampleRunner();
+		const blocks = Array.from({ length: 72 }, (_, index) => ({
+			type: "text" as const,
+			text: "block " + index + ": Ada Lovelace",
+		}));
+		const original = [{ role: "user", content: blocks, timestamp: 1 } as never];
+		const messages = await runner.emitContext(original);
+		const mapped = (messages[0] as { content: typeof blocks }).content;
+		expect(mapped.map(block => block.text)).toEqual(blocks.map(block => block.text.replace("Ada Lovelace", PLACEHOLDER)));
+		expect(blocks[71]?.text).toContain("Ada Lovelace");
+		expect(calls).toBeGreaterThanOrEqual(72);
+		expect(peak).toBeGreaterThan(1);
+		expect(peak).toBeLessThanOrEqual(8);
+	});
+
+	it("cancels outstanding detector processes at the runner handler deadline", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const signals: Array<AbortSignal | undefined> = [];
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, _args, _cwd, options) => {
+			const signal = options?.signal;
+			signals.push(signal);
+			const { promise, resolve } = Promise.withResolvers<void>();
+			if (signal?.aborted) resolve();
+			else signal?.addEventListener("abort", () => resolve(), { once: true });
+			await promise;
+			return { code: 1, stdout: "", stderr: "", killed: true };
+		});
+		const runner = await loadExampleRunner();
+		testSetExtensionHandlerTimeoutMs(30);
+		const original = [{ role: "user", content: Array.from({ length: 40 }, (_, i) => ({ type: "text", text: "Ada Lovelace " + i })), timestamp: 1 } as never];
+		await runner.emitContext(original);
+		expect(signals.length).toBeGreaterThan(0);
+		expect(signals.length).toBeLessThanOrEqual(8);
+		expect(signals.every(signal => signal?.aborted)).toBe(true);
+	});
+
+	it("uses regex fallback on detector failures without a raw subprocess log", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async () => {
+			throw new Error("process unavailable");
+		});
+		const runner = await loadExampleRunner();
+		const result = await runner.emitToolResult({
+			type: "tool_result",
+			toolName: "ask",
+			toolCallId: "ask-fallback",
+			input: {},
+			content: [{ type: "text", text: "email a@b.co" }],
+			details: { note: "SSN 123-45-6789" },
+			isError: true,
+		});
+		expect(result?.content).toEqual([{ type: "text", text: "email [PII]" }]);
+		expect(result?.details).toEqual({ note: "SSN [PII]" });
 	});
 
 	it("registers via default export factory", () => {

@@ -453,6 +453,8 @@ export interface ExtensionModelQuery {
 export type ExtensionMode = "tui" | "rpc" | "json" | "print";
 
 export interface ExtensionContext {
+	/** Cancellation signal for the active event handler (including its 30s deadline). */
+	readonly signal?: AbortSignal;
 	/** UI methods for user interaction */
 	ui: ExtensionUIContext;
 	/** Current run mode. Use `"tui"` to guard terminal-only UI such as custom components. */
