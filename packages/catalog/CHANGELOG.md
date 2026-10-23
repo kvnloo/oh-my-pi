@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Nous Portal models appearing from a different API-key account or configured inference endpoint ([#10455](https://github.com/can1357/oh-my-pi/pull/10455)).
+
 ## [18.3.1] - 2026-09-25
 
 ### Added
