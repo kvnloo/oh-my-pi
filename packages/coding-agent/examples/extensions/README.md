@@ -22,6 +22,7 @@ cp permission-gate.ts ~/.omp/agent/extensions/
 | `protected-paths.ts`     | Blocks writes to protected paths (.env, .git/, node_modules/)                |
 | `confirm-destructive.ts` | Confirms before destructive session actions (clear, switch, branch)          |
 | `dirty-repo-guard.ts`    | Prevents session changes with uncommitted git changes                        |
+| `cognitive-state/`       | Shadow/canary cognitive-state packet on the `context` event (RFC #79)        |
 
 ### Custom Tools
 
