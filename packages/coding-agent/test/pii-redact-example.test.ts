@@ -1,6 +1,6 @@
 /**
  * Behavioral coverage for the pii-redact example extension.
- * Proves error-result scrubbing, multimodal block order, PAW fail-open
+ * Proves error-result scrubbing, multimodal block order, configured PAW failure masking and zero-dependency regex
  * fallback, schema property-name scope, opaque signed/encrypted replay,
  * provider metadata/image preservation, and runner timeout limits.
  */
@@ -170,7 +170,7 @@ describe("pii-redact example helpers", () => {
 			else process.env.PAW_PII_CMD = previous;
 		}
 	});
-	it("redactText falls back to regex when PAW exec throws", async () => {
+	it("masks NER-only PII if configured PAW fails to spawn", async () => {
 		const previous = process.env.PAW_PII_CMD;
 		process.env.PAW_PII_CMD = "missing-paw-binary-that-does-not-exist";
 		const warn = vi.fn();
@@ -181,8 +181,8 @@ describe("pii-redact example helpers", () => {
 			logger: { warn },
 		} as unknown as ExtensionAPI;
 		try {
-			const out = await redactText(pi, "write a@b.co", PLACEHOLDER);
-			expect(out).toBe(`write ${PLACEHOLDER}`);
+			const out = await redactText(pi, "Ada Lovelace wrote to a@b.co", PLACEHOLDER);
+			expect(out).toBe(PLACEHOLDER);
 			expect(warn).toHaveBeenCalled();
 			const first = warn.mock.calls[0]?.[1];
 			expect(first).toBeUndefined();
@@ -192,7 +192,19 @@ describe("pii-redact example helpers", () => {
 		}
 	});
 
-	it("redactText falls back without logging detector stderr", async () => {
+	it("masks a configured detector success with no usable redaction output", async () => {
+		const old = process.env.PAW_PII_CMD;
+		process.env.PAW_PII_CMD = "paw-pii";
+		try {
+			const pi = { exec: async () => ({ code: 0, stdout: "", stderr: "", killed: false }) } as unknown as ExtensionAPI;
+			expect(await redactText(pi, "Ada Lovelace", PLACEHOLDER)).toBe(PLACEHOLDER);
+		} finally {
+			if (old === undefined) delete process.env.PAW_PII_CMD;
+			else process.env.PAW_PII_CMD = old;
+		}
+	});
+
+	it("masks PII after nonzero detector exit without logging stderr", async () => {
 		const previous = process.env.PAW_PII_CMD;
 		process.env.PAW_PII_CMD = "paw-pii";
 		const warn = vi.fn();
@@ -206,8 +218,8 @@ describe("pii-redact example helpers", () => {
 			logger: { warn },
 		} as unknown as ExtensionAPI;
 		try {
-			const out = await redactText(pi, "ssn 123-45-6789", PLACEHOLDER);
-			expect(out).toBe(`ssn ${PLACEHOLDER}`);
+			const out = await redactText(pi, "Ada Lovelace SSN 123-45-6789", PLACEHOLDER);
+			expect(out).toBe(PLACEHOLDER);
 			expect(JSON.stringify(warn.mock.calls)).not.toContain("ECHOED_SECRET");
 			expect(JSON.stringify(warn.mock.calls)).not.toContain("a@b.co");
 			expect(warn.mock.calls[0]?.[1]).toEqual({ code: 2, killed: false });
@@ -883,7 +895,7 @@ describe("pii-redact example extension events", () => {
 		expect(signals.every(signal => signal?.aborted)).toBe(true);
 	});
 
-	it("uses regex fallback on detector failures without a raw subprocess log", async () => {
+	it("masks full persisted text when a configured detector is unavailable", async () => {
 		process.env.PAW_PII_CMD = "mock-paw";
 		vi.spyOn(execUtils, "execCommand").mockImplementation(async () => {
 			throw new Error("process unavailable");
@@ -894,12 +906,12 @@ describe("pii-redact example extension events", () => {
 			toolName: "ask",
 			toolCallId: "ask-fallback",
 			input: {},
-			content: [{ type: "text", text: "email a@b.co" }],
-			details: { note: "SSN 123-45-6789" },
+			content: [{ type: "text", text: "Ada Lovelace email a@b.co" }],
+			details: { note: "Ada Lovelace SSN 123-45-6789" },
 			isError: true,
 		});
-		expect(result?.content).toEqual([{ type: "text", text: "email [PII]" }]);
-		expect(result?.details).toEqual({ note: "SSN [PII]" });
+		expect(result?.content).toEqual([{ type: "text", text: PLACEHOLDER }]);
+		expect(result?.details).toEqual({ note: PLACEHOLDER });
 	});
 
 	it("registers via default export factory", () => {
