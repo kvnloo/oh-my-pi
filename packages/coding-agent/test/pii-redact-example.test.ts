@@ -99,6 +99,37 @@ describe("pii-redact example helpers", () => {
 		expect(shared.email).toBe("secret@example.com");
 	});
 
+	it("isolates shared protocol metadata from redactable message references", async () => {
+		const shared: Record<string, unknown> = {
+			text: "contact secret@example.com",
+			nested: { email: "other@example.com" },
+		};
+		shared.self = shared;
+		for (const metadataFirst of [true, false]) {
+			// Enumerate both orders: the first visitor must not dictate whether
+			// a later reference is scrubbed or kept as protocol metadata.
+			const payload = metadataFirst
+				? { metadata: shared, messages: [{ role: "user", content: shared }], input: [{ role: "user", content: shared }] }
+				: { messages: [{ role: "user", content: shared }], input: [{ role: "user", content: shared }], metadata: shared };
+			const result = (await redactTextLeaves(
+				{} as ExtensionAPI,
+				payload,
+				PLACEHOLDER,
+				undefined,
+				"provider",
+			)) as typeof payload;
+			expect(result.metadata.text).toBe("contact secret@example.com");
+			expect(result.metadata.nested).toEqual({ email: "other@example.com" });
+			expect(result.messages[0]!.content.text).toBe(`contact ${PLACEHOLDER}`);
+			expect(result.messages[0]!.content.nested).toEqual({ email: PLACEHOLDER });
+			expect(result.messages[0]!.content).toBe(result.input[0]!.content);
+			expect(result.messages[0]!.content).not.toBe(result.metadata);
+			expect(result.metadata.self).toBe(result.metadata);
+			expect(result.messages[0]!.content.self).toBe(result.messages[0]!.content);
+		}
+		expect(shared.text).toBe("contact secret@example.com");
+	});
+
 	it("keeps sparse arrays sparse and provider binary data unchanged", async () => {
 		const sparse = new Array(3);
 		sparse[1] = { text: "a@b.co" };

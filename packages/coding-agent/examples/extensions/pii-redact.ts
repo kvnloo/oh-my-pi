@@ -174,7 +174,7 @@ export async function redactTextLeaves(
 ): Promise<unknown> {
 	const deadline = performance.now() + PAW_EVENT_BUDGET_MS;
 	const root: { value?: unknown } = {};
-	const seen = new WeakMap<object, object>();
+	const seen = new WeakMap<object, Map<RedactionScope, object>>();
 	const queue: PendingObject[] = [];
 	const tasks: TextTask[] = [];
 	const byText = new Map<string, TextTask>();
@@ -213,13 +213,18 @@ export async function redactTextLeaves(
 			Reflect.set(target, key, value);
 			return;
 		}
-		const prior = seen.get(value);
+		// A provider object may be reused as opaque metadata and redactable
+		// message content. Reusing one clone across those scopes leaks text
+		// (or corrupts metadata), so preserve aliases only within each scope.
+		const copies = seen.get(value);
+		const prior = copies?.get(scope);
 		if (prior) {
 			Reflect.set(target, key, prior);
 			return;
 		}
 		const copy: object = Array.isArray(value) ? new Array(value.length) : Object.create(prototype);
-		seen.set(value, copy);
+		if (copies) copies.set(scope, copy);
+		else seen.set(value, new Map([[scope, copy]]));
 		Reflect.set(target, key, copy);
 		queue.push({ source: value, target: copy, scope });
 	};
