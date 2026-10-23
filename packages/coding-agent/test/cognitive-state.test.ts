@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "bun:test";
 import {
+	FROZEN_QUESTIONS,
 	PUBLIC_EVIDENCE,
+	assertShaRevision,
 	ReceiptLog,
 	applySpillOnly,
 	compileCognitiveState,
@@ -11,13 +14,15 @@ import {
 	evidenceFromAgentsView,
 	evidenceFromContextResolve,
 	handleCognitiveStateContext,
+	locatorHash,
 	measureArms,
 	messageText,
 	resolveFromAgentsView,
 	resolveFromZ0int,
+	toEvidenceRef,
 	validateUnifiedReceipt,
 } from "../examples/extensions/cognitive-state/index.ts";
-import type { ArmBytes, ContextMessage, EvidenceRef } from "../examples/extensions/cognitive-state/index.ts";
+import type { ArmBytes, ContextMessage, EvidenceRef, UnifiedMemoryReceipt } from "../examples/extensions/cognitive-state/index.ts";
 import { growthFromPrevious } from "../examples/extensions/cognitive-state/index.ts";
 
 const base = { sessionId: "sess-1", traceId: "trace-1", sourceRevision: "984fa8bcc5d4" };
@@ -307,5 +312,94 @@ describe("z0eval receipt schema", () => {
 			expect(result.receipt?.evidence_refs.every(ref => typeof ref.source_id === "string" && typeof ref.locator_hash === "string")).toBe(true);
 		}
 		expect(ids).toHaveLength(6);
+	});
+});
+
+describe("pinned z0evals wire contract", () => {
+	it("keeps the committed six JSONL rows wire-compatible with the exact pinned contracts", () => {
+		const schemaBytes = readFileSync(new URL("../evals/cognitive-state/receipt.schema.json", import.meta.url));
+		const questionBytes = readFileSync(new URL("../evals/cognitive-state/question-contract.json", import.meta.url));
+		const blobSha = (bytes: Buffer) =>
+			createHash("sha1").update(`blob ${bytes.length}\\0`).update(bytes).digest("hex");
+		// These are the Git blobs at kvnloo/z0evals@8341084c4967bd25236ef011e6efdbace27d03bd.
+		expect(blobSha(schemaBytes)).toBe("b43eaf3eba88e31142d5f0f2af01b0729eb221ba");
+		expect(blobSha(questionBytes)).toBe("44b5b228e62fa64ba8cc50a4aeef899c2e9a5aa7");
+		const schema = JSON.parse(schemaBytes.toString("utf8")) as {
+			required: string[];
+			properties: Record<string, unknown>;
+		};
+		const questions = JSON.parse(questionBytes.toString("utf8")) as { questions: Array<{ id: string }> };
+		const canonicalIds = questions.questions.map(question => question.id);
+		const lines = readFileSync(new URL("../evals/cognitive-state/receipts.jsonl", import.meta.url), "utf8")
+			.trimEnd().split("\\n");
+		const rows = lines.map(line => JSON.parse(line) as UnifiedMemoryReceipt);
+		expect(FROZEN_QUESTIONS.map(question => question.id)).toEqual(canonicalIds);
+		expect(rows.map(row => row.question_id)).toEqual(canonicalIds);
+		for (const row of rows) {
+			expect(validateUnifiedReceipt(row, schema)).toEqual([]);
+			expect(Object.keys(row).sort()).toEqual([...schema.required].sort());
+			expect(row.harness).toBe("omp");
+			expect(row.retrieval_capability).toBe("fixture");
+			expect(row.injected).toBe(true);
+			expect("arms" in row).toBe(false);
+			for (const ref of row.evidence_refs) {
+				expect(ref.locator_hash).toMatch(/^[0-9a-f]{64}$/);
+				expect("locator" in ref).toBe(false);
+				expect("excerpt" in ref).toBe(false);
+			}
+		}
+	});
+
+	it("rejects malformed numbers, optional fields, and raw/private locator leaks", async () => {
+		const schema = JSON.parse(
+			readFileSync(new URL("../evals/cognitive-state/receipt.schema.json", import.meta.url), "utf8"),
+		) as { required?: string[]; properties?: Record<string, unknown> };
+		const result = await handleCognitiveStateContext(
+			{ type: "context", messages: marked("exact-identifier") },
+			{ ...base, mode: "canary" },
+		);
+		const valid = result.receipt!;
+		const badRows: unknown[] = [
+			{ ...valid, latency_ms: Number.NaN },
+			{ ...valid, latency_ms: Number.POSITIVE_INFINITY },
+			{ ...valid, raw_source_reads: 1.5 },
+			{ ...valid, context_bytes: -1 },
+			{ ...valid, retrieval_latency_ms: -1 },
+			{ ...valid, evidence_count: "1" },
+			{ ...valid, z0int_revision: "invalid-sha" },
+			{ ...valid, notes: ["ok", 42] },
+			{ ...valid, evidence_refs: [{ ...valid.evidence_refs[0], locator: "/private/path" }] },
+			{ ...valid, evidence_refs: [{ ...valid.evidence_refs[0], source_version: 12 }] },
+		];
+		for (const row of badRows) {
+			expect(validateUnifiedReceipt(row, schema).length).toBeGreaterThan(0);
+		}
+		expect(() => assertShaRevision("")).toThrow("harness_revision");
+	});
+
+	it("hashes AgentsView session identifiers and fails closed on unavailable search", async () => {
+		const evidence: EvidenceRef = {
+			source_id: "agentsview:private-session-123",
+			source_version: "ordinal=17",
+			locator: "private-session-123@12-24",
+			trust_class: "index_hit",
+			observed_at: "2026-09-29T00:00:00Z",
+			excerpt: "private text",
+		};
+		const wire = toEvidenceRef(evidence);
+		expect(wire).toEqual({
+			source_id: `agentsview:sha256:${locatorHash(evidence.source_id)}`,
+			source_version: "ordinal=17",
+			trust_class: "index_hit",
+			locator_hash: locatorHash(evidence.locator),
+		});
+		expect(JSON.stringify(wire)).not.toContain("private-session-123");
+		expect(JSON.stringify(wire)).not.toContain("private text");
+		const unavailable = await resolveFromAgentsView("context_resolve", async () => ({
+			code: 1, stdout: "", stderr: "symlink blocked",
+		}));
+		expect(unavailable.evidence).toEqual([]);
+		expect(unavailable.gaps).toEqual(["agentsview: search unavailable (1)"]);
+		expect(unavailable.raw_source_reads).toBe(0);
 	});
 });
