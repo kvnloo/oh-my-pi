@@ -415,7 +415,9 @@ describe("pii-redact example extension events", () => {
 				}] },
 			],
 		};
-		const a = (await runner.emitBeforeProviderRequest(anthropic)) as typeof anthropic;
+		const a = (await runner.emitBeforeProviderRequest(anthropic)) as {
+			messages: Array<{ content: Array<Record<string, unknown>> }>;
+		};
 		expect(a.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
 		expect(a.messages[0]?.content[1]?.source).toBe(anthropicSource);
 		expect(a.messages[0]?.content[2]?.thinking).toBe(PLACEHOLDER);
@@ -435,11 +437,14 @@ describe("pii-redact example extension events", () => {
 				response: { id: "Ada Lovelace", type: "Ada Lovelace" },
 			} },
 		] }] };
-		const g = (await runner.emitBeforeProviderRequest(google)) as typeof google;
+		const g = (await runner.emitBeforeProviderRequest(google)) as {
+			contents: Array<{ parts: Array<Record<string, unknown>> }>;
+		};
 		expect(g.contents[0]?.parts[0]?.text).toBe(PLACEHOLDER);
 		expect(g.contents[0]?.parts[1]?.inlineData).toBe(inlineData);
-		expect(g.contents[0]?.parts[2]?.functionResponse?.name).toBe("lookup_Ada Lovelace");
-		expect(g.contents[0]?.parts[2]?.functionResponse?.response).toEqual({ id: PLACEHOLDER, type: PLACEHOLDER });
+		expect(g.contents[0]?.parts[2]?.functionResponse).toEqual({
+			name: "lookup_Ada Lovelace", response: { id: PLACEHOLDER, type: PLACEHOLDER },
+		});
 
 		const imageUrl = { url: "data:image/jpeg;base64,completion_Ada Lovelace_opaque" };
 		const completions = {
@@ -449,7 +454,10 @@ describe("pii-redact example extension events", () => {
 				{ type: "image_url", image_url: imageUrl },
 			] }],
 		};
-		const c = (await runner.emitBeforeProviderRequest(completions)) as typeof completions;
+		const c = (await runner.emitBeforeProviderRequest(completions)) as {
+			model: string;
+			messages: Array<{ content: Array<Record<string, unknown>> }>;
+		};
 		expect(c.model).toBe(completions.model);
 		expect(c.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
 		expect(c.messages[0]?.content[1]?.image_url).toBe(imageUrl);
@@ -575,7 +583,7 @@ describe("pii-redact example extension events", () => {
 		expect(peak).toBeLessThanOrEqual(8);
 	});
 
-	it("cancels outstanding detector processes at the runner handler deadline", async () => {
+	it("proves runner handler timeout aborts PAW but still forwards original private content", async () => {
 		process.env.PAW_PII_CMD = "mock-paw";
 		const signals: Array<AbortSignal | undefined> = [];
 		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, _args, _cwd, options) => {
