@@ -119,6 +119,26 @@ describe("pii-redact example helpers", () => {
 		expect(await redactTextLeaves({} as ExtensionAPI, { record }, PLACEHOLDER)).toEqual({ record: { email: PLACEHOLDER } });
 	});
 
+	it("scrubs regex-identifiable PII even when PAW reports success but misses it", async () => {
+		const previous = process.env.PAW_PII_CMD;
+		process.env.PAW_PII_CMD = "paw-pii";
+		const pi = {
+			exec: async () => ({
+				code: 0,
+				stdout: "name [PII] email a@b.co ssn 123-45-6789\n",
+				stderr: "",
+				killed: false,
+			}),
+		} as unknown as ExtensionAPI;
+		try {
+			expect(await redactText(pi, "name Diana Smith email a@b.co ssn 123-45-6789", PLACEHOLDER)).toBe(
+				"name [PII] email [PII] ssn [PII]",
+			);
+		} finally {
+			if (previous === undefined) delete process.env.PAW_PII_CMD;
+			else process.env.PAW_PII_CMD = previous;
+		}
+	});
 	it("redactText falls back to regex when PAW exec throws", async () => {
 		const previous = process.env.PAW_PII_CMD;
 		process.env.PAW_PII_CMD = "missing-paw-binary-that-does-not-exist";
