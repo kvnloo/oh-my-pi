@@ -6,7 +6,9 @@
  *   - context                  — rewrite AgentMessage[] before the LLM call
  *   - before_provider_request  — content-aware scrub of provider request text (not protocol metadata)
  *
- * This example ships a small regex fallback so it runs with zero deps.
+ * Without a configured detector, this example uses regexes with zero dependencies.
+ * When PAW_PII_CMD is configured but fails, the whole content field is masked
+ * instead of leaking PII that only the detector could have recognized.
  * For production NER (names, addresses, multilingual PII) point
  * PAW_PII_CMD at the local ProgramAsWeights CLI from:
  *   https://github.com/kvnloo/pii  (integrations/omp package: omp-paw-pii)
@@ -310,16 +312,16 @@ export async function redactText(
 			return regexRedact(result.stdout.replace(/\r?\n$/, ""), placeholder);
 		}
 		// Never log stdout/stderr or input, including when the CLI echoes it.
-		pi.logger?.warn?.("PAW_PII_CMD failed; falling back to regex", {
+		pi.logger?.warn?.("PAW_PII_CMD failed; masking content", {
 			code: result.code,
 			killed: result.killed,
 		});
 	} catch {
 		if (signal?.aborted) return placeholder;
-		pi.logger?.warn?.("PAW_PII_CMD failed to spawn; falling back to regex");
+		pi.logger?.warn?.("PAW_PII_CMD failed to spawn; masking content");
 	}
-	// Retain the example's documented zero-dependency fallback on CLI errors.
-	return regexRedact(text, placeholder);
+	// A configured detector failure cannot certify NER-only names or addresses.
+	return placeholder;
 }
 
 export default function piiRedactExtension(pi: ExtensionAPI) {
