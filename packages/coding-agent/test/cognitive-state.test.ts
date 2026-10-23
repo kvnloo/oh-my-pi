@@ -368,8 +368,8 @@ describe("pinned z0evals wire contract", () => {
 			{ ...valid, evidence_count: "1" },
 			{ ...valid, z0int_revision: "invalid-sha" },
 			{ ...valid, notes: ["ok", 42] },
-			{ ...valid, evidence_refs: [{ ...valid.evidence_refs[0], locator: "/private/path" }] },
-			{ ...valid, evidence_refs: [{ ...valid.evidence_refs[0], source_version: 12 }] },
+			{ ...valid, evidence_refs: [{ ...valid.evidence_refs[0]!, locator: "/private/path" }] },
+			{ ...valid, evidence_refs: [{ ...valid.evidence_refs[0]!, source_version: 12 }] },
 		];
 		for (const row of badRows) {
 			expect(validateUnifiedReceipt(row, schema).length).toBeGreaterThan(0);
