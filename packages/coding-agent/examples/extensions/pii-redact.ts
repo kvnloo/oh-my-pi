@@ -145,6 +145,7 @@ export async function redactTextLeaves(
 	const queue: PendingObject[] = [];
 	const tasks: TextTask[] = [];
 	const byText = new Map<string, TextTask>();
+	const serializedArguments: Array<{ source: string; parsed: unknown; holder: { value?: unknown }; target: object; key: string }> = [];
 
 	const visit = (value: unknown, target: object, key: string, scope: RedactionScope, typedBlock = false): void => {
 		if (typeof value === "string") {
@@ -200,6 +201,24 @@ export async function redactTextLeaves(
 				Reflect.set(target, key, child);
 				continue;
 			}
+			// OpenAI/Responses function arguments can be a JSON-encoded string.
+			// Traverse the JSON values instead of passing structural quotes,
+			// property names and embedded image URLs to the detector. Re-encode
+			// only if something actually changed, preserving original formatting.
+			if ((key === "arguments" || key === "function_arguments") && typeof child === "string") {
+				let parsed: unknown;
+				try {
+					parsed = JSON.parse(child);
+				} catch {
+					parsed = undefined;
+				}
+				if (parsed !== null && typeof parsed === "object") {
+					const holder: { value?: unknown } = {};
+					visit(parsed, holder, "value", "data");
+					serializedArguments.push({ source: child, parsed, holder, target, key });
+					continue;
+				}
+			}
 			visit(child, target, key, childScope(scope, key), typedBlock);
 		}
 	}
@@ -220,6 +239,10 @@ export async function redactTextLeaves(
 		}
 	};
 	await Promise.all(Array.from({ length: Math.min(PAW_MAX_CONCURRENCY, tasks.length) }, () => worker()));
+	for (const { source, parsed, holder, target, key } of serializedArguments) {
+		const replacement = JSON.stringify(holder.value);
+		Reflect.set(target, key, replacement === JSON.stringify(parsed) ? source : replacement);
+	}
 	return root.value;
 }
 
