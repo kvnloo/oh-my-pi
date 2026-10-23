@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Redacts configured-detector PII across structured requests, context and persisted tool details while bounding detector work and preserving multimodal/binary data ([#10829](https://github.com/can1357/oh-my-pi/pull/10829)).
+- The example PII redactor now protects provider IDs, tool signatures, schema constraints and opaque image references while scrubbing request text, serialized arguments and persisted details; runner-level handler timeouts remain non-fail-closed ([#10829](https://github.com/can1357/oh-my-pi/pull/10829)).
 
 - Fixed the example PII redactor interpreting replacement tokens in configured placeholders and converting binary/provider-native payload values into plain objects ([#10829](https://github.com/can1357/oh-my-pi/pull/10829), by [@kvnloo](https://github.com/kvnloo)).
 
