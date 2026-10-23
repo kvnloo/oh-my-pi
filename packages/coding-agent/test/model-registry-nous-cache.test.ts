@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { buildModel } from "@oh-my-pi/pi-catalog/build";
 import { writeModelCache } from "@oh-my-pi/pi-catalog/model-cache";
-import { resolveModelCacheProviderId } from "@oh-my-pi/pi-catalog/provider-models";
+import { normalizeNousPortalBaseUrl, resolveModelCacheProviderId } from "@oh-my-pi/pi-catalog/provider-models/cache-provider-id";
 import { nousPortalModelManagerOptions } from "@oh-my-pi/pi-catalog/provider-models/openai-compat";
 import { ModelRegistry } from "@oh-my-pi/pi-coding-agent/config/model-registry";
 import { AuthStorage } from "@oh-my-pi/pi-coding-agent/session/auth-storage";
@@ -77,8 +77,8 @@ test("Nous startup hydration reads only the current account and normalized endpo
 			expect(selected).toMatchObject({
 				provider: providerId,
 				id: fixture.modelId,
-				baseUrl: fixture.discoveryBaseUrl,
 			});
+			expect(normalizeNousPortalBaseUrl(selected!.baseUrl)).toBe(fixture.discoveryBaseUrl);
 			for (const other of cases) {
 				if (other.modelId !== fixture.modelId) {
 					expect(registry.find(providerId, other.modelId)).toBeUndefined();
