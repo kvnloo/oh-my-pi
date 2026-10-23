@@ -34,6 +34,7 @@ from omp_rpc import (
     RpcTimeoutError,
     SubagentLifecycleEvent,
     host_tool,
+    host_uri,
 )
 
 from omp_rpc.client import (
@@ -1187,6 +1188,13 @@ STARTUP_REGISTRATION_SERVER = textwrap.dedent(
             names = [tool["name"] for tool in pending_registration["tools"]]
             respond(pending_registration, data={"toolNames": names})
             pending_registration = None
+        elif command["type"] == "set_host_uri_schemes":
+            schemes = [entry["scheme"] for entry in command["schemes"]]
+            if len(set(schemes)) != len(schemes):
+                # Reject after any initial tool registration has completed.
+                respond(command, error="RPC host URI schemes must be unique")
+            else:
+                respond(command, data={"schemes": schemes})
         else:
             respond(command, data={})
     """
@@ -1194,10 +1202,11 @@ STARTUP_REGISTRATION_SERVER = textwrap.dedent(
 
 
 class StartupRegistrationTests(unittest.TestCase):
-    def _make_client(self, tools, *, protocol_v2=False):
+    def _make_client(self, tools, *, protocol_v2=False, host_uris=()):
         client = RpcClient(
             command=[sys.executable, "-u", "-c", STARTUP_REGISTRATION_SERVER],
             custom_tools=tools,
+            host_uris=host_uris,
             startup_timeout=2.0,
             request_timeout=2.0,
             env={"STARTUP_PROTOCOL_V2": "1" if protocol_v2 else "0"},
@@ -1275,6 +1284,41 @@ class StartupRegistrationTests(unittest.TestCase):
                 self.assertIsNotNone(child.poll())
                 self.assertFalse(stdout_reader.is_alive())
                 self.assertFalse(stderr_reader.is_alive())
+        finally:
+            client.stop()
+
+    def test_uri_rejection_after_tool_ack_reaps_worker_and_retry_succeeds(self):
+        tool = self._tool()
+        uri = host_uri(scheme="db", read=lambda url, _ctx: "record")
+        client, resources = self._make_client((tool,), host_uris=(uri, uri))
+        try:
+            # The first registration succeeds, but the later URI registration
+            # fails while the server and reader threads are still alive.
+            with self.assertRaises(RpcCommandError) as caught:
+                client.__enter__()
+            self.assertEqual(caught.exception.command, "set_host_uri_schemes")
+            self.assertEqual(
+                caught.exception.error, "RPC host URI schemes must be unique"
+            )
+            self.assertEqual(len(resources), 1)
+            child, stdout_reader, stderr_reader = resources[0]
+            self.assertIsNotNone(child.poll())
+            self.assertFalse(stdout_reader.is_alive())
+            self.assertFalse(stderr_reader.is_alive())
+            self.assertEqual(client.survivor_pids, ())
+
+            # A rejected __enter__ does not invoke __exit__; retry must create
+            # a new child and complete both registration stages.
+            self.assertEqual(client.set_host_uris((uri,)), ("db",))
+            with client:
+                self.assertEqual(client.request_raw("ping"), {})
+                self.assertEqual(len(resources), 2)
+                self.assertIsNot(resources[0][0], resources[1][0])
+                self.assertIsNone(resources[1][0].poll())
+            child, stdout_reader, stderr_reader = resources[1]
+            self.assertIsNotNone(child.poll())
+            self.assertFalse(stdout_reader.is_alive())
+            self.assertFalse(stderr_reader.is_alive())
         finally:
             client.stop()
 
