@@ -61,7 +61,11 @@ import {
 	normalizeSingularityApiBaseUrl,
 } from "../wire/singularityapi";
 import { createBundledReferenceMap, createReferenceResolver, toModelSpec } from "./bundled-references";
-import { getDefaultModelDiscoveryBaseUrl, normalizeNousPortalBaseUrl, resolveModelCacheProviderId } from "./cache-provider-id";
+import {
+	getDefaultModelDiscoveryBaseUrl,
+	normalizeNousPortalBaseUrl,
+	resolveModelCacheProviderId,
+} from "./cache-provider-id";
 import { getClinePassModelMetadata } from "./cline-pass";
 import type { ModelManagerConfig } from "./descriptor-types";
 import { filterModelsDevCatalogRows } from "./models-dev-policies";

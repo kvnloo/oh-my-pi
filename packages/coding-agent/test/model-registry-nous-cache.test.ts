@@ -1,7 +1,10 @@
 import { expect, test } from "bun:test";
 import { buildModel } from "@oh-my-pi/pi-catalog/build";
 import { writeModelCache } from "@oh-my-pi/pi-catalog/model-cache";
-import { normalizeNousPortalBaseUrl, resolveModelCacheProviderId } from "@oh-my-pi/pi-catalog/provider-models/cache-provider-id";
+import {
+	normalizeNousPortalBaseUrl,
+	resolveModelCacheProviderId,
+} from "@oh-my-pi/pi-catalog/provider-models/cache-provider-id";
 import { nousPortalModelManagerOptions } from "@oh-my-pi/pi-catalog/provider-models/openai-compat";
 import { ModelRegistry } from "@oh-my-pi/pi-coding-agent/config/model-registry";
 import { AuthStorage } from "@oh-my-pi/pi-coding-agent/session/auth-storage";

@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Fixed Nous Portal models appearing from a different API-key account or configured inference endpoint ([#10455](https://github.com/can1357/oh-my-pi/pull/10455)).
+- Fixed Nous Portal discovery requesting `/v1//models` when a configured endpoint ends in duplicate trailing slashes (such as `/v1//`); discovery now uses the same endpoint normalization as the existing account-scoped cache ID ([#10455](https://github.com/can1357/oh-my-pi/pull/10455)).
 
 ## [18.3.1] - 2026-09-25
 
