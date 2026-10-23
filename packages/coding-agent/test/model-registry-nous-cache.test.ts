@@ -55,11 +55,14 @@ test("Nous startup hydration reads only the current account and normalized endpo
 
 	for (const [index, fixture] of cases.entries()) {
 		const modelsPath = tempDir.join(`models-${index}.json`);
-		await Bun.write(modelsPath, JSON.stringify({
-			providers: {
-				[providerId]: { baseUrl: fixture.baseUrl },
-			},
-		}));
+		await Bun.write(
+			modelsPath,
+			JSON.stringify({
+				providers: {
+					[providerId]: { baseUrl: fixture.baseUrl },
+				},
+			}),
+		);
 		const authStorage = await AuthStorage.create(":memory:");
 		try {
 			authStorage.keys.setRuntime(providerId, fixture.apiKey);

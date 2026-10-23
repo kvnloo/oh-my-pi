@@ -95,10 +95,12 @@ describe("Nous Portal provider", () => {
 			baseUrl: configuredUrl,
 		});
 		expect(startupId).toBe(resolveModelCacheProviderId("nous-portal", { apiKey, baseUrl: canonicalUrl }));
-		expect(startupId).toBe(resolveModelCacheProviderId("nous-portal", {
-			apiKey,
-			baseUrl: "  https://proxy.example/v1/  ",
-		}));
+		expect(startupId).toBe(
+			resolveModelCacheProviderId("nous-portal", {
+				apiKey,
+				baseUrl: "  https://proxy.example/v1/  ",
+			}),
+		);
 
 		const urls: string[] = [];
 		const fakeFetch = (async (input: string | URL | Request) => {
