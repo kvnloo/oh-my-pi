@@ -1,7 +1,7 @@
 /**
  * Behavioral coverage for the pii-redact example extension.
  * Proves error-result scrubbing, multimodal block order, PAW fail-open
- * fallback, and structured provider payload redaction.
+ * fallback, provider metadata/image preservation, and runner timeout limits.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import * as fs from "node:fs";
@@ -307,6 +307,186 @@ describe("pii-redact example extension events", () => {
 		expect(payload.system).toBe("Ada Lovelace");
 	});
 
+	it("retains Responses protocol, matching call IDs, image references and schema constraints on killed NER", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const inspected: string[] = [];
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args) => {
+			inspected.push(args[args.length - 1] ?? "");
+			return { code: 1, stdout: "", stderr: "hidden", killed: true };
+		});
+		const runner = await loadExampleRunner();
+		const callId = "call_Ada Lovelace_meta";
+		const imageUrl = "data:image/png;base64,Ada Lovelace_opaque";
+		const fileId = "file_Ada Lovelace_opaque";
+		const rawArgs = JSON.stringify({
+			recipient: "Ada Lovelace",
+			id: "Ada Lovelace",
+			image_url: { url: imageUrl },
+		});
+		const original = {
+			model: "gpt-Ada Lovelace-model",
+			input: [
+				{
+					role: "user",
+					content: [
+						{ type: "input_text", text: "Ada Lovelace" },
+						{ type: "input_image", image_url: imageUrl, file_id: fileId },
+					],
+				},
+				{
+					type: "function_call", call_id: callId, name: "lookup_Ada Lovelace",
+					arguments: rawArgs, signature: "sig_Ada Lovelace_meta",
+				},
+				{ type: "function_call_output", call_id: callId, output: "Tell Ada Lovelace" },
+			],
+			tools: [{
+				type: "function", name: "lookup_Ada Lovelace", description: "Ask Ada Lovelace",
+				parameters: {
+					type: "object",
+					properties: {
+						recipient: {
+							type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
+							description: "Ask Ada Lovelace",
+						},
+					},
+					required: ["recipient"],
+				},
+			}],
+		};
+		const redacted = (await runner.emitBeforeProviderRequest(original)) as typeof original;
+		expect(redacted.model).toBe(original.model);
+		expect(redacted.input[0]?.role).toBe("user");
+		expect(redacted.input[0]?.content?.[0]).toEqual({ type: "input_text", text: PLACEHOLDER });
+		expect(redacted.input[0]?.content?.[1]).toEqual(original.input[0]?.content?.[1]);
+		expect(redacted.input[1]?.call_id).toBe(callId);
+		expect(redacted.input[2]?.call_id).toBe(callId);
+		expect(redacted.input[1]?.name).toBe("lookup_Ada Lovelace");
+		expect(redacted.input[1]?.signature).toBe("sig_Ada Lovelace_meta");
+		const scrubbedArgs = JSON.parse(redacted.input[1]!.arguments!);
+		expect(scrubbedArgs).toEqual({
+			recipient: PLACEHOLDER, id: PLACEHOLDER, image_url: { url: imageUrl },
+		});
+		expect(redacted.input[2]?.output).toBe(PLACEHOLDER);
+		expect(redacted.tools[0]?.type).toBe("function");
+		expect(redacted.tools[0]?.name).toBe("lookup_Ada Lovelace");
+		expect(redacted.tools[0]?.description).toBe(PLACEHOLDER);
+		expect(redacted.tools[0]?.parameters).toEqual({
+			type: "object",
+			properties: {
+				recipient: {
+					type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
+					description: PLACEHOLDER,
+				},
+			},
+			required: ["recipient"],
+		});
+		expect(inspected).not.toContain(imageUrl);
+		expect(inspected).not.toContain(fileId);
+		expect(inspected).not.toContain(callId);
+		expect(inspected).not.toContain("sig_Ada Lovelace_meta");
+		expect(inspected).not.toContain("gpt-Ada Lovelace-model");
+		expect(JSON.parse(original.input[1]!.arguments!).recipient).toBe("Ada Lovelace");
+	});
+
+	it("protects Anthropic source, Google inlineData and Completions image_url through registered NER", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const inspected: string[] = [];
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args) => {
+			const input = args[args.length - 1] ?? "";
+			inspected.push(input);
+			return { code: 0, stdout: input.replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+		});
+		const runner = await loadExampleRunner();
+		const anthropicSource = { type: "base64", media_type: "image/png", data: "anthropic_Ada Lovelace_opaque" };
+		const anthropic = {
+			messages: [{ role: "user", content: [
+				{ type: "text", text: "Ada Lovelace" },
+				{ type: "image", source: anthropicSource },
+				{ type: "thinking", thinking: "Ada Lovelace", signature: "sig_Ada Lovelace_opaque" },
+			] }],
+		};
+		const a = (await runner.emitBeforeProviderRequest(anthropic)) as typeof anthropic;
+		expect(a.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
+		expect(a.messages[0]?.content[1]?.source).toBe(anthropicSource);
+		expect(a.messages[0]?.content[2]?.thinking).toBe(PLACEHOLDER);
+		expect(a.messages[0]?.content[2]?.signature).toBe("sig_Ada Lovelace_opaque");
+
+		const inlineData = { mimeType: "image/png", data: "google_Ada Lovelace_opaque" };
+		const google = { contents: [{ role: "user", parts: [{ text: "Ada Lovelace" }, { inlineData }] }] };
+		const g = (await runner.emitBeforeProviderRequest(google)) as typeof google;
+		expect(g.contents[0]?.parts[0]?.text).toBe(PLACEHOLDER);
+		expect(g.contents[0]?.parts[1]?.inlineData).toBe(inlineData);
+
+		const imageUrl = { url: "data:image/jpeg;base64,completion_Ada Lovelace_opaque" };
+		const completions = {
+			model: "model_Ada Lovelace",
+			messages: [{ role: "user", content: [
+				{ type: "text", text: "Ada Lovelace" },
+				{ type: "image_url", image_url: imageUrl },
+			] }],
+		};
+		const c = (await runner.emitBeforeProviderRequest(completions)) as typeof completions;
+		expect(c.model).toBe(completions.model);
+		expect(c.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
+		expect(c.messages[0]?.content[1]?.image_url).toBe(imageUrl);
+		for (const opaque of [
+			anthropicSource.data, "sig_Ada Lovelace_opaque", inlineData.data, imageUrl.url,
+			"model_Ada Lovelace",
+		]) {
+			expect(inspected).not.toContain(opaque);
+		}
+		expect(inspected).toContain("Ada Lovelace");
+	});
+
+	it("treats nested result detail id/type fields as private data, not provider metadata", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async () => ({
+			code: 1, stdout: "", stderr: "", killed: true,
+		}));
+		const runner = await loadExampleRunner();
+		const details = { results: [{ id: "Ada Lovelace", type: "Ada Lovelace", note: "Ada Lovelace" }] };
+		const result = await runner.emitToolResult({
+			type: "tool_result",
+			toolName: "ask",
+			toolCallId: "call-Ada Lovelace-metadata",
+			input: {},
+			content: [{ type: "text", text: "Ada Lovelace" }],
+			details,
+			isError: false,
+		});
+		expect(result?.content).toEqual([{ type: "text", text: PLACEHOLDER }]);
+		expect(result?.details).toEqual({ results: [{ id: PLACEHOLDER, type: PLACEHOLDER, note: PLACEHOLDER }] });
+		expect(details.results[0]?.id).toBe("Ada Lovelace");
+	});
+
+	it("returns only scrubbed content and intact protocol fields when internal detector budget expires", async () => {
+		process.env.PAW_PII_CMD = "mock-paw";
+		const runner = await loadExampleRunner();
+		const realNow = performance.now.bind(performance);
+		let expireBudget = false;
+		vi.spyOn(performance, "now").mockImplementation(() => realNow() + (expireBudget ? 25_000 : 0));
+		let calls = 0;
+		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args) => {
+			calls++;
+			expireBudget = true;
+			const input = args[args.length - 1] ?? "";
+			return { code: 0, stdout: input.replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+		});
+		const original = {
+			model: "model_Ada Lovelace_meta",
+			input: [{ role: "user", content: Array.from({ length: 18 }, (_, i) => ({
+				type: "input_text", text: "block " + i + " Ada Lovelace",
+			})) }],
+		};
+		const result = (await runner.emitBeforeProviderRequest(original)) as typeof original;
+		expect(result.model).toBe(original.model);
+		expect(result.input[0]?.role).toBe("user");
+		expect(result.input[0]?.content[0]?.text).toBe("block 0 [PII]");
+		expect(result.input[0]?.content.slice(1).every(part => part.text === PLACEHOLDER)).toBe(true);
+		expect(calls).toBe(1);
+		expect(original.input[0]?.content[1]?.text).toContain("Ada Lovelace");
+	});
+
 	it("applies configured NER to persisted details and text blocks", async () => {
 		process.env.PAW_PII_CMD = "mock-paw";
 		vi.spyOn(execUtils, "execCommand").mockImplementation(async (_command, args, _cwd, options) => {
@@ -386,9 +566,23 @@ describe("pii-redact example extension events", () => {
 		const runner = await loadExampleRunner();
 		testSetExtensionHandlerTimeoutMs(30);
 		const original = [{ role: "user", content: Array.from({ length: 40 }, (_, i) => ({ type: "text", text: "Ada Lovelace " + i })), timestamp: 1 } as never];
-		await runner.emitContext(original);
+		const returned = await runner.emitContext(original);
+		// Runner timeout wins the race and discards the handler's safe replacement.
+		// This is a documented privacy gap, NOT a fail-closed acceptance test.
+		expect(returned).toEqual(original);
+		expect(JSON.stringify(returned)).toContain("Ada Lovelace");
 		expect(signals.length).toBeGreaterThan(0);
 		expect(signals.length).toBeLessThanOrEqual(8);
+		expect(signals.every(signal => signal?.aborted)).toBe(true);
+		signals.length = 0;
+		const rawPayload = {
+			model: "gpt-Ada Lovelace-metadata",
+			messages: [{ role: "user", content: "Ada Lovelace" }],
+		};
+		const forwarded = await runner.emitBeforeProviderRequest(rawPayload);
+		expect(forwarded).toBe(rawPayload);
+		expect((forwarded as typeof rawPayload).messages[0]?.content).toBe("Ada Lovelace");
+		expect(signals.length).toBeGreaterThan(0);
 		expect(signals.every(signal => signal?.aborted)).toBe(true);
 	});
 
