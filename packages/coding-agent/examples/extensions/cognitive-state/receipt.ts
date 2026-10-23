@@ -3,15 +3,18 @@ import type { EvidenceRef } from "./types.ts";
 import { UNIFIED_RECEIPT_SCHEMA } from "./types.ts";
 import type { UnifiedEvidenceRef, UnifiedMemoryReceipt } from "./types.ts";
 
-const SHA_RE = /^[0-9a-f]{7,40}$/i;
+const SHA_RE = /^[0-9a-f]{7,40}$/;
 
 export function locatorHash(locator: string): string {
 	return createHash("sha256").update(locator).digest("hex");
 }
 
+/** Keep session identifiers and locators out of shareable cross-harness receipts. */
 export function toEvidenceRef(ref: EvidenceRef): UnifiedEvidenceRef {
 	return {
-		source_id: ref.source_id,
+		source_id: ref.source_id.startsWith("agentsview:")
+			? `agentsview:sha256:${locatorHash(ref.source_id)}`
+			: ref.source_id,
 		source_version: ref.source_version,
 		trust_class: ref.trust_class,
 		locator_hash: locatorHash(ref.locator),
@@ -19,66 +22,86 @@ export function toEvidenceRef(ref: EvidenceRef): UnifiedEvidenceRef {
 }
 
 export function assertShaRevision(revision: string): string {
-	if (!SHA_RE.test(revision)) {
+	const normalized = revision.toLowerCase();
+	if (!SHA_RE.test(normalized)) {
 		throw new Error(`harness_revision must be a git SHA, got ${revision}`);
 	}
-	return revision.toLowerCase();
+	return normalized;
+}
+
+/** The JSON Schema keywords used by z0evals@8341084's pinned receipt schema. */
+interface SchemaProperty {
+	type?: "object" | "array" | "string" | "number" | "integer" | "boolean";
+	const?: string;
+	enum?: string[];
+	pattern?: string;
+	minimum?: number;
+	required?: string[];
+	properties?: Record<string, SchemaProperty>;
+	additionalProperties?: boolean;
+	items?: SchemaProperty;
 }
 
 interface SchemaDoc {
 	required?: string[];
-	properties?: Record<string, { const?: string; enum?: string[]; type?: string; minimum?: number; pattern?: string }>;
+	properties?: Record<string, unknown>;
 }
 
-/** Validate one row against the pinned z0eval receipt schema object. */
+function validateProperty(value: unknown, spec: SchemaProperty, path: string, errors: string[]): void {
+	if (spec.const !== undefined && value !== spec.const) errors.push(`${path}: const mismatch`);
+	if (spec.enum && !spec.enum.includes(value as string)) errors.push(`${path}: not in enum`);
+
+	if (spec.type === "object") {
+		if (value === null || typeof value !== "object" || Array.isArray(value)) {
+			errors.push(`${path}: expected object`);
+			return;
+		}
+		const fields = value as Record<string, unknown>;
+		for (const required of spec.required ?? []) {
+			if (!Object.hasOwn(fields, required)) errors.push(`${path}: missing ${required}`);
+		}
+		for (const [key, field] of Object.entries(fields)) {
+			const rule = spec.properties?.[key];
+			if (rule) validateProperty(field, rule, `${path}.${key}`, errors);
+			else if (spec.additionalProperties === false) errors.push(`${path}: unexpected ${key}`);
+		}
+		return;
+	}
+
+	if (spec.type === "array") {
+		if (!Array.isArray(value)) {
+			errors.push(`${path}: expected array`);
+			return;
+		}
+		if (spec.items) {
+			for (const [index, item] of value.entries()) validateProperty(item, spec.items, `${path}[${index}]`, errors);
+		}
+		return;
+	}
+
+	if (spec.type === "string") {
+		if (typeof value !== "string") {
+			errors.push(`${path}: expected string`);
+			return;
+		}
+		if (spec.pattern && !new RegExp(spec.pattern).test(value)) errors.push(`${path}: pattern mismatch`);
+		return;
+	}
+	if (spec.type === "boolean" && typeof value !== "boolean") errors.push(`${path}: expected boolean`);
+	if (spec.type === "number" || spec.type === "integer") {
+		if (typeof value !== "number" || !Number.isFinite(value)) {
+			errors.push(`${path}: expected finite number`);
+			return;
+		}
+		if (spec.type === "integer" && !Number.isSafeInteger(value)) errors.push(`${path}: expected integer`);
+		if (spec.minimum !== undefined && value < spec.minimum) errors.push(`${path}: below minimum`);
+	}
+}
+
+/** Validate every keyword used by the pinned z0eval schema, including optional fields and nested evidence. */
 export function validateUnifiedReceipt(row: unknown, schema: SchemaDoc): string[] {
 	const errors: string[] = [];
-	if (row === null || typeof row !== "object" || Array.isArray(row)) return ["receipt is not an object"];
-	const record = row as Record<string, unknown>;
-	const allowed = new Set(Object.keys(schema.properties ?? {}));
-	for (const key of Object.keys(record)) {
-		if (!allowed.has(key)) errors.push(`unexpected property ${key}`);
-	}
-	for (const key of schema.required ?? []) {
-		if (!(key in record)) errors.push(`missing ${key}`);
-	}
-	if (record.schema !== UNIFIED_RECEIPT_SCHEMA) errors.push("schema const mismatch");
-	const harness = schema.properties?.harness?.enum;
-	if (harness && !harness.includes(String(record.harness))) errors.push("harness not in enum");
-	if (typeof record.harness_revision !== "string" || !SHA_RE.test(record.harness_revision)) {
-		errors.push("harness_revision is not a git SHA");
-	}
-	for (const key of ["retrieval_ok", "injected", "answer_supported", "verified", "abstained", "duplicate_injection"] as const) {
-		if (typeof record[key] !== "boolean") errors.push(`${key} is not boolean`);
-	}
-	for (const key of ["question_id", "session_id", "trace_id", "retrieval_capability"] as const) {
-		if (typeof record[key] !== "string") errors.push(`${key} is not string`);
-	}
-	if (typeof record.latency_ms !== "number" || record.latency_ms < 0) errors.push("latency_ms invalid");
-	if (!Number.isInteger(record.context_bytes) || (record.context_bytes as number) < 0) errors.push("context_bytes invalid");
-	if (!Number.isInteger(record.raw_source_reads) || (record.raw_source_reads as number) < 0) {
-		errors.push("raw_source_reads invalid");
-	}
-	if (!Array.isArray(record.evidence_refs)) {
-		errors.push("evidence_refs is not an array");
-	} else {
-		for (const item of record.evidence_refs) {
-			if (item === null || typeof item !== "object" || Array.isArray(item)) {
-				errors.push("evidence_refs item is not an object");
-				continue;
-			}
-			const ref = item as Record<string, unknown>;
-			for (const key of ["source_id", "source_version", "trust_class"] as const) {
-				if (typeof ref[key] !== "string") errors.push(`evidence_refs.${key} missing`);
-			}
-			if (ref.locator_hash !== undefined && typeof ref.locator_hash !== "string") errors.push("locator_hash invalid");
-			for (const key of Object.keys(ref)) {
-				if (!["source_id", "source_version", "trust_class", "locator_hash"].includes(key)) {
-					errors.push(`evidence_refs unexpected ${key}`);
-				}
-			}
-		}
-	}
+	validateProperty(row, { type: "object", required: schema.required, properties: schema.properties as Record<string, SchemaProperty>, additionalProperties: false }, "receipt", errors);
 	return errors;
 }
 
