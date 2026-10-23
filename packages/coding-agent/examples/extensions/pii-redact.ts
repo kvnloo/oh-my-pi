@@ -300,7 +300,10 @@ export async function redactText(
 		// A killed or cancelled NER invocation cannot certify names: fail
 		// closed instead of sending its unexamined original back to the model.
 		if (signal?.aborted || result.killed) return placeholder;
-		if (result.code === 0 && result.stdout) return result.stdout.replace(/\r?\n$/, "");
+		if (result.code === 0 && result.stdout) {
+			// Successful detectors can still miss email/phone/SSN patterns.
+			return regexRedact(result.stdout.replace(/\r?\n$/, ""), placeholder);
+		}
 		// Never log stdout/stderr or input, including when the CLI echoes it.
 		pi.logger?.warn?.("PAW_PII_CMD failed; falling back to regex", {
 			code: result.code,
