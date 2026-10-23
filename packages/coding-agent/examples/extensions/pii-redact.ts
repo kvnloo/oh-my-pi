@@ -4,14 +4,21 @@
  * Demonstrates first-class privacy middleware on the extension event bus:
  *   - tool_result              — scrub tool output (success and error) before it re-enters context
  *   - context                  — rewrite AgentMessage[] before the LLM call
- *   - before_provider_request  — last-mile provider payload scrub (strings + structured objects)
+ *   - before_provider_request  — content-aware scrub of provider request text (not protocol metadata)
  *
- * This example ships a small regex fallback so it runs with zero deps.
+ * Without a configured detector, this example uses regexes with zero dependencies.
+ * When PAW_PII_CMD is configured but fails, the whole content field is masked
+ * instead of leaking PII that only the detector could have recognized.
  * For production NER (names, addresses, multilingual PII) point
  * PAW_PII_CMD at the local ProgramAsWeights CLI from:
  *   https://github.com/kvnloo/pii  (integrations/omp package: omp-paw-pii)
  *
  * Complements built-in secrets.enabled (credentials) — does not replace it.
+ * WARNING: if the extension handler itself times out, ExtensionRunner can
+ * discard its result and continue with original, unredacted input. Detector
+ * kills and the internal work budget fail closed, but runner timeout does not.
+ * Signed thinking and redacted/encrypted reasoning are opaque replay data:
+ * this example preserves them verbatim even if they contain private text.
  *
  * Usage:
  *   omp -e packages/coding-agent/examples/extensions/pii-redact.ts
@@ -28,6 +35,10 @@ const SSN = /\b\d{3}-\d{2}-\d{4}\b/g;
 
 /** Keep PAW well under the extension handler timeout (30s). */
 const PAW_TIMEOUT_MS = 5_000;
+/** Reserve ten seconds for traversal, other handlers, and runner cleanup. */
+const PAW_EVENT_BUDGET_MS = 20_000;
+/** PAW's CLI accepts one --text; bound parallel single-text calls, not invented batch flags. */
+const PAW_MAX_CONCURRENCY = 8;
 
 export function regexRedact(text: string, placeholder: string): string {
 	const replacement = () => placeholder;
@@ -39,103 +50,278 @@ export function buildPawArgs(text: string, placeholder: string): string[] {
 	return ["--placeholder", placeholder, "redact", "--text", text];
 }
 
+type RedactionScope = "data" | "messages" | "provider" | "schema" | "schemaMap";
+
+interface TextDestination {
+	target: object;
+	key: string;
+}
+
+interface TextTask {
+	text: string;
+	destinations: TextDestination[];
+}
+
+interface PendingObject {
+	source: object;
+	target: object;
+	scope: RedactionScope;
+}
+
 /**
- * Preserve multimodal block order: redact each text block in place without
- * joining/moving content across non-text parts.
+ * Only known textual request fields opt into PAW at the provider envelope.
+ * Inside messages, text is the default except for protocol metadata.
+ * Inside actual tool arguments and result details, *all* ordinary string
+ * values are data (even a key named "id", "type" or "model").
  */
-export function mapTextBlocks(content: unknown, redact: (text: string) => string): unknown {
-	if (typeof content === "string") return redact(content);
-	if (!Array.isArray(content)) return content;
-	return content.map(part => {
-		if (part && typeof part === "object" && "type" in part && part.type === "text" && "text" in part) {
-			if (typeof part.text === "string") {
-				return { ...part, text: redact(part.text) };
+const PROVIDER_TEXT_FIELDS = new Set([
+	"content", "contents", "description", "input", "instructions", "message", "messages",
+	"note", "output", "parts", "prompt", "query", "reasoning", "response", "responses",
+	"result", "summary", "system", "systemInstruction", "system_instruction", "text",
+	"thought", "toolCalls", "tool_calls",
+]);
+const DATA_FIELDS = new Set([
+	"args", "arguments", "details", "functionArguments", "function_arguments",
+	"toolArgs", "toolInput", "tool_args", "tool_input",
+]);
+const SCHEMA_FIELDS = new Set([
+	"input_schema", "json_schema", "parameters", "responseSchema", "response_schema", "schema",
+]);
+/** Keys of these schema containers are property/definition names, never JSON Schema keywords. */
+const SCHEMA_MAP_FIELDS = new Set(["$defs", "definitions", "dependentSchemas", "patternProperties", "properties"]);
+const MESSAGE_METADATA_FIELDS = new Set([
+	"api", "callId", "call_id", "detail", "file_id", "finishReason", "finish_reason",
+	"format", "id", "item_id", "kind", "media_type", "mimeType", "mime_type", "model",
+	"name", "object", "provider", "recipient", "response_id", "role", "signature",
+	"status", "textSignature", "thinkingSignature", "thoughtSignature",
+	"toolCallId", "toolName", "toolUseId", "tool_call_id", "tool_name", "tool_use_id",
+	"type", "uri", "url", "version",
+]);
+const IMAGE_METADATA_FIELDS = new Set([
+	"data", "detail", "file_id", "format", "media_type", "mimeType", "mime_type", "source", "url",
+]);
+const CONTENT_BLOCK_TYPES = new Set([
+	"image", "image_url", "input_audio", "input_file", "input_image", "input_text",
+	"output_audio", "output_text", "redacted_thinking", "text", "thinking",
+]);
+
+function childScope(scope: RedactionScope, key: string, parent: object): RedactionScope {
+	if (scope === "data") return "data";
+	// A named property/definition is a schema even when its name happens to
+	// equal a keyword such as "description" or "examples".
+	if (scope === "schemaMap") return "schema";
+	// Schema constraints (including enum/required/default/pattern/type) are
+	// protocol, not prose. Only actual keyword descriptions/examples are data.
+	if (scope === "schema") {
+		if (SCHEMA_MAP_FIELDS.has(key)) return "schemaMap";
+		return key === "description" || key === "examples" ? "data" : "schema";
+	}
+	if (DATA_FIELDS.has(key)) return "data";
+	if (SCHEMA_FIELDS.has(key)) return "schema";
+	// The same "input" key means a message array at the request root and
+	// arbitrary user-supplied tool parameters on Anthropic tool_use blocks.
+	if (scope === "messages" && key === "input" && Reflect.get(parent, "type") === "tool_use") return "data";
+	// Gemini functionResponse.name is a protocol identifier, but its response
+	// object is arbitrary tool data and may contain PII even under "id".
+	if (scope === "messages" && key === "response" && "name" in parent) return "data";
+	if (scope === "provider") return PROVIDER_TEXT_FIELDS.has(key) ? "messages" : "provider";
+	return "messages";
+}
+
+/**
+ * Provider/native replay signatures authenticate (or identify) the entire
+ * thinking/text block. Scrubbing text while retaining the signature corrupts
+ * replay; preserving it means this example cannot scrub PII inside the block.
+ * Native and Anthropic redacted-thinking blobs are likewise opaque.
+ */
+function opaqueReplayBlock(scope: RedactionScope, source: object): boolean {
+	if (scope !== "messages") return false;
+	const type = Reflect.get(source, "type");
+	if (type === "redactedThinking" || type === "redacted_thinking") return true;
+	if ("thinkingSignature" in source || "textSignature" in source || "thoughtSignature" in source) return true;
+	return type === "thinking" && "signature" in source;
+}
+
+function opaqueImageField(source: object, key: string): boolean {
+	// All of these are opaque provider image references or encoded bytes.
+	// Never pass their values (or nested source/url objects) to an NER CLI.
+	if (key === "inlineData" || key === "inline_data" || key === "fileData" || key === "file_data") return true;
+	if (key === "image_url" || key === "imageUrl" || key === "b64_json") return true;
+	const type = Reflect.get(source, "type");
+	const isImage = type === "image" || type === "input_image" || type === "image_url" || type === "input_file";
+	if (isImage && IMAGE_METADATA_FIELDS.has(key)) return true;
+	const mime = Reflect.get(source, "mimeType") ?? Reflect.get(source, "mime_type") ?? Reflect.get(source, "media_type");
+	return key === "data" && typeof mime === "string" && mime.startsWith("image/");
+}
+
+/**
+ * Graph-preserving content traversal for context, persisted results and request
+ * envelopes. Only content strings are sent to PAW. Protocol IDs, schema
+ * constraints, signatures and image data/URLs are never rewritten; arbitrary
+ * nested tool arguments and details are still fully traversed. Signed thinking
+ * and opaque redacted/encrypted reasoning cannot be scrubbed by this example.
+ *
+ * At most eight PAW subprocesses per invocation (not globally across
+ * concurrent events). The internal 20s budget fails closed for *content*
+ * leaves, but the ExtensionRunner's own 30s timeout discards handler results
+ * and may return the unredacted original; this example is not a mandatory
+ * fail-closed privacy boundary.
+ */
+export async function redactTextLeaves(
+	pi: ExtensionAPI,
+	input: unknown,
+	placeholder: string,
+	signal?: AbortSignal,
+	surface: RedactionScope = "data",
+): Promise<unknown> {
+	const deadline = performance.now() + PAW_EVENT_BUDGET_MS;
+	const root: { value?: unknown } = {};
+	const seen = new WeakMap<object, Map<RedactionScope, object>>();
+	const queue: PendingObject[] = [];
+	const tasks: TextTask[] = [];
+	const byText = new Map<string, TextTask>();
+	const serializedArguments: Array<{ source: string; parsed: unknown; holder: { value?: unknown }; target: object; key: string }> = [];
+
+	const visit = (value: unknown, target: object, key: string, scope: RedactionScope, typedBlock = false): void => {
+		if (typeof value === "string") {
+			const structural =
+				scope === "provider" || scope === "schema" || scope === "schemaMap" ||
+				(scope === "messages" && MESSAGE_METADATA_FIELDS.has(key)) ||
+				(typedBlock && key === "type");
+			if (value.length === 0 || structural) {
+				Reflect.set(target, key, value);
+				return;
 			}
+			let task = byText.get(value);
+			if (!task) {
+				task = { text: value, destinations: [] };
+				byText.set(value, task);
+				tasks.push(task);
+			}
+			task.destinations.push({ target, key });
+			return;
 		}
-		return part;
-	});
+		if (value === null || typeof value !== "object") {
+			Reflect.set(target, key, value);
+			return;
+		}
+		if (opaqueReplayBlock(scope, value)) {
+			Reflect.set(target, key, value);
+			return;
+		}
+		const prototype = Object.getPrototypeOf(value);
+		if (!Array.isArray(value) && prototype !== Object.prototype && prototype !== null) {
+			// Binary buffers, dates, and provider-native objects retain identity.
+			Reflect.set(target, key, value);
+			return;
+		}
+		// A provider object may be reused as opaque metadata and redactable
+		// message content. Reusing one clone across those scopes leaks text
+		// (or corrupts metadata), so preserve aliases only within each scope.
+		const copies = seen.get(value);
+		const prior = copies?.get(scope);
+		if (prior) {
+			Reflect.set(target, key, prior);
+			return;
+		}
+		const copy: object = Array.isArray(value) ? new Array(value.length) : Object.create(prototype);
+		if (copies) copies.set(scope, copy);
+		else seen.set(value, new Map([[scope, copy]]));
+		Reflect.set(target, key, copy);
+		queue.push({ source: value, target: copy, scope });
+	};
+
+	// Providers may supply a text or a flat message array directly as payload.
+	const rootScope = surface === "provider" && (typeof input === "string" || Array.isArray(input))
+		? "messages"
+		: surface;
+	visit(input, root, "value", rootScope);
+	for (let index = 0; index < queue.length; index++) {
+		const { source, target, scope } = queue[index]!;
+		const type = Reflect.get(source, "type");
+		const typedBlock = CONTENT_BLOCK_TYPES.has(type);
+		for (const [key, child] of Object.entries(source)) {
+			// OpenAI Responses reasoning.encrypted_content and image payloads
+			// are opaque wire bytes, not user-visible text or NER input.
+			if ((scope !== "data" && key === "encrypted_content") || opaqueImageField(source, key)) {
+				Reflect.set(target, key, child);
+				continue;
+			}
+			// OpenAI/Responses function arguments can be a JSON-encoded string.
+			// Traverse the JSON values instead of passing structural quotes,
+			// property names and embedded image URLs to the detector. Re-encode
+			// only if something actually changed, preserving original formatting.
+			if ((key === "arguments" || key === "function_arguments") && typeof child === "string") {
+				let parsed: unknown;
+				try {
+					parsed = JSON.parse(child);
+				} catch {
+					parsed = undefined;
+				}
+				if (parsed !== null && typeof parsed === "object") {
+					const holder: { value?: unknown } = {};
+					visit(parsed, holder, "value", "data");
+					serializedArguments.push({ source: child, parsed, holder, target, key });
+					continue;
+				}
+			}
+			visit(child, target, key, childScope(scope, key, source), typedBlock);
+		}
+	}
+
+	const configured = Boolean(process.env.PAW_PII_CMD);
+	let cursor = 0;
+	const worker = async (): Promise<void> => {
+		while (cursor < tasks.length) {
+			const task = tasks[cursor++]!;
+			const remaining = Math.floor(deadline - performance.now());
+			// An exhausted budget or cancelled detector cannot certify NER-only
+			// names, so redact the whole content leaf (never protocol metadata).
+			const redacted =
+				signal?.aborted || (configured && remaining < 100)
+					? placeholder
+					: await redactText(pi, task.text, placeholder, signal, Math.min(PAW_TIMEOUT_MS, Math.max(1, remaining)));
+			for (const { target, key } of task.destinations) Reflect.set(target, key, redacted);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(PAW_MAX_CONCURRENCY, tasks.length) }, () => worker()));
+	for (const { source, parsed, holder, target, key } of serializedArguments) {
+		const replacement = JSON.stringify(holder.value);
+		Reflect.set(target, key, replacement === JSON.stringify(parsed) ? source : replacement);
+	}
+	return root.value;
 }
 
-/** Shape-preserving walk of provider request objects; redacts every string leaf. */
-export function redactStructuredPayload(value: unknown, placeholder: string, seen = new WeakMap<object, unknown>()): unknown {
-	if (typeof value === "string") return regexRedact(value, placeholder);
-	if (value == null || typeof value !== "object") return value;
-	// Binary fields and provider-native instances must retain their wire types.
-	const prototype = Object.getPrototypeOf(value);
-	if (!Array.isArray(value) && prototype !== Object.prototype && prototype !== null) return value;
-	// Returning the original on a repeated reference would revive unredacted
-	// PII in the second alias; cache the redacted clone before walking children.
-	if (seen.has(value)) return seen.get(value);
-	if (Array.isArray(value)) {
-		const out: unknown[] = new Array(value.length);
-		seen.set(value, out);
-		value.forEach((item, index) => {
-			out[index] = redactStructuredPayload(item, placeholder, seen);
-		});
-		return out;
-	}
-	const out: Record<string, unknown> = {};
-	seen.set(value, out);
-	for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
-		out[key] = redactStructuredPayload(child, placeholder, seen);
-	}
-	return out;
-}
-
-export async function redactText(pi: ExtensionAPI, text: string, placeholder: string): Promise<string> {
+export async function redactText(
+	pi: ExtensionAPI,
+	text: string,
+	placeholder: string,
+	signal?: AbortSignal,
+	timeoutMs = PAW_TIMEOUT_MS,
+): Promise<string> {
 	const cmd = process.env.PAW_PII_CMD;
 	if (!cmd) return regexRedact(text, placeholder);
+	if (signal?.aborted) return placeholder;
 	try {
-		const result = await pi.exec(cmd, buildPawArgs(text, placeholder), { timeout: PAW_TIMEOUT_MS });
+		const result = await pi.exec(cmd, buildPawArgs(text, placeholder), { signal, timeout: timeoutMs });
+		// A killed or cancelled NER invocation cannot certify names: fail
+		// closed instead of sending its unexamined original back to the model.
+		if (signal?.aborted || result.killed) return placeholder;
 		if (result.code === 0 && result.stdout) {
-			return result.stdout.replace(/\n$/, "");
+			// Successful detectors can still miss email/phone/SSN patterns.
+			return regexRedact(result.stdout.replace(/\r?\n$/, ""), placeholder);
 		}
-		// Do not log stderr/stdout — detectors may echo the protected input.
-		pi.logger?.warn?.("PAW_PII_CMD failed; falling back to regex", {
+		// Never log stdout/stderr or input, including when the CLI echoes it.
+		pi.logger?.warn?.("PAW_PII_CMD failed; masking content", {
 			code: result.code,
 			killed: result.killed,
 		});
 	} catch {
-		pi.logger?.warn?.("PAW_PII_CMD failed to spawn; falling back to regex");
+		if (signal?.aborted) return placeholder;
+		pi.logger?.warn?.("PAW_PII_CMD failed to spawn; masking content");
 	}
-	return regexRedact(text, placeholder);
-}
-
-async function redactToolResultContent(
-	pi: ExtensionAPI,
-	content: ToolResultContent,
-	placeholder: string,
-): Promise<ToolResultContent> {
-	const next: ToolResultContent = [];
-	for (const part of content) {
-		if (part && typeof part === "object" && part.type === "text" && typeof part.text === "string") {
-			next.push({ ...part, text: await redactText(pi, part.text, placeholder) });
-			continue;
-		}
-		next.push(part);
-	}
-	return next;
-}
-
-async function redactMessageContent(pi: ExtensionAPI, content: unknown, placeholder: string): Promise<unknown> {
-	if (typeof content === "string") {
-		return await redactText(pi, content, placeholder);
-	}
-	if (!Array.isArray(content)) return content;
-	const next: unknown[] = [];
-	for (const part of content) {
-		if (part && typeof part === "object" && "type" in part && part.type === "text" && "text" in part) {
-			if (typeof (part as { text?: unknown }).text === "string") {
-				next.push({
-					...(part as object),
-					text: await redactText(pi, (part as { text: string }).text, placeholder),
-				});
-				continue;
-			}
-		}
-		next.push(part);
-	}
-	return next;
+	// A configured detector failure cannot certify NER-only names or addresses.
+	return placeholder;
 }
 
 export default function piiRedactExtension(pi: ExtensionAPI) {
@@ -151,42 +337,28 @@ export default function piiRedactExtension(pi: ExtensionAPI) {
 		},
 	});
 
-	pi.on("tool_result", async event => {
+	pi.on("tool_result", async (event, ctx) => {
 		if (!enabled) return;
-		// Error results are model-visible and persisted; scrub them too.
-		const redacted = await redactToolResultContent(pi, event.content, placeholder);
-		// Details are persisted alongside tool content; scrub their string
-		// leaves without converting binary or provider-native values.
-		const details = redactStructuredPayload(event.details, placeholder);
-		return { content: redacted, details };
+		// One work budget covers both model-visible blocks AND persisted details.
+		// Failure results are just as sensitive as successes.
+		const redacted = (await redactTextLeaves(
+			pi,
+			{ content: event.content, details: event.details },
+			placeholder,
+			ctx.signal,
+			"messages",
+		)) as { content: ToolResultContent; details: unknown };
+		return redacted;
 	});
 
-	pi.on("context", async event => {
+	pi.on("context", async (event, ctx) => {
 		if (!enabled || !Array.isArray(event.messages)) return;
-		const messages = [];
-		for (const message of event.messages) {
-			if (!message || typeof message !== "object") {
-				messages.push(message);
-				continue;
-			}
-			if (!("content" in message)) {
-				messages.push(message);
-				continue;
-			}
-			const content = await redactMessageContent(pi, (message as { content?: unknown }).content, placeholder);
-			messages.push({ ...message, content } as typeof message);
-		}
+		const messages = (await redactTextLeaves(pi, event.messages, placeholder, ctx.signal, "messages")) as typeof event.messages;
 		return { messages };
 	});
 
-	pi.on("before_provider_request", async event => {
+	pi.on("before_provider_request", async (event, ctx) => {
 		if (!enabled || event.payload == null) return;
-		if (typeof event.payload === "string") {
-			return await redactText(pi, event.payload, placeholder);
-		}
-		if (typeof event.payload === "object") {
-			return redactStructuredPayload(event.payload, placeholder);
-		}
-		return undefined;
+		return await redactTextLeaves(pi, event.payload, placeholder, ctx.signal, "provider");
 	});
 }

@@ -219,6 +219,11 @@ function createHandlerContext(
 	timeoutBudget?: HandlerTimeoutBudget,
 ): ExtensionContext {
 	const scoped: ExtensionContext = Object.create(ctx);
+	Object.defineProperty(scoped, "signal", {
+		value: handlerSignal,
+		enumerable: true,
+		configurable: true,
+	});
 	Object.defineProperty(scoped, "ui", {
 		value: createHandlerUIContext(ctx.ui, handlerSignal, timeoutBudget),
 		enumerable: true,
