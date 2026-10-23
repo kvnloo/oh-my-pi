@@ -398,24 +398,48 @@ describe("pii-redact example extension events", () => {
 		});
 		const runner = await loadExampleRunner();
 		const anthropicSource = { type: "base64", media_type: "image/png", data: "anthropic_Ada Lovelace_opaque" };
+		const toolUseId = "toolu_Ada Lovelace_ref";
 		const anthropic = {
-			messages: [{ role: "user", content: [
-				{ type: "text", text: "Ada Lovelace" },
-				{ type: "image", source: anthropicSource },
-				{ type: "thinking", thinking: "Ada Lovelace", signature: "sig_Ada Lovelace_opaque" },
-			] }],
+			messages: [
+				{ role: "user", content: [
+					{ type: "text", text: "Ada Lovelace" },
+					{ type: "image", source: anthropicSource },
+					{ type: "thinking", thinking: "Ada Lovelace", signature: "sig_Ada Lovelace_opaque" },
+				] },
+				{ role: "assistant", content: [{
+					type: "tool_use", id: toolUseId, name: "lookup_Ada Lovelace",
+					input: { id: "Ada Lovelace", recipient: "Ada Lovelace" },
+				}] },
+				{ role: "user", content: [{
+					type: "tool_result", tool_use_id: toolUseId, content: "Ada Lovelace",
+				}] },
+			],
 		};
 		const a = (await runner.emitBeforeProviderRequest(anthropic)) as typeof anthropic;
 		expect(a.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
 		expect(a.messages[0]?.content[1]?.source).toBe(anthropicSource);
 		expect(a.messages[0]?.content[2]?.thinking).toBe(PLACEHOLDER);
 		expect(a.messages[0]?.content[2]?.signature).toBe("sig_Ada Lovelace_opaque");
+		expect(a.messages[1]?.content[0]?.id).toBe(toolUseId);
+		expect(a.messages[1]?.content[0]?.name).toBe("lookup_Ada Lovelace");
+		expect(a.messages[1]?.content[0]?.input).toEqual({ id: PLACEHOLDER, recipient: PLACEHOLDER });
+		expect(a.messages[2]?.content[0]?.tool_use_id).toBe(toolUseId);
+		expect(a.messages[2]?.content[0]?.content).toBe(PLACEHOLDER);
 
 		const inlineData = { mimeType: "image/png", data: "google_Ada Lovelace_opaque" };
-		const google = { contents: [{ role: "user", parts: [{ text: "Ada Lovelace" }, { inlineData }] }] };
+		const google = { contents: [{ role: "user", parts: [
+			{ text: "Ada Lovelace" },
+			{ inlineData },
+			{ functionResponse: {
+				name: "lookup_Ada Lovelace",
+				response: { id: "Ada Lovelace", type: "Ada Lovelace" },
+			} },
+		] }] };
 		const g = (await runner.emitBeforeProviderRequest(google)) as typeof google;
 		expect(g.contents[0]?.parts[0]?.text).toBe(PLACEHOLDER);
 		expect(g.contents[0]?.parts[1]?.inlineData).toBe(inlineData);
+		expect(g.contents[0]?.parts[2]?.functionResponse?.name).toBe("lookup_Ada Lovelace");
+		expect(g.contents[0]?.parts[2]?.functionResponse?.response).toEqual({ id: PLACEHOLDER, type: PLACEHOLDER });
 
 		const imageUrl = { url: "data:image/jpeg;base64,completion_Ada Lovelace_opaque" };
 		const completions = {
@@ -430,7 +454,7 @@ describe("pii-redact example extension events", () => {
 		expect(c.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
 		expect(c.messages[0]?.content[1]?.image_url).toBe(imageUrl);
 		for (const opaque of [
-			anthropicSource.data, "sig_Ada Lovelace_opaque", inlineData.data, imageUrl.url,
+			anthropicSource.data, "sig_Ada Lovelace_opaque", toolUseId, inlineData.data, imageUrl.url,
 			"model_Ada Lovelace",
 		]) {
 			expect(inspected).not.toContain(opaque);
