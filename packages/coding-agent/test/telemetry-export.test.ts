@@ -174,7 +174,6 @@ describe("initTelemetryExport signals export path", () => {
 	}, 20_000);
 });
 
-
 /**
  * Synthetic native spans, captured by an in-memory SDK processor. An explicit
  * tracer is injected through the existing agent telemetry config; no global
@@ -202,7 +201,11 @@ describe("telemetry export evidence contracts (in memory)", () => {
 			provider: "mock-provider",
 			id: "export-synthetic",
 			responses: [
-				{ content: [{ type: "toolCall", id: "call-1", name: "lookup", arguments: { query: rawPrompt, token: secret } }] },
+				{
+					content: [
+						{ type: "toolCall", id: "call-1", name: "lookup", arguments: { query: rawPrompt, token: secret } },
+					],
+				},
 				{ content: [rawPrompt + " " + secret] },
 			],
 		});
@@ -219,7 +222,8 @@ describe("telemetry export evidence contracts (in memory)", () => {
 		try {
 			// With no registered OTLP signals this API must preserve the native
 			// telemetry callbacks and attribute policy without exporting remotely.
-			expect(createTelemetryExportConfig(config)).toBe(config);
+			const merged = createTelemetryExportConfig(config);
+			expect(merged).toBe(config);
 			expect(isTelemetryExportEnabled()).toBe(false);
 			const context: AgentContext = { systemPrompt: [secret], messages: [], tools: [tool] };
 			const identityConverter = (messages: AgentMessage[]): Message[] =>
@@ -227,7 +231,7 @@ describe("telemetry export evidence contracts (in memory)", () => {
 			for await (const _event of agentLoop(
 				[{ role: "user", content: rawPrompt + " " + secret, timestamp: 1 }],
 				context,
-				{ model: mock.model, convertToLlm: identityConverter, telemetry: config },
+				{ model: mock.model, convertToLlm: identityConverter, telemetry: merged },
 				undefined,
 				mock.stream,
 			)) {
@@ -281,8 +285,9 @@ describe("telemetry export evidence contracts (in memory)", () => {
 			},
 		};
 		try {
-			expect(createTelemetryExportConfig(config)).toBe(config);
-			const telemetry = resolveTelemetry(config, "synthetic-conversation");
+			const merged = createTelemetryExportConfig(config);
+			expect(merged).toBe(config);
+			const telemetry = resolveTelemetry(merged, "synthetic-conversation");
 			const mock = createMockModel({ provider: "mock-provider", id: "missing-usage", responses: [] });
 			// Missing data and a genuinely reported zero are distinct observations.
 			await recordManualChatTelemetry(telemetry, {
