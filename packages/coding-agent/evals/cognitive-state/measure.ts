@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import {
 	PUBLIC_EVIDENCE,
+	assertShaRevision,
 	RLM_DONOR_REF,
 	RLM_DONOR_SPILL_BYTES,
 	contextBytes,
@@ -16,6 +17,7 @@ import { FROZEN_QUESTIONS } from "../../examples/extensions/cognitive-state/froz
 const outPath = new URL("./measurements.json", import.meta.url);
 const receiptPath = new URL("./receipts.jsonl", import.meta.url);
 const schemaPath = new URL("./receipt.schema.json", import.meta.url);
+const questionsPath = new URL("./question-contract.json", import.meta.url);
 
 function toolResult(text: string): ContextMessage {
 	return { role: "toolResult", toolName: "read", content: [{ type: "text", text }], timestamp: 2 };
@@ -25,7 +27,12 @@ function marked(id: string): ContextMessage[] {
 	return [toolResult("native-transcript"), { role: "user", content: `z0evals#56:${id}`, timestamp: 1 }];
 }
 
-const sourceRevision = process.env.OMP_SOURCE_REVISION ?? "984fa8bcc5d49463d2d5fe5be0e2cb86542ae507";
+// Fail closed rather than reporting another source tree as the measured harness.
+const sourceRevision = assertShaRevision(process.env.OMP_SOURCE_REVISION ?? "");
+const canonicalIds = (JSON.parse(readFileSync(questionsPath, "utf8")) as { questions: Array<{ id: string }> }).questions.map(question => question.id);
+if (JSON.stringify(FROZEN_QUESTIONS.map(question => question.id)) !== JSON.stringify(canonicalIds)) {
+	throw new Error("Frozen OMP question IDs drifted from the pinned z0evals contract");
+}
 const wire: UnifiedMemoryReceipt[] = [];
 const shadowBytes: Array<{ question_id: string; context_bytes: number; would_send_bytes: number }> = [];
 for (const question of FROZEN_QUESTIONS) {
