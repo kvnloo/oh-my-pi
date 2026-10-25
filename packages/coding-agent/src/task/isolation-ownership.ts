@@ -6,6 +6,8 @@
  * it. `omp worktree clear` consults the marker so it can distinguish a live
  * subagent's sandbox from a crashed run's leftover instead of deleting both.
  */
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as natives from "@oh-my-pi/pi-natives";
 import { $ } from "bun";
@@ -70,6 +72,31 @@ export async function writeIsolationOwner(baseDir: string, id: string): Promise<
 	const startToken = await processStartToken(process.pid);
 	const owner: IsolationOwner = { pid: process.pid, id, ...(startToken ? { startToken } : {}) };
 	await Bun.write(path.join(baseDir, ISOLATION_OWNER_FILE), JSON.stringify(owner));
+	const leasePath = path.join(baseDir, ".artifact-lease.json");
+	const temporary = `${leasePath}.${process.pid}.tmp`;
+	const lease = {
+		schema: "z0.artifact-lease.v1",
+		owner: `omp:${id}`,
+		path: path.resolve(baseDir),
+		node: process.env.ARTIFACT_LEASE_NODE ?? os.hostname(),
+		kind: "worktree",
+		created_at: Date.now() / 1000,
+		ttl: 7 * 86400,
+		keep_receipts: [ISOLATION_OWNER_FILE, ".omp-retained-backend.json"],
+	};
+	try {
+		await fs.writeFile(temporary, `${JSON.stringify(lease)}\n`, { flag: "wx", mode: 0o600 });
+		try {
+			// Publish without replacing an existing lease or extending its TTL.
+			await fs.link(temporary, leasePath);
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+		}
+	} finally {
+		await fs.unlink(temporary).catch(error => {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+		});
+	}
 }
 
 /**

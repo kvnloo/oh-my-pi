@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
 import * as natives from "@oh-my-pi/pi-natives";
-import { needsNativeTeardown } from "@oh-my-pi/pi-coding-agent/task/isolation-ownership";
+import { needsNativeTeardown, writeIsolationOwner } from "@oh-my-pi/pi-coding-agent/task/isolation-ownership";
 
 const { IsoBackendKind } = natives;
 
@@ -28,6 +31,26 @@ describe("retained workspace teardown set", () => {
 	it("rejects non-backend values", () => {
 		for (const value of [undefined, null, "overlayfs", 1.5, -1, 999]) {
 			expect(needsNativeTeardown(value)).toBe(false);
+		}
+	});
+});
+
+describe("task artifact lease", () => {
+	it("records an explicit owner and seven-day lease without renewal", async () => {
+		const base = await fs.mkdtemp(path.join(os.tmpdir(), "omp-lease-test-"));
+		try {
+			await writeIsolationOwner(base, "task-1");
+			const file = path.join(base, ".artifact-lease.json");
+			const first = await Bun.file(file).json();
+			expect(first.schema).toBe("z0.artifact-lease.v1");
+			expect(first.path).toBe(base);
+			expect(first.owner).toBe("omp:task-1");
+			expect(first.ttl).toBe(604800);
+			expect(first.keep_receipts).toContain(".omp-isolation-owner.json");
+			await writeIsolationOwner(base, "task-2");
+			expect(await Bun.file(file).json()).toEqual(first);
+		} finally {
+			await fs.rm(base, { recursive: true, force: true });
 		}
 	});
 });
