@@ -50,7 +50,7 @@ export function buildPawArgs(text: string, placeholder: string): string[] {
 	return ["--placeholder", placeholder, "redact", "--text", text];
 }
 
-type RedactionScope = "data" | "messages" | "provider" | "schema" | "schemaMap";
+type RedactionScope = "data" | "messages" | "provider" | "schema" | "schemaMap" | "opaque";
 
 interface TextDestination {
 	target: object;
@@ -75,37 +75,117 @@ interface PendingObject {
  * values are data (even a key named "id", "type" or "model").
  */
 const PROVIDER_TEXT_FIELDS = new Set([
-	"content", "contents", "description", "input", "instructions", "message", "messages",
-	"note", "output", "parts", "prompt", "query", "reasoning", "response", "responses",
-	"result", "summary", "system", "systemInstruction", "system_instruction", "text",
-	"thought", "toolCalls", "tool_calls",
+	"content",
+	"contents",
+	"description",
+	"input",
+	"instructions",
+	"message",
+	"messages",
+	"note",
+	"output",
+	"parts",
+	"prompt",
+	"query",
+	"reasoning",
+	"response",
+	"responses",
+	"result",
+	"summary",
+	"system",
+	"systemInstruction",
+	"system_instruction",
+	"text",
+	"thought",
+	"toolCalls",
+	"tool_calls",
 ]);
 const DATA_FIELDS = new Set([
-	"args", "arguments", "details", "functionArguments", "function_arguments",
-	"toolArgs", "toolInput", "tool_args", "tool_input",
+	"args",
+	"arguments",
+	"details",
+	"functionArguments",
+	"function_arguments",
+	"toolArgs",
+	"toolInput",
+	"tool_args",
+	"tool_input",
 ]);
 const SCHEMA_FIELDS = new Set([
-	"input_schema", "json_schema", "parameters", "responseSchema", "response_schema", "schema",
+	"input_schema",
+	"json_schema",
+	"parameters",
+	"responseSchema",
+	"response_schema",
+	"schema",
 ]);
 /** Keys of these schema containers are property/definition names, never JSON Schema keywords. */
 const SCHEMA_MAP_FIELDS = new Set(["$defs", "definitions", "dependentSchemas", "patternProperties", "properties"]);
 const MESSAGE_METADATA_FIELDS = new Set([
-	"api", "callId", "call_id", "detail", "file_id", "finishReason", "finish_reason",
-	"format", "id", "item_id", "kind", "media_type", "mimeType", "mime_type", "model",
-	"name", "object", "provider", "recipient", "response_id", "role", "signature",
-	"status", "textSignature", "thinkingSignature", "thoughtSignature",
-	"toolCallId", "toolName", "toolUseId", "tool_call_id", "tool_name", "tool_use_id",
-	"type", "uri", "url", "version",
+	"api",
+	"callId",
+	"call_id",
+	"detail",
+	"file_id",
+	"finishReason",
+	"finish_reason",
+	"format",
+	"id",
+	"item_id",
+	"kind",
+	"media_type",
+	"mimeType",
+	"mime_type",
+	"model",
+	"name",
+	"object",
+	"provider",
+	"recipient",
+	"response_id",
+	"role",
+	"signature",
+	"status",
+	"textSignature",
+	"thinkingSignature",
+	"thoughtSignature",
+	"toolCallId",
+	"toolName",
+	"toolUseId",
+	"tool_call_id",
+	"tool_name",
+	"tool_use_id",
+	"type",
+	"uri",
+	"url",
+	"version",
 ]);
 const IMAGE_METADATA_FIELDS = new Set([
-	"data", "detail", "file_id", "format", "media_type", "mimeType", "mime_type", "source", "url",
+	"data",
+	"detail",
+	"file_id",
+	"format",
+	"media_type",
+	"mimeType",
+	"mime_type",
+	"source",
+	"url",
 ]);
 const CONTENT_BLOCK_TYPES = new Set([
-	"image", "image_url", "input_audio", "input_file", "input_image", "input_text",
-	"output_audio", "output_text", "redacted_thinking", "text", "thinking",
+	"image",
+	"image_url",
+	"input_audio",
+	"input_file",
+	"input_image",
+	"input_text",
+	"output_audio",
+	"output_text",
+	"redacted_thinking",
+	"text",
+	"thinking",
 ]);
 
 function childScope(scope: RedactionScope, key: string, parent: object): RedactionScope {
+	if (scope === "opaque") return "opaque";
 	if (scope === "data") return "data";
 	// A named property/definition is a schema even when its name happens to
 	// equal a keyword such as "description" or "examples".
@@ -113,10 +193,12 @@ function childScope(scope: RedactionScope, key: string, parent: object): Redacti
 	// Schema constraints (including enum/required/default/pattern/type) are
 	// protocol, not prose. Only actual keyword descriptions/examples are data.
 	if (scope === "schema") {
+		if (key === "default" || key === "const" || key === "enum" || key === "required") return "opaque";
 		if (SCHEMA_MAP_FIELDS.has(key)) return "schemaMap";
 		return key === "description" || key === "examples" ? "data" : "schema";
 	}
 	if (DATA_FIELDS.has(key)) return "data";
+	if (scope === "provider" && key === "metadata") return "opaque";
 	if (SCHEMA_FIELDS.has(key)) return "schema";
 	// The same "input" key means a message array at the request root and
 	// arbitrary user-supplied tool parameters on Anthropic tool_use blocks.
@@ -150,7 +232,8 @@ function opaqueImageField(source: object, key: string): boolean {
 	const type = Reflect.get(source, "type");
 	const isImage = type === "image" || type === "input_image" || type === "image_url" || type === "input_file";
 	if (isImage && IMAGE_METADATA_FIELDS.has(key)) return true;
-	const mime = Reflect.get(source, "mimeType") ?? Reflect.get(source, "mime_type") ?? Reflect.get(source, "media_type");
+	const mime =
+		Reflect.get(source, "mimeType") ?? Reflect.get(source, "mime_type") ?? Reflect.get(source, "media_type");
 	return key === "data" && typeof mime === "string" && mime.startsWith("image/");
 }
 
@@ -180,12 +263,24 @@ export async function redactTextLeaves(
 	const queue: PendingObject[] = [];
 	const tasks: TextTask[] = [];
 	const byText = new Map<string, TextTask>();
-	const serializedArguments: Array<{ source: string; parsed: unknown; holder: { value?: unknown }; target: object; key: string }> = [];
+	const serializedArguments: Array<{
+		source: string;
+		parsed: unknown;
+		holder: { value?: unknown };
+		target: object;
+		key: string;
+	}> = [];
 
 	const visit = (value: unknown, target: object, key: string, scope: RedactionScope, typedBlock = false): void => {
+		if (scope === "opaque") {
+			Reflect.set(target, key, value);
+			return;
+		}
 		if (typeof value === "string") {
 			const structural =
-				scope === "provider" || scope === "schema" || scope === "schemaMap" ||
+				scope === "provider" ||
+				scope === "schema" ||
+				scope === "schemaMap" ||
 				(scope === "messages" && MESSAGE_METADATA_FIELDS.has(key)) ||
 				(typedBlock && key === "type");
 			if (value.length === 0 || structural) {
@@ -232,9 +327,8 @@ export async function redactTextLeaves(
 	};
 
 	// Providers may supply a text or a flat message array directly as payload.
-	const rootScope = surface === "provider" && (typeof input === "string" || Array.isArray(input))
-		? "messages"
-		: surface;
+	const rootScope =
+		surface === "provider" && (typeof input === "string" || Array.isArray(input)) ? "messages" : surface;
 	visit(input, root, "value", rootScope);
 	for (let index = 0; index < queue.length; index++) {
 		const { source, target, scope } = queue[index]!;
@@ -353,7 +447,13 @@ export default function piiRedactExtension(pi: ExtensionAPI) {
 
 	pi.on("context", async (event, ctx) => {
 		if (!enabled || !Array.isArray(event.messages)) return;
-		const messages = (await redactTextLeaves(pi, event.messages, placeholder, ctx.signal, "messages")) as typeof event.messages;
+		const messages = (await redactTextLeaves(
+			pi,
+			event.messages,
+			placeholder,
+			ctx.signal,
+			"messages",
+		)) as typeof event.messages;
 		return { messages };
 	});
 

@@ -15,10 +15,16 @@ import {
 } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/runner";
 import * as execUtils from "@oh-my-pi/pi-coding-agent/exec/exec";
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/types";
+import type { ContextEvent } from "@oh-my-pi/pi-coding-agent/extensibility/extensions/types";
 import { AuthStorage } from "@oh-my-pi/pi-coding-agent/session/auth-storage";
 import { SessionManager } from "@oh-my-pi/pi-coding-agent/session/session-manager";
 import { TempDir } from "@oh-my-pi/pi-utils";
-import piiRedactExtension, { buildPawArgs, redactText, redactTextLeaves, regexRedact } from "../examples/extensions/pii-redact";
+import piiRedactExtension, {
+	buildPawArgs,
+	redactText,
+	redactTextLeaves,
+	regexRedact,
+} from "../examples/extensions/pii-redact";
 
 const EXAMPLE_PATH = path.resolve(import.meta.dir, "../examples/extensions/pii-redact.ts");
 const PLACEHOLDER = "[PII]";
@@ -47,7 +53,9 @@ describe("pii-redact example helpers", () => {
 			{ type: "image", url: "img://1" },
 			{ type: "text", text: "after 555-123-4567" },
 		];
-		const mapped = (await redactTextLeaves({} as ExtensionAPI, content, PLACEHOLDER)) as Array<Record<string, unknown>>;
+		const mapped = (await redactTextLeaves({} as ExtensionAPI, content, PLACEHOLDER)) as Array<
+			Record<string, unknown>
+		>;
 		expect(mapped).toEqual([
 			{ type: "text", text: `before ${PLACEHOLDER}` },
 			{ type: "image", url: "img://1" },
@@ -109,8 +117,16 @@ describe("pii-redact example helpers", () => {
 			// Enumerate both orders: the first visitor must not dictate whether
 			// a later reference is scrubbed or kept as protocol metadata.
 			const payload = metadataFirst
-				? { metadata: shared, messages: [{ role: "user", content: shared }], input: [{ role: "user", content: shared }] }
-				: { messages: [{ role: "user", content: shared }], input: [{ role: "user", content: shared }], metadata: shared };
+				? {
+						metadata: shared,
+						messages: [{ role: "user", content: shared }],
+						input: [{ role: "user", content: shared }],
+					}
+				: {
+						messages: [{ role: "user", content: shared }],
+						input: [{ role: "user", content: shared }],
+						metadata: shared,
+					};
 			const result = (await redactTextLeaves(
 				{} as ExtensionAPI,
 				payload,
@@ -147,7 +163,9 @@ describe("pii-redact example helpers", () => {
 
 	it("continues walking null-prototype JSON records", async () => {
 		const record = Object.assign(Object.create(null), { email: "a@b.co" });
-		expect(await redactTextLeaves({} as ExtensionAPI, { record }, PLACEHOLDER)).toEqual({ record: { email: PLACEHOLDER } });
+		expect(await redactTextLeaves({} as ExtensionAPI, { record }, PLACEHOLDER)).toEqual({
+			record: { email: PLACEHOLDER },
+		});
 	});
 
 	it("scrubs regex-identifiable PII even when PAW reports success but misses it", async () => {
@@ -196,7 +214,9 @@ describe("pii-redact example helpers", () => {
 		const old = process.env.PAW_PII_CMD;
 		process.env.PAW_PII_CMD = "paw-pii";
 		try {
-			const pi = { exec: async () => ({ code: 0, stdout: "", stderr: "", killed: false }) } as unknown as ExtensionAPI;
+			const pi = {
+				exec: async () => ({ code: 0, stdout: "", stderr: "", killed: false }),
+			} as unknown as ExtensionAPI;
 			expect(await redactText(pi, "Ada Lovelace", PLACEHOLDER)).toBe(PLACEHOLDER);
 		} finally {
 			if (old === undefined) delete process.env.PAW_PII_CMD;
@@ -235,6 +255,7 @@ describe("pii-redact example extension events", () => {
 	let oldPawCommand: string | undefined;
 	let authStorage: AuthStorage;
 	let modelRegistry: ModelRegistry;
+	const contextInputs = new WeakMap<ExtensionRunner, ContextEvent["messages"]>();
 
 	beforeEach(() => {
 		oldPawCommand = process.env.PAW_PII_CMD;
@@ -262,49 +283,93 @@ describe("pii-redact example extension events", () => {
 		const result = await loadExtensions([dest], tempDir.path());
 		expect(result.errors).toEqual([]);
 		const sessionManager = SessionManager.inMemory();
-		return new ExtensionRunner(result.extensions, result.runtime, tempDir.path(), sessionManager, modelRegistry);
+		const runner = new ExtensionRunner(
+			result.extensions,
+			result.runtime,
+			tempDir.path(),
+			sessionManager,
+			modelRegistry,
+		);
+		// The runner clones context before dispatch. Observe the actual handler
+		// input so identity assertions measure the extension's replay preservation.
+		result.extensions[0]!.handlers.get("context")!.unshift(async event => {
+			contextInputs.set(runner, (event as ContextEvent).messages);
+		});
+		return runner;
 	}
-
 
 	function makeReplayFixtures() {
 		const nativeThinking = {
-			type: "thinking", thinking: "native signed Ada Lovelace", thinkingSignature: "native sig Ada Lovelace",
+			type: "thinking",
+			thinking: "native signed Ada Lovelace",
+			thinkingSignature: "native sig Ada Lovelace",
 		};
 		const nativeText = {
-			type: "text", text: "native signed text Ada Lovelace", textSignature: '{"v":1,"id":"text Ada Lovelace"}',
+			type: "text",
+			text: "native signed text Ada Lovelace",
+			textSignature: '{"v":1,"id":"text Ada Lovelace"}',
 		};
 		const nativeRedacted = { type: "redactedThinking", data: "native redacted Ada Lovelace bytes" };
 		const anthropicThinking = {
-			type: "thinking", thinking: "anthropic signed Ada Lovelace", signature: "anthropic sig Ada Lovelace",
+			type: "thinking",
+			thinking: "anthropic signed Ada Lovelace",
+			signature: "anthropic sig Ada Lovelace",
 		};
 		const anthropicRedacted = { type: "redacted_thinking", data: "anthropic redacted Ada Lovelace bytes" };
 		const reasoning = {
-			type: "reasoning", encrypted_content: "responses encrypted Ada Lovelace bytes",
+			type: "reasoning",
+			encrypted_content: "responses encrypted Ada Lovelace bytes",
 			summary: [{ type: "summary_text", text: "Ada Lovelace" }],
 		};
-		const nativeMessages = [{ role: "assistant", content: [
-			nativeThinking, nativeText, nativeRedacted,
-			{ type: "text", text: "Ada Lovelace" },
-			{ type: "text", text: "later Ada Lovelace" },
-		], timestamp: 1 } as never];
+		const nativeMessages = [
+			{
+				role: "assistant",
+				content: [
+					nativeThinking,
+					nativeText,
+					nativeRedacted,
+					{ type: "text", text: "Ada Lovelace" },
+					{ type: "text", text: "later Ada Lovelace" },
+				],
+				timestamp: 1,
+			} as never,
+		];
 		const provider = {
-			messages: [{ role: "assistant", content: [
-				anthropicThinking, anthropicRedacted,
-				{ type: "text", text: "Ada Lovelace" },
-				{ type: "text", text: "later Ada Lovelace" },
-			] }],
+			messages: [
+				{
+					role: "assistant",
+					content: [
+						anthropicThinking,
+						anthropicRedacted,
+						{ type: "text", text: "Ada Lovelace" },
+						{ type: "text", text: "later Ada Lovelace" },
+					],
+				},
+			],
 			input: [reasoning, { type: "message", role: "user", content: [{ type: "input_text", text: "Ada Lovelace" }] }],
 		};
-		return { nativeThinking, nativeText, nativeRedacted, anthropicThinking, anthropicRedacted, reasoning, nativeMessages, provider };
+		return {
+			nativeThinking,
+			nativeText,
+			nativeRedacted,
+			anthropicThinking,
+			anthropicRedacted,
+			reasoning,
+			nativeMessages,
+			provider,
+		};
 	}
 
 	async function assertReplayProtection(runner: ExtensionRunner, inspected: string[]) {
 		const f = makeReplayFixtures();
 		const context = await runner.emitContext(f.nativeMessages);
+		const input = contextInputs.get(runner)!;
+		expect(input).toEqual(f.nativeMessages);
+		const inputBlocks = (input[0] as { content: unknown[] }).content;
 		const blocks = (context[0] as { content: unknown[] }).content;
-		expect(blocks[0]).toBe(f.nativeThinking);
-		expect(blocks[1]).toBe(f.nativeText);
-		expect(blocks[2]).toBe(f.nativeRedacted);
+		expect(blocks[0]).toBe(inputBlocks[0]);
+		expect(blocks[1]).toBe(inputBlocks[1]);
+		expect(blocks[2]).toBe(inputBlocks[2]);
 		expect(blocks[3]).toEqual({ type: "text", text: PLACEHOLDER });
 		expect(blocks[4]).toEqual({ type: "text", text: PLACEHOLDER });
 
@@ -314,17 +379,25 @@ describe("pii-redact example extension events", () => {
 		expect(result.messages[0]?.content[2]).toEqual({ type: "text", text: PLACEHOLDER });
 		expect(result.messages[0]?.content[3]).toEqual({ type: "text", text: PLACEHOLDER });
 		expect(result.input[0]).toMatchObject({
-			type: "reasoning", encrypted_content: f.reasoning.encrypted_content,
+			type: "reasoning",
+			encrypted_content: f.reasoning.encrypted_content,
 			summary: [{ type: "summary_text", text: PLACEHOLDER }],
 		});
 		expect(result.input[1]).toMatchObject({
-			type: "message", role: "user", content: [{ type: "input_text", text: PLACEHOLDER }],
+			type: "message",
+			role: "user",
+			content: [{ type: "input_text", text: PLACEHOLDER }],
 		});
 		for (const opaque of [
-			f.nativeThinking.thinking, f.nativeThinking.thinkingSignature,
-			f.nativeText.text, f.nativeText.textSignature, f.nativeRedacted.data,
-			f.anthropicThinking.thinking, f.anthropicThinking.signature,
-			f.anthropicRedacted.data, f.reasoning.encrypted_content,
+			f.nativeThinking.thinking,
+			f.nativeThinking.thinkingSignature,
+			f.nativeText.text,
+			f.nativeText.textSignature,
+			f.nativeRedacted.data,
+			f.anthropicThinking.thinking,
+			f.anthropicThinking.signature,
+			f.anthropicRedacted.data,
+			f.reasoning.encrypted_content,
 		]) {
 			expect(inspected).not.toContain(opaque);
 		}
@@ -336,39 +409,60 @@ describe("pii-redact example extension events", () => {
 	function makeSchemaPayload() {
 		return {
 			messages: [{ role: "user", content: "Ada Lovelace" }],
-			tools: [{ type: "function", name: "lookup", description: "Ada Lovelace", parameters: {
-				type: "object",
-				description: "Ada Lovelace",
-				examples: ["Ada Lovelace"],
-				properties: {
-					description: {
-						type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
+			tools: [
+				{
+					type: "function",
+					name: "lookup",
+					description: "Ada Lovelace",
+					parameters: {
+						type: "object",
 						description: "Ada Lovelace",
+						examples: ["Ada Lovelace"],
+						properties: {
+							description: {
+								type: "string",
+								enum: ["Ada Lovelace"],
+								default: "Ada Lovelace",
+								description: "Ada Lovelace",
+							},
+							examples: {
+								type: "array",
+								items: { type: "string" },
+								examples: ["Ada Lovelace"],
+								description: "Ada Lovelace",
+							},
+						},
+						patternProperties: {
+							description: { type: "string", enum: ["Ada Lovelace"], description: "Ada Lovelace" },
+							examples: { type: "string", default: "Ada Lovelace", description: "Ada Lovelace" },
+						},
+						$defs: {
+							examples: {
+								type: "object",
+								required: ["description"],
+								description: "Ada Lovelace",
+								properties: {
+									description: {
+										type: "string",
+										default: "Ada Lovelace",
+										description: "Ada Lovelace",
+									},
+								},
+							},
+						},
+						additionalProperties: {
+							type: "string",
+							enum: ["Ada Lovelace"],
+							description: "Ada Lovelace",
+						},
+						required: ["description"],
+						default: { description: "Ada Lovelace" },
 					},
-					examples: {
-						type: "array", items: { type: "string" },
-						examples: ["Ada Lovelace"], description: "Ada Lovelace",
-					},
 				},
-				patternProperties: {
-					description: { type: "string", enum: ["Ada Lovelace"], description: "Ada Lovelace" },
-					examples: { type: "string", default: "Ada Lovelace", description: "Ada Lovelace" },
-				},
-				$defs: {
-					examples: {
-						type: "object", required: ["description"], description: "Ada Lovelace",
-						properties: { description: {
-							type: "string", default: "Ada Lovelace", description: "Ada Lovelace",
-						} },
-					},
-				},
-				additionalProperties: {
-					type: "string", enum: ["Ada Lovelace"], description: "Ada Lovelace",
-				},
-				required: ["description"],
-				default: { description: "Ada Lovelace" },
-			} }],
-			toolCalls: [{ arguments: { description: "Ada Lovelace details", details: { examples: "Ada Lovelace details" } } }],
+			],
+			toolCalls: [
+				{ arguments: { description: "Ada Lovelace details", details: { examples: "Ada Lovelace details" } } },
+			],
 		};
 	}
 
@@ -382,35 +476,47 @@ describe("pii-redact example extension events", () => {
 		expect(schema.description).toBe(PLACEHOLDER);
 		expect(schema.examples).toEqual([PLACEHOLDER]);
 		expect(schema.properties.description).toEqual({
-			type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
+			type: "string",
+			enum: ["Ada Lovelace"],
+			default: "Ada Lovelace",
 			description: PLACEHOLDER,
 		});
 		expect(schema.properties.examples).toEqual({
-			type: "array", items: { type: "string" },
-			examples: [PLACEHOLDER], description: PLACEHOLDER,
+			type: "array",
+			items: { type: "string" },
+			examples: [PLACEHOLDER],
+			description: PLACEHOLDER,
 		});
 		expect(schema.patternProperties).toEqual({
 			description: { type: "string", enum: ["Ada Lovelace"], description: PLACEHOLDER },
 			examples: { type: "string", default: "Ada Lovelace", description: PLACEHOLDER },
 		});
 		expect(schema.$defs.examples).toEqual({
-			type: "object", required: ["description"], description: PLACEHOLDER,
+			type: "object",
+			required: ["description"],
+			description: PLACEHOLDER,
 			properties: { description: { type: "string", default: "Ada Lovelace", description: PLACEHOLDER } },
 		});
 		expect(schema.additionalProperties).toEqual({
-			type: "string", enum: ["Ada Lovelace"], description: PLACEHOLDER,
+			type: "string",
+			enum: ["Ada Lovelace"],
+			description: PLACEHOLDER,
 		});
 		expect(schema.required).toEqual(["description"]);
 		expect(schema.default).toEqual({ description: "Ada Lovelace" });
 		expect(result.toolCalls[0]?.arguments).toEqual({
-			description: PLACEHOLDER, details: { examples: PLACEHOLDER },
+			description: PLACEHOLDER,
+			details: { examples: PLACEHOLDER },
 		});
 		expect(payload.tools[0]?.parameters.properties.description.type).toBe("string");
 		expect(payload.tools[0]?.parameters.properties.examples.examples).toEqual(["Ada Lovelace"]);
 
 		const tool = await runner.emitToolResult({
-			type: "tool_result", toolName: "lookup", toolCallId: "schema-redaction",
-			input: {}, content: [{ type: "text", text: "Ada Lovelace" }],
+			type: "tool_result",
+			toolName: "lookup",
+			toolCallId: "schema-redaction",
+			input: {},
+			content: [{ type: "text", text: "Ada Lovelace" }],
 			details: { description: "Ada Lovelace details", examples: ["Ada Lovelace details"] },
 			isError: false,
 		});
@@ -510,7 +616,9 @@ describe("pii-redact example extension events", () => {
 		const bytes = new Uint8Array([12, 34]);
 		const payload = {
 			system: "Ada Lovelace",
-			tools: [{ description: "Ask Ada Lovelace", parameters: { properties: { note: { description: "Ada Lovelace" } } } }],
+			tools: [
+				{ description: "Ask Ada Lovelace", parameters: { properties: { note: { description: "Ada Lovelace" } } } },
+			],
 			toolCalls: [{ arguments: { recipient: "Ada Lovelace" } }],
 			native: { bytes },
 		};
@@ -551,24 +659,33 @@ describe("pii-redact example extension events", () => {
 					],
 				},
 				{
-					type: "function_call", call_id: callId, name: "lookup_Ada Lovelace",
-					arguments: rawArgs, signature: "sig_Ada Lovelace_meta",
+					type: "function_call",
+					call_id: callId,
+					name: "lookup_Ada Lovelace",
+					arguments: rawArgs,
+					signature: "sig_Ada Lovelace_meta",
 				},
 				{ type: "function_call_output", call_id: callId, output: "Tell Ada Lovelace" },
 			],
-			tools: [{
-				type: "function", name: "lookup_Ada Lovelace", description: "Ask Ada Lovelace",
-				parameters: {
-					type: "object",
-					properties: {
-						recipient: {
-							type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
-							description: "Ask Ada Lovelace",
+			tools: [
+				{
+					type: "function",
+					name: "lookup_Ada Lovelace",
+					description: "Ask Ada Lovelace",
+					parameters: {
+						type: "object",
+						properties: {
+							recipient: {
+								type: "string",
+								enum: ["Ada Lovelace"],
+								default: "Ada Lovelace",
+								description: "Ask Ada Lovelace",
+							},
 						},
+						required: ["recipient"],
 					},
-					required: ["recipient"],
 				},
-			}],
+			],
 		};
 		const redacted = (await runner.emitBeforeProviderRequest(original)) as typeof original;
 		expect(redacted.model).toBe(original.model);
@@ -581,7 +698,9 @@ describe("pii-redact example extension events", () => {
 		expect(redacted.input[1]?.signature).toBe("sig_Ada Lovelace_meta");
 		const scrubbedArgs = JSON.parse(redacted.input[1]!.arguments!);
 		expect(scrubbedArgs).toEqual({
-			recipient: PLACEHOLDER, id: PLACEHOLDER, image_url: { url: imageUrl },
+			recipient: PLACEHOLDER,
+			id: PLACEHOLDER,
+			image_url: { url: imageUrl },
 		});
 		expect(redacted.input[2]?.output).toBe(PLACEHOLDER);
 		expect(redacted.tools[0]?.type).toBe("function");
@@ -591,7 +710,9 @@ describe("pii-redact example extension events", () => {
 			type: "object",
 			properties: {
 				recipient: {
-					type: "string", enum: ["Ada Lovelace"], default: "Ada Lovelace",
+					type: "string",
+					enum: ["Ada Lovelace"],
+					default: "Ada Lovelace",
 					description: PLACEHOLDER,
 				},
 			},
@@ -618,18 +739,39 @@ describe("pii-redact example extension events", () => {
 		const toolUseId = "toolu_Ada Lovelace_ref";
 		const anthropic = {
 			messages: [
-				{ role: "user", content: [
-					{ type: "text", text: "Ada Lovelace" },
-					{ type: "image", source: anthropicSource },
-					{ type: "thinking", thinking: "signed Anthropic Ada Lovelace thinking", signature: "sig_Ada Lovelace_opaque" },
-				] },
-				{ role: "assistant", content: [{
-					type: "tool_use", id: toolUseId, name: "lookup_Ada Lovelace",
-					input: { id: "Ada Lovelace", recipient: "Ada Lovelace" },
-				}] },
-				{ role: "user", content: [{
-					type: "tool_result", tool_use_id: toolUseId, content: "Ada Lovelace",
-				}] },
+				{
+					role: "user",
+					content: [
+						{ type: "text", text: "Ada Lovelace" },
+						{ type: "image", source: anthropicSource },
+						{
+							type: "thinking",
+							thinking: "signed Anthropic Ada Lovelace thinking",
+							signature: "sig_Ada Lovelace_opaque",
+						},
+					],
+				},
+				{
+					role: "assistant",
+					content: [
+						{
+							type: "tool_use",
+							id: toolUseId,
+							name: "lookup_Ada Lovelace",
+							input: { id: "Ada Lovelace", recipient: "Ada Lovelace" },
+						},
+					],
+				},
+				{
+					role: "user",
+					content: [
+						{
+							type: "tool_result",
+							tool_use_id: toolUseId,
+							content: "Ada Lovelace",
+						},
+					],
+				},
 			],
 		};
 		const a = (await runner.emitBeforeProviderRequest(anthropic)) as {
@@ -649,30 +791,45 @@ describe("pii-redact example extension events", () => {
 		expect(a.messages[2]?.content[0]?.content).toBe(PLACEHOLDER);
 
 		const inlineData = { mimeType: "image/png", data: "google_Ada Lovelace_opaque" };
-		const google = { contents: [{ role: "user", parts: [
-			{ text: "Ada Lovelace" },
-			{ inlineData },
-			{ functionResponse: {
-				name: "lookup_Ada Lovelace",
-				response: { id: "Ada Lovelace", type: "Ada Lovelace" },
-			} },
-		] }] };
+		const google = {
+			contents: [
+				{
+					role: "user",
+					parts: [
+						{ text: "Ada Lovelace" },
+						{ inlineData },
+						{
+							functionResponse: {
+								name: "lookup_Ada Lovelace",
+								response: { id: "Ada Lovelace", type: "Ada Lovelace" },
+							},
+						},
+					],
+				},
+			],
+		};
 		const g = (await runner.emitBeforeProviderRequest(google)) as {
 			contents: Array<{ parts: Array<Record<string, unknown>> }>;
 		};
 		expect(g.contents[0]?.parts[0]?.text).toBe(PLACEHOLDER);
 		expect(g.contents[0]?.parts[1]?.inlineData).toBe(inlineData);
 		expect(g.contents[0]?.parts[2]?.functionResponse).toEqual({
-			name: "lookup_Ada Lovelace", response: { id: PLACEHOLDER, type: PLACEHOLDER },
+			name: "lookup_Ada Lovelace",
+			response: { id: PLACEHOLDER, type: PLACEHOLDER },
 		});
 
 		const imageUrl = { url: "data:image/jpeg;base64,completion_Ada Lovelace_opaque" };
 		const completions = {
 			model: "model_Ada Lovelace",
-			messages: [{ role: "user", content: [
-				{ type: "text", text: "Ada Lovelace" },
-				{ type: "image_url", image_url: imageUrl },
-			] }],
+			messages: [
+				{
+					role: "user",
+					content: [
+						{ type: "text", text: "Ada Lovelace" },
+						{ type: "image_url", image_url: imageUrl },
+					],
+				},
+			],
 		};
 		const c = (await runner.emitBeforeProviderRequest(completions)) as {
 			model: string;
@@ -682,14 +839,18 @@ describe("pii-redact example extension events", () => {
 		expect(c.messages[0]?.content[0]?.text).toBe(PLACEHOLDER);
 		expect(c.messages[0]?.content[1]?.image_url).toBe(imageUrl);
 		for (const opaque of [
-			anthropicSource.data, "sig_Ada Lovelace_opaque", toolUseId, inlineData.data, imageUrl.url,
-			"model_Ada Lovelace", "signed Anthropic Ada Lovelace thinking",
+			anthropicSource.data,
+			"sig_Ada Lovelace_opaque",
+			toolUseId,
+			inlineData.data,
+			imageUrl.url,
+			"model_Ada Lovelace",
+			"signed Anthropic Ada Lovelace thinking",
 		]) {
 			expect(inspected).not.toContain(opaque);
 		}
 		expect(inspected).toContain("Ada Lovelace");
 	});
-
 
 	it("keeps native, Anthropic and Responses replay bytes intact under killed detectors", async () => {
 		process.env.PAW_PII_CMD = "mock-paw";
@@ -724,7 +885,10 @@ describe("pii-redact example extension events", () => {
 	it("keeps schema property and definition names in schema scope after detector kill", async () => {
 		process.env.PAW_PII_CMD = "mock-paw";
 		vi.spyOn(execUtils, "execCommand").mockImplementation(async () => ({
-			code: 1, stdout: "", stderr: "", killed: true,
+			code: 1,
+			stdout: "",
+			stderr: "",
+			killed: true,
 		}));
 		const runner = await loadExampleRunner();
 		await assertSchemaProtection(runner);
@@ -750,7 +914,10 @@ describe("pii-redact example extension events", () => {
 	it("treats nested result detail id/type fields as private data, not provider metadata", async () => {
 		process.env.PAW_PII_CMD = "mock-paw";
 		vi.spyOn(execUtils, "execCommand").mockImplementation(async () => ({
-			code: 1, stdout: "", stderr: "", killed: true,
+			code: 1,
+			stdout: "",
+			stderr: "",
+			killed: true,
 		}));
 		const runner = await loadExampleRunner();
 		const details = { results: [{ id: "Ada Lovelace", type: "Ada Lovelace", note: "Ada Lovelace" }] };
@@ -783,9 +950,15 @@ describe("pii-redact example extension events", () => {
 		});
 		const original = {
 			model: "model_Ada Lovelace_meta",
-			input: [{ role: "user", content: Array.from({ length: 18 }, (_, i) => ({
-				type: "input_text", text: "block " + i + " Ada Lovelace",
-			})) }],
+			input: [
+				{
+					role: "user",
+					content: Array.from({ length: 18 }, (_, i) => ({
+						type: "input_text",
+						text: "block " + i + " Ada Lovelace",
+					})),
+				},
+			],
 		};
 		const result = (await runner.emitBeforeProviderRequest(original)) as typeof original;
 		expect(result.model).toBe(original.model);
@@ -810,11 +983,7 @@ describe("pii-redact example extension events", () => {
 			toolName: "ask",
 			toolCallId: "ask-ner",
 			input: {},
-			content: [
-				{ type: "text", text: "Ada Lovelace" },
-				image,
-				{ type: "text", text: "For Ada Lovelace" },
-			],
+			content: [{ type: "text", text: "Ada Lovelace" }, image, { type: "text", text: "For Ada Lovelace" }],
 			details: { results: [{ customInput: "Ada Lovelace", note: "Hi Ada Lovelace" }] },
 			isError: true,
 		});
@@ -843,7 +1012,12 @@ describe("pii-redact example extension events", () => {
 			calls++;
 			await Bun.sleep(10);
 			inflight--;
-			return { code: 0, stdout: (args[args.length - 1] ?? "").replaceAll("Ada Lovelace", PLACEHOLDER), stderr: "", killed: false };
+			return {
+				code: 0,
+				stdout: (args[args.length - 1] ?? "").replaceAll("Ada Lovelace", PLACEHOLDER),
+				stderr: "",
+				killed: false,
+			};
 		});
 		const runner = await loadExampleRunner();
 		const blocks = Array.from({ length: 72 }, (_, index) => ({
@@ -853,7 +1027,9 @@ describe("pii-redact example extension events", () => {
 		const original = [{ role: "user", content: blocks, timestamp: 1 } as never];
 		const messages = await runner.emitContext(original);
 		const mapped = (messages[0] as { content: typeof blocks }).content;
-		expect(mapped.map(block => block.text)).toEqual(blocks.map(block => block.text.replace("Ada Lovelace", PLACEHOLDER)));
+		expect(mapped.map(block => block.text)).toEqual(
+			blocks.map(block => block.text.replace("Ada Lovelace", PLACEHOLDER)),
+		);
 		expect(blocks[71]?.text).toContain("Ada Lovelace");
 		expect(calls).toBeGreaterThanOrEqual(72);
 		expect(peak).toBeGreaterThan(1);
@@ -874,7 +1050,13 @@ describe("pii-redact example extension events", () => {
 		});
 		const runner = await loadExampleRunner();
 		testSetExtensionHandlerTimeoutMs(30);
-		const original = [{ role: "user", content: Array.from({ length: 40 }, (_, i) => ({ type: "text", text: "Ada Lovelace " + i })), timestamp: 1 } as never];
+		const original = [
+			{
+				role: "user",
+				content: Array.from({ length: 40 }, (_, i) => ({ type: "text", text: "Ada Lovelace " + i })),
+				timestamp: 1,
+			} as never,
+		];
 		const returned = await runner.emitContext(original);
 		// Runner timeout wins the race and discards the handler's safe replacement.
 		// This is a documented privacy gap, NOT a fail-closed acceptance test.
