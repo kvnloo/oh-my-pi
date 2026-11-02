@@ -25,7 +25,7 @@ describe("M5 extension seam ledger", () => {
 			expect(cells.every(cell => cell.length > 0)).toBe(true);
 		}
 		expect(markdown).toContain("GENERIC_UPSTREAM_CANDIDATE");
-		expect(markdown).toContain("no actual out-of-tree z0 adapter");
+		expect(markdown).toContain("not an actual out-of-tree z0 adapter");
 	});
 
 	it("resolves every symbol and exact line against the immutable source snapshot", async () => {
