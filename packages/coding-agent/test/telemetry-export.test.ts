@@ -244,6 +244,7 @@ describe("telemetry export evidence contracts (in memory)", () => {
 			const chats = spans.filter(s => s.name === "chat export-synthetic");
 			const executeTool = spans.find(s => s.name === "execute_tool lookup");
 			expect(invoke).toBeDefined();
+			if (!invoke) throw new Error("Missing invoke_agent span");
 			expect(chats).toHaveLength(2);
 			expect(executeTool).toBeDefined();
 			expect(chats.map(s => s.attributes["z0.attempt_id"]).sort()).toEqual(["attempt-0", "attempt-1"]);
