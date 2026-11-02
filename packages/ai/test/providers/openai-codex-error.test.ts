@@ -150,7 +150,7 @@ const FAILURE_EVENTS = [
 ] as const;
 
 describe("Codex quota / auth / throttle boundary (#158 M1)", () => {
-	it.each(FAILURE_EVENTS)("classifies $label without treating it as a transport retry", failure => {
+	it.each([...FAILURE_EVENTS])("classifies $label without treating it as a transport retry", failure => {
 		const error = createCodexProviderStreamError(failure.event);
 		expect(error.code).toBe(failure.code);
 		expect(error.message).toContain(failure.code);
@@ -229,7 +229,7 @@ describe("Codex synthetic stream retry and tier boundary (#158 M1)", () => {
 		}
 	}
 
-	it.each(FAILURE_EVENTS)("surfaces $label once without retrying or selecting a reserve tier", async failure => {
+	it.each([...FAILURE_EVENTS])("surfaces $label once without retrying or selecting a reserve tier", async failure => {
 		const sent: Array<Record<string, unknown>> = [];
 		const waitSpy = vi.spyOn(scheduler, "wait").mockResolvedValue(undefined);
 		const result = await streamOpenAICodexResponses(model, context, {
